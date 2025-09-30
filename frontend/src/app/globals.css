@@ -1,1 +1,12 @@
 @import "tailwindcss";
+
+@theme {
+  --color-primary: #f8fafc;
+  --color-secondary: #fff;
+  --color-accent: #1398c6;
+  --color-faded: #f0f0f0;
+}
+
+body {
+  @apply bg-secondary;
+}

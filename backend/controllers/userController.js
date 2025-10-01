@@ -1,10 +1,18 @@
 import prisma from "../config/database.js";
 import bcrypt from "bcrypt";
+import { generateToken } from "../middleware/auth.js";
 
 export const getAllUsers = async (req, res) => {
   try {
     const users = await prisma.user.findMany();
-    res.json(users);
+    // Format dateOfBirth to only return the date part (YYYY-MM-DD)
+    const formattedUsers = users.map((user) => ({
+      ...user,
+      dateOfBirth: user.dateOfBirth
+        ? user.dateOfBirth.toISOString().slice(0, 10)
+        : null,
+    }));
+    res.json(formattedUsers);
   } catch (error) {
     console.error("Error fetching users:", error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -32,7 +40,24 @@ export const createUser = async (req, res) => {
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
       },
     });
-    res.status(201).json(newUser);
+
+    // Generate JWT token for the new user
+    const token = generateToken(newUser);
+
+    // Return user data without password and include token
+    const { password: _, ...userWithoutPassword } = newUser;
+    // Format dateOfBirth to only return the date part (YYYY-MM-DD)
+    const formattedUser = {
+      ...userWithoutPassword,
+      dateOfBirth: userWithoutPassword.dateOfBirth
+        ? userWithoutPassword.dateOfBirth.toISOString().slice(0, 10)
+        : null,
+    };
+    res.status(201).json({
+      message: "User created successfully",
+      user: formattedUser,
+      token,
+    });
   } catch (error) {
     console.error("Error creating user:", error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -48,7 +73,14 @@ export const getUserById = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-    res.json(user);
+    // Format dateOfBirth to only return the date part (YYYY-MM-DD)
+    const formattedUser = {
+      ...user,
+      dateOfBirth: user.dateOfBirth
+        ? user.dateOfBirth.toISOString().slice(0, 10)
+        : null,
+    };
+    res.json(formattedUser);
   } catch (error) {
     console.error("Error fetching user:", error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -68,11 +100,20 @@ export const checkUserCredentials = async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
+
+    // Generate JWT token
+    const token = generateToken(user);
+
     res.json({
       message: "Login successful",
-      name: user.name,
-      email: user.email,
-      dateOfBirth: user.dateOfBirth.toISOString().slice(0, 10),
+      user: {
+        name: user.name,
+        email: user.email,
+        dateOfBirth: user.dateOfBirth
+          ? user.dateOfBirth.toISOString().slice(0, 10)
+          : null,
+      },
+      token,
     });
   } catch (error) {
     console.error("Error checking credentials:", error);
@@ -127,9 +168,37 @@ export const updateUser = async (req, res) => {
       where: { id: parseInt(id) },
       data: updateData,
     });
-    res.json(updatedUser);
+    // Format dateOfBirth to only return the date part (YYYY-MM-DD)
+    const formattedUser = {
+      ...updatedUser,
+      dateOfBirth: updatedUser.dateOfBirth
+        ? updatedUser.dateOfBirth.toISOString().slice(0, 10)
+        : null,
+    };
+    res.json(formattedUser);
   } catch (error) {
     console.error("Error updating user:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+// Get current user profile (protected route)
+export const getCurrentUser = async (req, res) => {
+  try {
+    // req.user is populated by the authenticateToken middleware
+    const user = req.user;
+    res.json({
+      message: "Profile retrieved successfully",
+      user: {
+        name: user.name,
+        email: user.email,
+        dateOfBirth: user.dateOfBirth
+          ? user.dateOfBirth.toISOString().slice(0, 10)
+          : null,
+      },
+    });
+  } catch (error) {
+    console.error("Error getting current user:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };

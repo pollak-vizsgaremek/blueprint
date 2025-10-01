@@ -5,22 +5,29 @@ import {
   getUserById,
   checkUserCredentials,
   updateUser,
+  getCurrentUser,
 } from "../controllers/userController.js";
+import { authenticateToken } from "../middleware/auth.js";
 const router = express.Router();
 
-// GET /users - Get all users
-router.get("/", getAllUsers);
-
-// POST /users - Create a new user
+// Public routes (no authentication required)
+// POST /users - Create a new user (register)
 router.post("/", createUser);
 
-// GET /users/:id - Get user by ID
-router.get("/:id", getUserById);
-
-// POST /users/login - Check user credentials
+// POST /users/login - Check user credentials (login)
 router.post("/login", checkUserCredentials);
 
+// Protected routes (authentication required)
+// GET /users/profile - Get current user profile
+router.get("/profile", authenticateToken, getCurrentUser);
+
+// GET /users - Get all users (admin only)
+router.get("/", authenticateToken, getAllUsers);
+
+// GET /users/:id - Get user by ID
+router.get("/:id", authenticateToken, getUserById);
+
 // PUT /users/:id - Update user by ID
-router.put("/:id", updateUser);
+router.put("/:id", authenticateToken, updateUser);
 
 export default router;

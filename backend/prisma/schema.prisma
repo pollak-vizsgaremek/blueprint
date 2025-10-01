@@ -26,13 +26,15 @@ model user {
 }
 
 model event {
-  id           Int            @id @default(autoincrement())
-  name         String
-  description  String         @db.Text
-  creator      String
-  location     String
-  date         DateTime
-  createdAt    DateTime       @default(now())
+  id            Int            @id @default(autoincrement())
+  name          String
+  description   String         @db.Text
+  imageUrl      String?
+  creator       String
+  location      String
+  date          DateTime
+  maxParticipants Int?         // Optional field for maximum number of participants
+  createdAt     DateTime       @default(now())
   registrations registration[]
 }
 

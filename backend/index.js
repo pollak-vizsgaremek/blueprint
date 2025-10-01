@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 import eventRoutes from "./routes/events.js";
 import userRoutes from "./routes/users.js";
 import { errorHandler, notFound } from "./middleware/errorHandler.js";
@@ -6,6 +7,7 @@ import { errorHandler, notFound } from "./middleware/errorHandler.js";
 const app = express();
 
 // Middleware
+app.use(cors());
 app.use(express.json());
 
 // Routes

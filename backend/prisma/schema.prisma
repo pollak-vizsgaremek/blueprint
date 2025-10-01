@@ -15,21 +15,36 @@ datasource db {
 }
 
 model user {
-  id        Int      @id @default(autoincrement())
-  name      String   
-  email     String   @unique
-  password  String  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           Int            @id @default(autoincrement())
+  name         String   
+  email        String         @unique
+  password     String  
+  dateOfBirth  DateTime       @db.Date
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  registrations registration[]
 }
 
 model event {
-  id        Int      @id @default(autoincrement())
-  name      String?
-  description String? @db.Text
-  creator   String?
-  location  String?
-  date      DateTime?
-  createdAt DateTime @default(now())
+  id           Int            @id @default(autoincrement())
+  name         String
+  description  String         @db.Text
+  creator      String
+  location     String
+  date         DateTime
+  createdAt    DateTime       @default(now())
+  registrations registration[]
+}
 
+model registration {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  eventId      Int
+  registeredAt DateTime @default(now())
+  status       String   @default("registered") // registered, cancelled, attended
+  
+  user         user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event        event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, eventId])
 }

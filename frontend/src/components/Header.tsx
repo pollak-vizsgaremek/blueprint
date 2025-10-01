@@ -1,12 +1,17 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Roboto_Mono } from "next/font/google";
+
+const roboto = Roboto_Mono({
+  subsets: ["latin"],
+});
 
 export const Header = () => {
   return (
     <header className="w-full h-20 px-10 py-2 flex justify-between">
       <div className="flex items-center gap-3">
         <Image src="/blueprint.png" alt="Logo" width={50} height={50} />
-        <div className="text-2xl">Blueprint</div>
+        <div className={`text-2xl ${roboto.className}`}>Blueprint</div>
       </div>
       <div className="flex gap-2 items-center text-xl">
         <Link href="/">Főoldal</Link>

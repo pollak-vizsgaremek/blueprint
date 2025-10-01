@@ -15,12 +15,13 @@ const EventsPage = async () => {
           <div className="">Befejezett</div>
         </div>
         <div className="flex gap-3 items-center">
-          <FaList size={25} />
           <PiSquaresFourFill
             size={30}
             className="bg-accent rounded-md"
             color="white"
           />
+
+          <FaList size={25} />
         </div>
       </div>
       <div className="pt-5 px-5 flex gap-5 flex-wrap">

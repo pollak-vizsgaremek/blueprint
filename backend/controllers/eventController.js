@@ -1,4 +1,5 @@
 import prisma from "../config/database.js";
+import { deleteEventImageFromMinio } from "../middleware/upload.js";
 
 export const getAllEvents = async (req, res) => {
   try {
@@ -34,26 +35,28 @@ export const getAllEvents = async (req, res) => {
       },
     });
 
-    const formattedEvents = events.map((event) => ({
-      id: event.id,
-      name: event.name,
-      description: event.description,
-      imageUrl: event.imageUrl,
-      creator: event.creator,
-      location: event.location,
-      date: event.date,
-      maxParticipants: event.maxParticipants,
-      createdAt: event.createdAt,
-      registrationCount: event._count.registrations,
-      userRegistration:
-        userId && event.registrations.length > 0
-          ? event.registrations[0]
-          : null,
-      isUserRegistered: userId ? event.registrations.length > 0 : false,
-      isFull: event.maxParticipants
-        ? event._count.registrations >= event.maxParticipants
-        : false,
-    }));
+    const formattedEvents = events.map((event) => {
+      return {
+        id: event.id,
+        name: event.name,
+        description: event.description,
+        imageUrl: event.imageUrl,
+        creator: event.creator,
+        location: event.location,
+        date: event.date,
+        maxParticipants: event.maxParticipants,
+        createdAt: event.createdAt,
+        registrationCount: event._count.registrations,
+        userRegistration:
+          userId && event.registrations.length > 0
+            ? event.registrations[0]
+            : null,
+        isUserRegistered: userId ? event.registrations.length > 0 : false,
+        isFull: event.maxParticipants
+          ? event._count.registrations >= event.maxParticipants
+          : false,
+      };
+    });
 
     res.json(formattedEvents);
   } catch (error) {
@@ -63,27 +66,46 @@ export const getAllEvents = async (req, res) => {
 };
 
 export const createEvent = async (req, res) => {
-  const { name, description, imageUrl, location, date, maxParticipants } =
-    req.body;
+  let { name, description, location, date, maxParticipants } = req.body;
 
   try {
     const creator = req.user.name;
 
-    // Validate maxParticipants if provided
-    if (maxParticipants !== undefined && maxParticipants !== null) {
-      if (!Number.isInteger(maxParticipants) || maxParticipants <= 0) {
+    // Validate required fields
+    if (!name || !description || !location || !date) {
+      return res.status(400).json({
+        error: "Missing required fields",
+        message: "Name, description, location, and date are required",
+      });
+    }
+
+    // Convert maxParticipants to integer if it's a string
+    if (
+      maxParticipants !== undefined &&
+      maxParticipants !== null &&
+      maxParticipants !== ""
+    ) {
+      maxParticipants = parseInt(maxParticipants, 10);
+
+      // Validate maxParticipants after conversion
+      if (isNaN(maxParticipants) || maxParticipants <= 0) {
         return res.status(400).json({
           error: "Invalid maxParticipants",
           message: "Maximum participants must be a positive integer",
         });
       }
+    } else {
+      maxParticipants = null;
     }
+
+    // Get image URL from uploaded file if available
+    const imageUrl = req.uploadedImage ? req.uploadedImage.url : null;
 
     const newEvent = await prisma.event.create({
       data: {
         name,
         description,
-        imageUrl: imageUrl || null,
+        imageUrl,
         creator,
         location,
         date: new Date(date),
@@ -97,6 +119,125 @@ export const createEvent = async (req, res) => {
     });
   } catch (error) {
     console.error("Error creating event:", error);
+
+    // If there was an uploaded image but database creation failed, clean it up
+    if (req.uploadedImage) {
+      deleteEventImageFromMinio(req.uploadedImage.url);
+    }
+
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+// Update an existing event
+export const updateEvent = async (req, res) => {
+  const { eventId } = req.params;
+  let { name, description, location, date, maxParticipants } = req.body;
+
+  try {
+    // Check if event exists
+    const existingEvent = await prisma.event.findUnique({
+      where: { id: parseInt(eventId) },
+    });
+
+    if (!existingEvent) {
+      // Clean up uploaded image if event doesn't exist
+      if (req.uploadedImage) {
+        deleteEventImageFromMinio(req.uploadedImage.url);
+      }
+      return res.status(404).json({ error: "Event not found" });
+    }
+
+    // Convert and validate maxParticipants if provided
+    if (
+      maxParticipants !== undefined &&
+      maxParticipants !== null &&
+      maxParticipants !== ""
+    ) {
+      maxParticipants = parseInt(maxParticipants, 10);
+
+      // Validate maxParticipants after conversion
+      if (isNaN(maxParticipants) || maxParticipants <= 0) {
+        if (req.uploadedImage) {
+          deleteEventImageFromMinio(req.uploadedImage.url);
+        }
+        return res.status(400).json({
+          error: "Invalid maxParticipants",
+          message: "Maximum participants must be a positive integer",
+        });
+      }
+    } else if (maxParticipants === "" || maxParticipants === null) {
+      maxParticipants = null;
+    }
+
+    // Prepare update data
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    if (location !== undefined) updateData.location = location;
+    if (date !== undefined) updateData.date = new Date(date);
+    if (maxParticipants !== undefined)
+      updateData.maxParticipants = maxParticipants || null;
+
+    // Handle image update
+    if (req.uploadedImage) {
+      // Delete old image if it exists
+      if (existingEvent.imageUrl) {
+        deleteEventImageFromMinio(existingEvent.imageUrl);
+      }
+      updateData.imageUrl = req.uploadedImage.url;
+    }
+
+    const updatedEvent = await prisma.event.update({
+      where: { id: parseInt(eventId) },
+      data: updateData,
+    });
+
+    res.json({
+      message: "Event updated successfully",
+      event: updatedEvent,
+    });
+  } catch (error) {
+    console.error("Error updating event:", error);
+
+    // Clean up uploaded image if update failed
+    if (req.uploadedImage) {
+      deleteEventImageFromMinio(req.uploadedImage.url);
+    }
+
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+// Delete an event
+export const deleteEvent = async (req, res) => {
+  const { eventId } = req.params;
+
+  try {
+    // Check if event exists and get image URL
+    const existingEvent = await prisma.event.findUnique({
+      where: { id: parseInt(eventId) },
+    });
+
+    if (!existingEvent) {
+      return res.status(404).json({ error: "Event not found" });
+    }
+
+    // Delete the event (this will cascade delete registrations)
+    await prisma.event.delete({
+      where: { id: parseInt(eventId) },
+    });
+
+    // Delete associated image from MinIO if it exists
+    if (existingEvent.imageUrl) {
+      deleteEventImageFromMinio(existingEvent.imageUrl);
+    }
+
+    res.json({
+      message: "Event deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting event:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -293,12 +434,14 @@ export const getUserEventRegistrations = async (req, res) => {
       },
     });
 
-    const formattedRegistrations = registrations.map((reg) => ({
-      id: reg.id,
-      registeredAt: reg.registeredAt,
-      status: reg.status,
-      event: reg.event,
-    }));
+    const formattedRegistrations = registrations.map((reg) => {
+      return {
+        id: reg.id,
+        registeredAt: reg.registeredAt,
+        status: reg.status,
+        event: reg.event,
+      };
+    });
 
     res.json({
       message: "Registrations retrieved successfully",

@@ -29,7 +29,7 @@ model event {
   id            Int            @id @default(autoincrement())
   name          String
   description   String         @db.Text
-  imageUrl      String?
+  imageUrl      String?        @db.Text
   creator       String
   location      String
   date          DateTime

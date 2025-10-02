@@ -17,7 +17,9 @@
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
-    "mysql": "^2.18.1"
+    "minio": "^8.0.6",
+    "multer": "^2.0.2",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "prisma": "^6.16.2"

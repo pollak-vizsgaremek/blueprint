@@ -1,28 +1,8 @@
 import jwt from "jsonwebtoken";
-import prisma from "../config/database.js";
 
 const JWT_SECRET =
   process.env.JWT_SECRET ||
   "your-super-secret-jwt-key-change-this-in-production";
-
-// Helper function to verify user exists in database (for critical operations)
-export const verifyUserInDatabase = async (userId) => {
-  try {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        dateOfBirth: true,
-      },
-    });
-    return user;
-  } catch (error) {
-    console.error("Error verifying user in database:", error);
-    return null;
-  }
-};
 
 // Generate JWT token
 export const generateToken = (user) => {

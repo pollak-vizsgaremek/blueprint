@@ -9,6 +9,7 @@ import { useSearchParams } from "next/navigation";
 import { EventTiles } from "@/components/EventTiles";
 import { Evenlist } from "@/components/EventList";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 const EventsPage = () => {
   const searchParams = useSearchParams();
@@ -25,17 +26,35 @@ const EventsPage = () => {
   const filter = searchParams.get("f") ?? "all";
 
   return (
-    <div className="px-20 pt-5">
+    <div className="w-7/8 m-auto">
       <div className="flex justify-between border-b-[1px] border-slate-400 pb-1">
-        <div className="flex gap-3 text-xl">
+        <div className="flex gap-1 text-xl">
           <Link href={`/events?v=${view}&f=all`}>
-            <div className="bg-accent text-white rounded-md px-2">Összes</div>
+            <div
+              className={cn("px-2", {
+                "bg-accent text-white rounded-md": filter === "all",
+              })}
+            >
+              Összes
+            </div>
           </Link>
           <Link href={`/events?v=${view}&f=future`}>
-            <div className="">Jövőbeli</div>
+            <div
+              className={cn("px-2", {
+                "bg-accent text-white rounded-md": filter === "future",
+              })}
+            >
+              Jövőbeli
+            </div>
           </Link>
           <Link href={`/events?v=${view}&f=past`}>
-            <div className="">Befejezett</div>
+            <div
+              className={cn("px-2", {
+                "bg-accent text-white rounded-md": filter === "past",
+              })}
+            >
+              Befejezett
+            </div>
           </Link>
         </div>
         <div className="flex gap-3 items-center">
@@ -71,9 +90,9 @@ const EventsPage = () => {
       {isLoading ? (
         <Spinner />
       ) : view === "tiles" ? (
-        <EventTiles events={events} />
+        <EventTiles events={events} filter={filter} />
       ) : (
-        <Evenlist events={events} />
+        <Evenlist events={events} filter={filter} />
       )}
     </div>
   );

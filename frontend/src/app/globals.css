@@ -1,12 +1,22 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
 @theme {
   --color-primary: #f8fafc;
   --color-secondary: #fff;
   --color-accent: #1398c6;
-  --color-faded: #f0f0f0;
+  --color-faded: #909090;
+  --color-text: #000;
 }
 
 body {
   @apply bg-primary;
+}
+
+body::after {
+  @apply w-full h-full fixed top-0 left-0 -z-10 bg-primary transition opacity-90 content-[""];
+}
+
+body::before {
+  @apply fixed top-20 left-30 w-2 h-2 -z-20 bg-[#ff0092]/60 shadow-[200px_2px_200px_200px_#ff0092,1200px_600px_200px_300px_#0280ff] content-[""];
 }

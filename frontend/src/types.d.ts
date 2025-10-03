@@ -15,9 +15,10 @@ export interface User {
   id: number;
   name: string;
   email: string;
+  role: "admin" | "user";
   dateOfBirth: string | null; // ISO date string format (YYYY-MM-DD)
-  createdAt: string; // ISO datetime string
-  updatedAt: string; // ISO datetime string
+  createdAt?: string; // ISO datetime string
+  updatedAt?: string; // ISO datetime string
 }
 
 export interface UserWithoutPassword extends Omit<User, "password"> {}
@@ -32,6 +33,7 @@ export interface LoginResponse {
   user: {
     name: string;
     email: string;
+    role: "admin" | "user";
     dateOfBirth: string | null;
   };
   token: string;

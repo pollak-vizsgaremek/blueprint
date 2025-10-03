@@ -30,32 +30,38 @@ const EventsContent = () => {
     <div className="w-7/8 m-auto">
       <div className="flex justify-between border-b-[1px] border-slate-400 pb-1">
         <div className="flex gap-1 text-xl">
-          <Link href={`/app/events?v=${view}&f=all`}>
-            <div
-              className={cn("px-2", {
-                "bg-accent text-white rounded-md": filter === "all",
-              })}
-            >
-              Összes
-            </div>
+          <Link
+            href={`/app/events?v=${view}&f=all`}
+            className={cn(
+              "px-2 hover:bg-faded/40 transition ease-in-out rounded-md",
+              {
+                "bg-accent text-white pointer-events-none": filter === "all",
+              },
+            )}
+          >
+            Összes
           </Link>
-          <Link href={`/app/events?v=${view}&f=future`}>
-            <div
-              className={cn("px-2", {
-                "bg-accent text-white rounded-md": filter === "future",
-              })}
-            >
-              Jövőbeli
-            </div>
+          <Link
+            href={`/app/events?v=${view}&f=future`}
+            className={cn(
+              "px-2 hover:bg-faded/40 transition ease-in-out rounded-md",
+              {
+                "bg-accent text-white pointer-events-none": filter === "future",
+              },
+            )}
+          >
+            Jövőbeli
           </Link>
-          <Link href={`/app/events?v=${view}&f=past`}>
-            <div
-              className={cn("px-2", {
-                "bg-accent text-white rounded-md": filter === "past",
-              })}
-            >
-              Befejezett
-            </div>
+          <Link
+            href={`/app/events?v=${view}&f=past`}
+            className={cn(
+              "px-2 hover:bg-faded/40 transition ease-in-out rounded-md",
+              {
+                "bg-accent text-white pointer-events-none": filter === "past",
+              },
+            )}
+          >
+            Befejezett
           </Link>
         </div>
         <div className="flex gap-3 items-center">
@@ -69,17 +75,23 @@ const EventsContent = () => {
                 />
               </Link>
               <Link href={`/app/events?v=list&f=${filter}`}>
-                <FaList size={25} />
+                <FaList
+                  size={30}
+                  className="hover:bg-faded transition ease-in-out rounded-md p-1"
+                />
               </Link>
             </>
           ) : (
             <>
               <Link href={`/app/events?v=tiles&f=${filter}`}>
-                <PiSquaresFourFill size={30} />
+                <PiSquaresFourFill
+                  size={30}
+                  className="hover:bg-faded transition ease-in-out rounded-md"
+                />
               </Link>
               <Link href={`/app/events?v=list&f=${filter}`}>
                 <FaList
-                  size={25}
+                  size={30}
                   className="bg-accent rounded-md p-1"
                   color="white"
                 />

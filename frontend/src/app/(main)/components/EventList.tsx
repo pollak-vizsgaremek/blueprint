@@ -9,7 +9,7 @@ export const Evenlist = ({
   filter: string;
 }) => {
   return (
-    <div className="pt-5 px-5 w-full">
+    <div className="pt-5 px-5 w-full flex flex-col gap-3">
       {events.map((event: Event) => {
         if (filter == "future" && new Date(event.date) > new Date()) {
           return <EventListItem event={event} key={event.id} />;

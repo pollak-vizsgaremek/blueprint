@@ -9,7 +9,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/Popover";
 import { Separator } from "@/components/ui/Separator";
-import { LogOut, Settings, User } from "lucide-react";
+import { LogOut, Menu, Settings, User } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 const roboto = Roboto_Mono({
@@ -20,14 +20,14 @@ export const Header = () => {
   const path = usePathname();
   return (
     <div className="fixed top-5 w-full z-50">
-      <header className="h-20 px-10 py-2 flex justify-between items-center bg-secondary/50 backdrop-blur-md w-9/10 hover:bg-secondary transition ease-in-out shadow-sm shadow-accent/30 hover:shadow-lg rounded-2xl m-auto">
+      <header className="h-20 px-10 max-md:px-5 py-2 flex justify-between items-center bg-secondary/50 backdrop-blur-md w-9/10 hover:bg-secondary transition ease-in-out shadow-sm shadow-accent/30 hover:shadow-lg rounded-2xl m-auto">
         <Link href="/">
           <div className="flex items-center gap-3 text-2xl hover:text-accent hover:scale-90 transition ease-in-out">
             <Image src="/blueprint.png" alt="Logo" width={50} height={50} />
             <div className={roboto.className}>Blueprint</div>
           </div>
         </Link>
-        <div className="flex gap-2 items-center justify-center text-xl *:hover:text-faded *:hover:scale-90 *:transition *:ease-in-out">
+        <div className="flex gap-2 items-center max-md:hidden justify-center text-xl *:hover:text-faded *:hover:scale-90 *:transition *:ease-in-out">
           <Link
             href="/app"
             className={cn({ "border-b-accent border-b-2": path === "/app" })}
@@ -51,7 +51,8 @@ export const Header = () => {
             Időpontok
           </Link>
         </div>
-        <div className="">
+        <div className="flex items-center flex-row-reverse gap-3">
+          <Menu className="min-md:hidden" size={35} />
           <Popover>
             <PopoverTrigger asChild>
               <Image

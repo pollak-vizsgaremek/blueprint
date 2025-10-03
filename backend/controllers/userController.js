@@ -38,6 +38,7 @@ export const createUser = async (req, res) => {
         email,
         password: hashedPassword,
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+        isAdmin: false,
       },
     });
 
@@ -67,8 +68,20 @@ export const createUser = async (req, res) => {
 export const getUserById = async (req, res) => {
   const { id } = req.params;
   try {
+    const targetUserId = parseInt(id);
+    const currentUserId = req.user.id;
+    const isAdmin = req.user.isAdmin;
+
+    // Authorization: Users can only view their own profile, admins can view anyone's profile
+    if (!isAdmin && targetUserId !== currentUserId) {
+      return res.status(403).json({
+        error: "Access denied",
+        message: "You can only view your own profile",
+      });
+    }
+
     const user = await prisma.user.findUnique({
-      where: { id: parseInt(id) },
+      where: { id: targetUserId },
     });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
@@ -109,6 +122,7 @@ export const checkUserCredentials = async (req, res) => {
       user: {
         name: user.name,
         email: user.email,
+        role: user.isAdmin ? "admin" : "user",
         dateOfBirth: user.dateOfBirth
           ? user.dateOfBirth.toISOString().slice(0, 10)
           : null,
@@ -125,8 +139,20 @@ export const updateUser = async (req, res) => {
   const { id } = req.params;
   const { name, email, password, dateOfBirth } = req.body;
   try {
+    const targetUserId = parseInt(id);
+    const currentUserId = req.user.id;
+    const isAdmin = req.user.isAdmin;
+
+    // Authorization: Users can only update themselves, admins can update anyone
+    if (!isAdmin && targetUserId !== currentUserId) {
+      return res.status(403).json({
+        error: "Access denied",
+        message: "You can only update your own profile",
+      });
+    }
+
     const existingUser = await prisma.user.findUnique({
-      where: { id: parseInt(id) },
+      where: { id: targetUserId },
     });
     if (!existingUser) {
       return res.status(404).json({ error: "User not found" });
@@ -165,7 +191,7 @@ export const updateUser = async (req, res) => {
     }
 
     const updatedUser = await prisma.user.update({
-      where: { id: parseInt(id) },
+      where: { id: targetUserId },
       data: updateData,
     });
     // Format dateOfBirth to only return the date part (YYYY-MM-DD)
@@ -192,6 +218,7 @@ export const getCurrentUser = async (req, res) => {
       user: {
         name: user.name,
         email: user.email,
+        isAdmin: user.isAdmin,
         dateOfBirth: user.dateOfBirth
           ? user.dateOfBirth.toISOString().slice(0, 10)
           : null,
@@ -199,6 +226,92 @@ export const getCurrentUser = async (req, res) => {
     });
   } catch (error) {
     console.error("Error getting current user:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+// Promote user to admin (admin only)
+export const promoteToAdmin = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: parseInt(id) },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (user.isAdmin) {
+      return res.status(400).json({
+        error: "User is already an admin",
+        message: "This user already has admin privileges",
+      });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: parseInt(id) },
+      data: { isAdmin: true },
+    });
+
+    // Format dateOfBirth to only return the date part (YYYY-MM-DD)
+    const formattedUser = {
+      ...updatedUser,
+      dateOfBirth: updatedUser.dateOfBirth
+        ? updatedUser.dateOfBirth.toISOString().slice(0, 10)
+        : null,
+    };
+    delete formattedUser.password;
+
+    res.json({
+      message: "User promoted to admin successfully",
+      user: formattedUser,
+    });
+  } catch (error) {
+    console.error("Error promoting user to admin:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+// Demote user from admin (admin only)
+export const demoteFromAdmin = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: parseInt(id) },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (!user.isAdmin) {
+      return res.status(400).json({
+        error: "User is not an admin",
+        message: "This user does not have admin privileges",
+      });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: parseInt(id) },
+      data: { isAdmin: false },
+    });
+
+    // Format dateOfBirth to only return the date part (YYYY-MM-DD)
+    const formattedUser = {
+      ...updatedUser,
+      dateOfBirth: updatedUser.dateOfBirth
+        ? updatedUser.dateOfBirth.toISOString().slice(0, 10)
+        : null,
+    };
+    delete formattedUser.password;
+
+    res.json({
+      message: "User demoted from admin successfully",
+      user: formattedUser,
+    });
+  } catch (error) {
+    console.error("Error demoting user from admin:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };

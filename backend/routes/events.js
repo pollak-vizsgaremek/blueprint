@@ -9,7 +9,11 @@ import {
   getUserEventRegistrations,
   getEventRegistrations,
 } from "../controllers/eventController.js";
-import { authenticateToken, optionalAuth } from "../middleware/auth.js";
+import {
+  authenticateToken,
+  authenticateAdminToken,
+  optionalAuth,
+} from "../middleware/auth.js";
 import { uploadEventImage } from "../middleware/upload.js";
 
 const router = express.Router();
@@ -20,14 +24,14 @@ router.get("/", optionalAuth, getAllEvents);
 // GET /events/my-registrations - Get user's event registrations (requires authentication)
 router.get("/my-registrations", authenticateToken, getUserEventRegistrations);
 
-// POST /events - Create a new event (requires authentication and supports image upload)
-router.post("/", authenticateToken, uploadEventImage, createEvent);
+// POST /events - Create a new event (requires admin authentication and supports image upload)
+router.post("/", authenticateAdminToken, uploadEventImage, createEvent);
 
-// PUT /events/:eventId - Update an event (requires authentication and supports image upload)
-router.put("/:eventId", authenticateToken, uploadEventImage, updateEvent);
+// PUT /events/:eventId - Update an event (requires admin authentication and supports image upload)
+router.put("/:eventId", authenticateAdminToken, uploadEventImage, updateEvent);
 
-// DELETE /events/:eventId - Delete an event (requires authentication)
-router.delete("/:eventId", authenticateToken, deleteEvent);
+// DELETE /events/:eventId - Delete an event (requires admin authentication)
+router.delete("/:eventId", authenticateAdminToken, deleteEvent);
 
 // POST /events/:eventId/register - Register for an event (requires authentication)
 router.post("/:eventId/register", authenticateToken, registerForEvent);

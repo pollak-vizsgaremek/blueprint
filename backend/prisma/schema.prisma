@@ -20,6 +20,7 @@ model user {
   email        String         @unique
   password     String  
   dateOfBirth  DateTime       @db.Date
+  isAdmin      Boolean        @default(false)
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   registrations registration[]

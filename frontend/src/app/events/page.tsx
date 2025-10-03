@@ -10,14 +10,15 @@ import { EventTiles } from "@/components/EventTiles";
 import { Evenlist } from "@/components/EventList";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { Suspense } from "react";
 
-const EventsPage = () => {
+const EventsContent = () => {
   const searchParams = useSearchParams();
   const { data: events, isLoading } = useQuery({
     queryKey: ["events"],
     queryFn: async () => {
       const { data } = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/events`,
+        `${process.env.NEXT_PUBLIC_API_URL}/events`
       );
       return data;
     },
@@ -95,6 +96,14 @@ const EventsPage = () => {
         <Evenlist events={events} filter={filter} />
       )}
     </div>
+  );
+};
+
+const EventsPage = () => {
+  return (
+    <Suspense fallback={<Spinner />}>
+      <EventsContent />
+    </Suspense>
   );
 };
 

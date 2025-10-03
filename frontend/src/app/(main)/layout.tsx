@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import "./globals.css";
-import { Providers } from "@/components/Providers";
+import { Header } from "./components/Header";
 
 export const metadata: Metadata = {
   title: "Blueprint",
@@ -13,10 +12,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="hu">
-      <Providers>
-        <body className="antialiased">{children}</body>
-      </Providers>
-    </html>
+    <main className="pt-36">
+      <Header />
+      {children}
+    </main>
   );
 }

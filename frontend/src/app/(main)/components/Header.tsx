@@ -29,21 +29,23 @@ export const Header = () => {
         </Link>
         <div className="flex gap-2 items-center justify-center text-xl *:hover:text-faded *:hover:scale-90 *:transition *:ease-in-out">
           <Link
-            href="/"
-            className={cn({ "border-b-accent border-b-2": path === "/" })}
+            href="/app"
+            className={cn({ "border-b-accent border-b-2": path === "/app" })}
           >
             Főoldal
           </Link>
           <Link
-            href="/events"
-            className={cn({ "border-b-accent border-b-2": path === "/events" })}
+            href="/app/events"
+            className={cn({
+              "border-b-accent border-b-2": path === "/app/events",
+            })}
           >
             Események
           </Link>
           <Link
-            href="/reservation"
+            href="/app/reservation"
             className={cn({
-              "border-b-accent border-b-2": path === "/reservation",
+              "border-b-accent border-b-2": path === "/app/reservation",
             })}
           >
             Időpontok

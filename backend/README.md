@@ -9,8 +9,8 @@ A comprehensive REST API backend for an event management system built with Node.
 - **User Authentication**: JWT-based authentication with bcrypt password hashing
 - **Event Management**: Full CRUD operations for events with advanced features
 - **File Storage**: MinIO integration for secure event image uploads and management
-- **Admin Panel**: Role-based access control with admin privileges
-- **Registration System**: Advanced event registration with status tracking
+- **Admin Panel**: Role-based access control with admin privileges and dedicated routes
+- **Registration System**: Advanced event registration with status tracking and capacity management
 
 ### Advanced Features
 
@@ -45,22 +45,26 @@ backend/
 │   ├── database.js          # Database configuration
 │   └── minio.js            # MinIO object storage configuration
 ├── controllers/
+│   ├── adminController.js   # Admin-specific business logic
 │   ├── eventController.js   # Event business logic
 │   └── userController.js    # User business logic
 ├── middleware/
 │   ├── auth.js             # Authentication & authorization middleware
-│   ├── upload.js           # File upload middleware with MinIO integration
-│   └── errorHandler.js     # Error handling middleware
+│   └── upload.js           # File upload middleware with MinIO integration
 ├── prisma/
 │   ├── schema.prisma       # Database schema with admin roles
-│   └── migrations/         # Database migrations
+│   └── migrations/         # Database migrations history
 ├── routes/
-│   ├── events.js          # Event routes with image upload
-│   └── users.js           # User routes with admin controls
+│   ├── events.js          # Public event routes
+│   ├── users.js           # User authentication & profile routes
+│   └── admin/             # Admin-only routes
+│       ├── adminEvents.js # Admin event management
+│       └── adminUsers.js  # Admin user management
 ├── generated/
 │   └── prisma/            # Generated Prisma client
-├── index.js               # Application entry point
-└── package.json           # Dependencies and scripts
+├── index.js               # Application entry point & server setup
+├── package.json           # Dependencies and scripts
+└── README.md              # This documentation
 ```
 
 ## Prerequisites
@@ -148,6 +152,21 @@ backend/
 The server will start on `http://localhost:8000` by default.
 MinIO console will be available at `http://localhost:9001` (if using Docker setup).
 
+## Server Configuration
+
+The application uses the following route structure:
+
+- `/events` - Public and user event routes
+- `/users` - User authentication and profile management
+- `/admin/events` - Admin-only event management
+- `/admin/users` - Admin-only user management
+
+The server is configured with:
+
+- CORS enabled for cross-origin requests
+- JSON body parsing middleware
+- Modular route organization for better maintainability
+
 ## Database Schema
 
 ### Users
@@ -222,9 +241,9 @@ Authorization: Bearer <your-jwt-token>
 
 #### Admin-Only Routes
 
-- **GET** `/users` - Get all users (admin only)
-- **PUT** `/users/:id/promote` - Promote user to admin (admin only)
-- **PUT** `/users/:id/demote` - Demote user from admin (admin only)
+- **GET** `/admin/users` - Get all users (admin only)
+- **PUT** `/admin/users/:id/promote` - Promote user to admin (admin only)
+- **PUT** `/admin/users/:id/demote` - Demote user from admin (admin only)
 
 ### Event Routes
 
@@ -243,7 +262,7 @@ Authorization: Bearer <your-jwt-token>
 
 #### Admin-Only Routes (Admin Authentication Required)
 
-- **POST** `/events` - Create a new event with optional image upload (admin only)
+- **POST** `/admin/events` - Create a new event with optional image upload (admin only)
 
   - Supports multipart/form-data for image upload
   - Automatically handles MinIO storage and URL generation
@@ -259,12 +278,12 @@ Authorization: Bearer <your-jwt-token>
   image: [File] (optional)
   ```
 
-- **PUT** `/events/:eventId` - Update an existing event with optional image upload (admin only)
+- **PUT** `/admin/events/:eventId` - Update an existing event with optional image upload (admin only)
 
   - Supports multipart/form-data for image replacement
   - Automatically removes old images from MinIO when replaced
 
-- **DELETE** `/events/:eventId` - Delete an event (admin only)
+- **DELETE** `/admin/events/:eventId` - Delete an event (admin only)
   - Automatically removes associated image from MinIO storage
   - Cascades registration deletions
 

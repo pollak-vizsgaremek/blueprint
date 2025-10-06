@@ -1,10 +1,11 @@
+import express from "express";
 import {
   createEvent,
   deleteEvent,
   updateEvent,
-} from "../controllers/adminController";
-import { authenticateAdminToken } from "../middleware/auth";
-import { uploadEventImage } from "../middleware/upload";
+} from "../../controllers/adminController.js";
+import { authenticateAdminToken } from "../../middleware/auth.js";
+import { uploadEventImage } from "../../middleware/upload.js";
 
 const router = express.Router();
 

@@ -1,9 +1,10 @@
+import express from "express";
 import {
   getAllUsers,
   getUserById,
   updateUser,
-} from "../../controllers/adminController";
-import { authenticateAdminToken } from "../../middleware/auth";
+} from "../../controllers/adminController.js";
+import { authenticateAdminToken } from "../../middleware/auth.js";
 
 const router = express.Router();
 

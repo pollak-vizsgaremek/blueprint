@@ -2,21 +2,17 @@ import express from "express";
 import cors from "cors";
 import eventRoutes from "./routes/events.js";
 import userRoutes from "./routes/users.js";
-import { errorHandler, notFound } from "./middleware/errorHandler.js";
+import adminRoutes from "./routes/admin.js";
 
 const app = express();
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
 // Routes
 app.use("/events", eventRoutes);
 app.use("/users", userRoutes);
-
-// Error handling middleware
-app.use(notFound);
-app.use(errorHandler);
+app.use("/admin", adminRoutes);
 
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {

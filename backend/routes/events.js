@@ -12,14 +12,13 @@ import {
 import {
   authenticateToken,
   authenticateAdminToken,
-  optionalAuth,
 } from "../middleware/auth.js";
 import { uploadEventImage } from "../middleware/upload.js";
 
 const router = express.Router();
 
 // GET /events - Get all events (public route with optional auth)
-router.get("/", optionalAuth, getAllEvents);
+router.get("/", authenticateToken, getAllEvents);
 
 // GET /events/my-registrations - Get user's event registrations (requires authentication)
 router.get("/my-registrations", authenticateToken, getUserEventRegistrations);

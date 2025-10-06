@@ -8,11 +8,11 @@ import { authenticateAdminToken } from "../../middleware/auth";
 const router = express.Router();
 
 // GET /users - Get all users (admin only)
-router.get("/users", authenticateAdminToken, getAllUsers);
+router.get("/", authenticateAdminToken, getAllUsers);
 
 // GET /users/:id - Get user by ID
-router.get("/users/:id", authenticateAdminToken, getUserById);
+router.get("/:id", authenticateAdminToken, getUserById);
 
 // PUT /users/:id - Update user by ID
-router.put("/users/:id", authenticateAdminToken, updateUser);
+router.put("/:id", authenticateAdminToken, updateUser);
 export default router;

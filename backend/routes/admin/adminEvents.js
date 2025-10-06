@@ -9,17 +9,12 @@ import { uploadEventImage } from "../middleware/upload";
 const router = express.Router();
 
 // POST /events - Create a new event (requires admin authentication and supports image upload)
-router.post("/events", authenticateAdminToken, uploadEventImage, createEvent);
+router.post("/", authenticateAdminToken, uploadEventImage, createEvent);
 
 // PUT /events/:eventId - Update an event (requires admin authentication and supports image upload)
-router.put(
-  "events/:eventId",
-  authenticateAdminToken,
-  uploadEventImage,
-  updateEvent,
-);
+router.put("/:eventId", authenticateAdminToken, uploadEventImage, updateEvent);
 
 // DELETE /events/:eventId - Delete an event (requires admin authentication)
-router.delete("events/:eventId", authenticateAdminToken, deleteEvent);
+router.delete("/:eventId", authenticateAdminToken, deleteEvent);
 
 export default router;

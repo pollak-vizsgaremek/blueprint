@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
 const JWT_SECRET =
-  process.env.JWTam_SECRET ||
+  process.env.JWT_SECRET ||
   "your-super-secret-jwt-key-change-this-in-production";
 
 // Generate JWT token
@@ -112,9 +112,7 @@ export const getCurrentUser = async (req, res) => {
         name: user.name,
         email: user.email,
         isAdmin: user.isAdmin,
-        dateOfBirth: user.dateOfBirth
-          ? user.dateOfBirth.toISOString().slice(0, 10)
-          : null,
+        dateOfBirth: user.dateOfBirth,
       },
     });
   } catch (error) {
@@ -149,11 +147,13 @@ export const updateCurrentUser = async (req, res) => {
     }
 
     await prisma.user.update({
-      where: { id: targetUserId },
+      where: { id: user.id },
       data: {
         name: name ?? undefined,
         email: email ?? undefined,
-        dateOfBirth: new Date(dateOfBirth) ?? undefined,
+        dateOfBirth: dateOfBirth
+          ? new Date(dateOfBirth) ?? undefined
+          : undefined,
         password: (await bcrypt.hash(password, 10)) ?? undefined,
       },
     });

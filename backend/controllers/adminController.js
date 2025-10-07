@@ -82,7 +82,9 @@ export const updateUser = async (req, res) => {
       data: {
         name: name ?? undefined,
         email: email ?? undefined,
-        dateOfBirth: new Date(dateOfBirth) ?? undefined,
+        dateOfBirth: dateOfBirth
+          ? new Date(dateOfBirth) ?? undefined
+          : undefined,
         password: (await bcrypt.hash(password, 10)) ?? undefined,
       },
     });

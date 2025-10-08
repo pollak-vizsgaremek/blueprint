@@ -11,21 +11,17 @@ import { Evenlist } from "../../components/EventList";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Suspense } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 
 const EventsContent = () => {
   const searchParams = useSearchParams();
-  const { token } = useAuth();
   const { data: events, isLoading } = useQuery({
     queryKey: ["events"],
     queryFn: async () => {
       const { data } = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/events`,
         {
-          headers: {
-            authorization: `Bearer ${token}`,
-          },
-        },
+          withCredentials: true, // Include cookies in request
+        }
       );
       return data;
     },

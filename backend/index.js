@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import eventRoutes from "./routes/events.js";
 import userRoutes from "./routes/users.js";
 import adminEventsRoutes from "./routes/admin/adminEvents.js";
@@ -7,8 +8,15 @@ import adminUserRoutes from "./routes/admin/adminUsers.js";
 
 const app = express();
 
-app.use(cors());
+// CORS configuration to allow credentials (cookies)
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    credentials: true,
+  })
+);
 app.use(express.json());
+app.use(cookieParser());
 
 // Routes
 app.use("/events", eventRoutes);

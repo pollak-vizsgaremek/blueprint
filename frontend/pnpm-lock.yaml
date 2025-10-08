@@ -29,6 +29,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      js-cookie:
+        specifier: ^3.0.5
+        version: 3.0.5
       jwt-decode:
         specifier: ^4.0.0
         version: 4.0.0
@@ -60,6 +63,9 @@ importers:
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.1.13
+      '@types/js-cookie':
+        specifier: ^3.0.6
+        version: 3.0.6
       '@types/node':
         specifier: ^20
         version: 20.19.18
@@ -627,6 +633,9 @@ packages:
     peerDependencies:
       react: ^18 || ^19
 
+  '@types/js-cookie@3.0.6':
+    resolution: {integrity: sha512-wkw9yd1kEXOPnvEeEV1Go1MmxtBJL0RR79aOTAApecWFVu7w0NNXNqhcWgvw2YgZDYadliXkl14pa3WXw5jlCQ==}
+
   '@types/node@20.19.18':
     resolution: {integrity: sha512-KeYVbfnbsBCyKG8e3gmUqAfyZNcoj/qpEbHRkQkfZdKOBrU7QQ+BsTdfqLSWX9/m1ytYreMhpKvp+EZi3UFYAg==}
 
@@ -773,6 +782,10 @@ packages:
   jiti@2.6.0:
     resolution: {integrity: sha512-VXe6RjJkBPj0ohtqaO8vSWP3ZhAKo66fKrFNCll4BTcwljPLz03pCbaNKfzGP5MbrCYcbJ7v0nOYYwUzTEIdXQ==}
     hasBin: true
+
+  js-cookie@3.0.5:
+    resolution: {integrity: sha512-cEiJEAEoIbWfCZYKWhVwFuvPX1gETRYPw6LlaTKoxD3s2AkXzkCjnp6h0V77ozyqj0jakteJ4YqDJT830+lVGw==}
+    engines: {node: '>=14'}
 
   jwt-decode@4.0.0:
     resolution: {integrity: sha512-+KJGIyHgkGuIq3IEBNftfhW/LfWhXUIY6OmyVWjliu5KH1y0fw7VQ8YndE2O4qZdMSd9SqbnC8GOcZEy0Om7sA==}
@@ -1481,6 +1494,8 @@ snapshots:
       '@tanstack/query-core': 5.90.2
       react: 19.1.0
 
+  '@types/js-cookie@3.0.6': {}
+
   '@types/node@20.19.18':
     dependencies:
       undici-types: 6.21.0
@@ -1618,6 +1633,8 @@ snapshots:
       function-bind: 1.1.2
 
   jiti@2.6.0: {}
+
+  js-cookie@3.0.5: {}
 
   jwt-decode@4.0.0: {}
 

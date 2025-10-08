@@ -46,7 +46,15 @@ export const createUser = async (req, res) => {
     // Generate JWT token for the new user
     const token = generateToken(newUser);
 
-    // Return user data without password and include token
+    // Set token as httpOnly cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    });
+
+    // Return user data without password
     const { password: _, ...userWithoutPassword } = newUser;
     // Format dateOfBirth to only return the date part (YYYY-MM-DD)
     const formattedUser = {
@@ -58,7 +66,6 @@ export const createUser = async (req, res) => {
     res.status(201).json({
       message: "User created successfully",
       user: formattedUser,
-      token,
     });
   } catch (error) {
     console.error("Error creating user:", error);
@@ -83,6 +90,14 @@ export const userLogin = async (req, res) => {
     // Generate JWT token
     const token = generateToken(user);
 
+    // Set token as httpOnly cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    });
+
     res.json({
       message: "Login successful",
       user: {
@@ -93,7 +108,6 @@ export const userLogin = async (req, res) => {
           ? user.dateOfBirth.toISOString().slice(0, 10)
           : null,
       },
-      token,
     });
   } catch (error) {
     console.error("Error checking credentials:", error);
@@ -111,10 +125,25 @@ export const getCurrentUser = async (req, res) => {
       user: {
         name: user.name,
         email: user.email,
+        role: user.role,
         isAdmin: user.isAdmin,
         dateOfBirth: user.dateOfBirth,
       },
     });
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+// Logout user by clearing the token cookie
+export const userLogout = async (req, res) => {
+  try {
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+    });
+    res.json({ message: "Logout successful" });
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });
   }

@@ -4,6 +4,7 @@ import {
   getCurrentUser,
   updateCurrentUser,
   userLogin,
+  userLogout,
 } from "../controllers/userController.js";
 import { authenticateToken } from "../middleware/auth.js";
 
@@ -14,6 +15,9 @@ router.post("/", createUser);
 
 // POST /users/login - Check user credentials (login)
 router.post("/login", userLogin);
+
+// POST /users/logout - Logout user
+router.post("/logout", userLogout);
 
 // GET /users/profile - Get current user profile
 router.get("/profile", authenticateToken, getCurrentUser);

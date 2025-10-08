@@ -1,6 +1,5 @@
 "use client";
 
-import { useAuth } from "@/contexts/AuthContext";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 
@@ -17,7 +16,6 @@ interface Event {
 }
 
 const EventPage = () => {
-  const { token } = useAuth();
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -55,9 +53,7 @@ const EventPage = () => {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/events`,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          credentials: "include", // Include cookies in request
         }
       );
 
@@ -80,10 +76,8 @@ const EventPage = () => {
 
   // Load events on component mount
   useEffect(() => {
-    if (token) {
-      fetchEvents();
-    }
-  }, [token]);
+    fetchEvents();
+  }, []);
 
   // Select an event for editing
   const selectEventForEditing = (event: Event) => {
@@ -118,7 +112,7 @@ const EventPage = () => {
     setMessage(null);
   };
   const deleteEvent = async () => {
-    if (!token || !selectedEvent) {
+    if (!selectedEvent) {
       setMessage({
         type: "error",
         text: "Be kell jelentkezned az események kezeléséhez",
@@ -131,9 +125,7 @@ const EventPage = () => {
         `${process.env.NEXT_PUBLIC_API_URL}/events/${selectedEvent.id}`,
         {
           method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          credentials: "include", // Include cookies in request
         }
       );
 
@@ -160,14 +152,6 @@ const EventPage = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (!token) {
-      setMessage({
-        type: "error",
-        text: "Be kell jelentkezned az események kezeléséhez",
-      });
-      return;
-    }
-
     setIsSubmitting(true);
     setMessage(null);
 
@@ -193,9 +177,7 @@ const EventPage = () => {
 
       const response = await fetch(url, {
         method: method,
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: "include", // Include cookies in request
         body: formDataToSend,
       });
 

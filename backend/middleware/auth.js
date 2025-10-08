@@ -6,8 +6,13 @@ const JWT_SECRET =
 
 // Middleware to verify JWT token
 export const authenticateToken = async (req, res, next) => {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+  // Try to get token from cookie first, then fallback to Authorization header
+  let token = req.cookies?.token;
+
+  if (!token) {
+    const authHeader = req.headers["authorization"];
+    token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+  }
 
   if (!token) {
     return res.status(401).json({
@@ -58,8 +63,13 @@ export const authenticateToken = async (req, res, next) => {
 
 // Middleware to verify admin JWT token
 export const authenticateAdminToken = async (req, res, next) => {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+  // Try to get token from cookie first, then fallback to Authorization header
+  let token = req.cookies?.token;
+
+  if (!token) {
+    const authHeader = req.headers["authorization"];
+    token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+  }
 
   if (!token) {
     return res.status(401).json({

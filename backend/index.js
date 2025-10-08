@@ -9,9 +9,22 @@ import adminUserRoutes from "./routes/admin/adminUsers.js";
 const app = express();
 
 // CORS configuration to allow credentials (cookies)
+const allowedOrigins = [
+  "https://gemes.eu",
+  "https://blueprint.gemes.eu",
+  "https://blueprint-api.gemes.eu",
+  "http://localhost:3000",
+];
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      } else {
+        return callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );

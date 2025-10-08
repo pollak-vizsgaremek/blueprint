@@ -8,10 +8,12 @@ import React, {
   ReactNode,
 } from "react";
 import { User } from "@/types";
+import { useRouter } from "next/navigation";
+import axios from "axios";
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void | {}>;
   logout: () => void;
   isLoading: boolean;
   isAdmin: boolean;
@@ -34,25 +36,21 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
+  const router = useRouter();
   // Fetch user info from cookie on mount
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await fetch(
+        const response = await axios.get(
           `${process.env.NEXT_PUBLIC_API_URL}/users/profile`,
           {
-            method: "GET",
-            credentials: "include", // Include cookies in request
-          }
+            withCredentials: true,
+          },
         );
 
-        if (response.ok) {
-          const data = await response.json();
-          setUser(data.user);
-        }
+        setUser(response.data.user);
       } catch (error) {
-        console.error("Error fetching user:", error);
+        return { message: "Hiba történt." };
       } finally {
         setIsLoading(false);
       }
@@ -73,18 +71,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           },
           credentials: "include", // Include cookies in request
           body: JSON.stringify({ email, password }),
-        }
+        },
       );
-
-      if (!response.ok) {
-        throw new Error("Login failed");
-      }
 
       const data = await response.json();
       setUser(data.user);
     } catch (error) {
-      console.error("Login error:", error);
-      throw error;
+      return { message: "Hiba történt." };
     } finally {
       setIsLoading(false);
     }
@@ -96,6 +89,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         method: "POST",
         credentials: "include", // Include cookies in request
       });
+      router.push("/");
     } catch (error) {
       console.error("Logout error:", error);
     } finally {

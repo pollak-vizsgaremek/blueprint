@@ -51,6 +51,7 @@ export const createUser = async (req, res) => {
       httpOnly: true,
       secure: true,
       sameSite: "none",
+      domain: process.env.COOKIE_DOMAIN || "localhost",
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     });
 
@@ -95,6 +96,7 @@ export const userLogin = async (req, res) => {
       httpOnly: true,
       secure: true,
       sameSite: "none",
+      domain: process.env.COOKIE_DOMAIN || "localhost",
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     });
 
@@ -141,6 +143,7 @@ export const userLogout = async (req, res) => {
     res.clearCookie("token", {
       httpOnly: true,
       secure: true,
+      domain: process.env.COOKIE_DOMAIN || "localhost",
       sameSite: "none",
     });
     res.json({ message: "Logout successful" });

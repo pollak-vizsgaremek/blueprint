@@ -11,14 +11,21 @@ import { Evenlist } from "../../components/EventList";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Suspense } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const EventsContent = () => {
   const searchParams = useSearchParams();
+  const { token } = useAuth();
   const { data: events, isLoading } = useQuery({
     queryKey: ["events"],
     queryFn: async () => {
       const { data } = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/events`,
+        {
+          headers: {
+            authorization: `Bearer ${token}`,
+          },
+        },
       );
       return data;
     },
@@ -27,7 +34,7 @@ const EventsContent = () => {
   const filter = searchParams.get("f") ?? "all";
 
   return (
-    <div className="w-7/8 m-auto">
+    <main className="w-7/8 m-auto">
       <div className="flex justify-between border-b-[1px] border-slate-400 pb-1">
         <div className="flex gap-1 text-xl">
           <Link
@@ -107,7 +114,7 @@ const EventsContent = () => {
       ) : (
         <Evenlist events={events} filter={filter} />
       )}
-    </div>
+    </main>
   );
 };
 

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Header } from "./components/Header";
+import { Footer } from "./components/Footer";
 
 export const metadata: Metadata = {
   title: "Blueprint",
@@ -12,9 +13,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <main className="pt-36">
+    <div className="pt-36">
       <Header />
       {children}
-    </main>
+      <Footer />
+    </div>
   );
 }

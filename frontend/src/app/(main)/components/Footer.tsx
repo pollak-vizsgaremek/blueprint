@@ -1,20 +1,52 @@
-import { FaGithub, FaX, FaTemperatureThreeQuarters } from "react-icons/fa6";
+import Link from "next/link";
+import { FaGithub, FaLinkedin, FaTwitter } from "react-icons/fa6";
 
 export const Footer = () => {
   return (
-    <div className="w-full h-70 absolute -bottom-70">
-      <div className="h-8/10 justify-between flex items-center max-w-[600px] m-auto">
-        <div className="">Oldalak</div>
-        <div className="">Elérhetőségek</div>
-        <div className="">Linkek</div>
+    <div className="w-full h-80 pt-5 bg-primary/20 backdrop-blur-md pb-3">
+      <div className="h-8/10 justify-between flex items-start max-w-[600px] m-auto">
+        <div className="">
+          <div className="text-xl font-bold tracking-widest uppercase mb-5">
+            Oldalak
+          </div>
+          <div className="flex flex-col gap-2 *:hover:text-faded transition ease-in-out">
+            <Link href={"/"}>Blueprint</Link>
+            <Link href={"/app"}>Fő oldal</Link>
+            <Link href={"/events"}>Események</Link>
+            <Link href={"/appointments"}>Időpontok</Link>
+            <Link href={"/settings"}>Beállítások</Link>
+          </div>
+        </div>
+        <div className="">
+          <div className="text-xl font-bold tracking-widest uppercase mb-5">
+            Elérhetőség
+          </div>
+          <div className="flex flex-col gap-2 *:hover:text-faded transition ease-in-out">
+            <a href="#">Facebook</a>
+            <a href="#">Insta</a>
+            <a href="#">TikTok</a>
+            <a href="#">Email</a>
+            <a href="#">Telefon</a>
+          </div>
+        </div>
+        <div className="">
+          <div className="text-xl font-bold tracking-widest uppercase mb-5">
+            Linkek
+          </div>
+          <div className="flex flex-col gap-2 *:hover:text-faded transition ease-in-out">
+            <Link href={"/tos"}>ÁSZF</Link>
+            <Link href={"/dataprotection"}>Adatvédelmi táj.</Link>
+            <Link href={"/events"}>Rólunk</Link>
+          </div>
+        </div>
       </div>
-      <div className="h-1/10 w-full flex gap-5">
+      <div className="h-1/10 w-full flex gap-5 justify-center *:size-7">
         <FaGithub />
-        <FaX />
+        <FaTwitter />
+        <FaLinkedin />
       </div>
-      <div className="h-1/10 text-center">
-        Copyright © Hódmezővásárhelyi SZC Szentesi Pollák Antal Technikum. All
-        Rights Reserved.
+      <div className="h-1/10 text-center mt-2">
+        Copyright © HSZC Szentesi Pollák Antal Technikum. All Rights Reserved.
       </div>
     </div>
   );

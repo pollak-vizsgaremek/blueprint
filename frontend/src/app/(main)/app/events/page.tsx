@@ -21,7 +21,7 @@ const EventsContent = () => {
         `${process.env.NEXT_PUBLIC_API_URL}/events`,
         {
           withCredentials: true, // Include cookies in request
-        }
+        },
       );
       return data;
     },
@@ -30,7 +30,7 @@ const EventsContent = () => {
   const filter = searchParams.get("f") ?? "all";
 
   return (
-    <main className="w-7/8 m-auto">
+    <main className="w-7/8 m-auto mb-50">
       <div className="flex justify-between border-b-[1px] border-slate-400 pb-1">
         <div className="flex gap-1 text-xl">
           <Link

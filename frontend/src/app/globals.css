@@ -20,3 +20,11 @@ body::after {
 body::before {
   @apply fixed top-20 left-30 w-2 h-2 -z-20 bg-[#ff0092]/60 shadow-[200px_2px_200px_200px_#ff0092,1200px_600px_200px_300px_#0280ff] content-[""];
 }
+
+.card-title {
+  @apply text-2xl text-text;
+}
+
+.card-box {
+  @apply bg-secondary/80 border-faded border-[1px] grow h-60 rounded-xl p-4 transition hover:shadow-lg shadow-md shadow-black/20 ease-in-out;
+}

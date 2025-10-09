@@ -3,13 +3,15 @@ import type { NextRequest } from "next/server";
 
 export const middleware = async (request: NextRequest) => {
   const token = request.cookies.get("token");
-  if (!token?.value) {
+  if (
+    !token?.value &&
+    (request.nextUrl.pathname.startsWith("/app") ||
+      request.nextUrl.pathname.startsWith("/admin"))
+  ) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
+  if (request.nextUrl.pathname.startsWith("/login") && token?.value) {
+    return NextResponse.redirect(new URL("/app", request.url));
+  }
   // return NextResponse.redirect(new URL("/login", request.url));
-};
-
-// See "Matching Paths" below to learn more
-export const config = {
-  matcher: ["/app/:path*", "/admin/:path*"],
 };

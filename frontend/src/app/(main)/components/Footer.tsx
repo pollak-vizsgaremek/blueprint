@@ -11,10 +11,10 @@ export const Footer = () => {
           </div>
           <div className="flex flex-col gap-2 *:hover:text-faded transition ease-in-out">
             <Link href={"/"}>Blueprint</Link>
-            <Link href={"/app"}>Fő oldal</Link>
-            <Link href={"/events"}>Események</Link>
-            <Link href={"/appointments"}>Időpontok</Link>
-            <Link href={"/settings"}>Beállítások</Link>
+            <Link href={"/app"}>Főoldal</Link>
+            <Link href={"/app/events"}>Események</Link>
+            <Link href={"/app/appointments"}>Időpontok</Link>
+            <Link href={"/app/settings"}>Beállítások</Link>
           </div>
         </div>
         <div className="">
@@ -23,7 +23,7 @@ export const Footer = () => {
           </div>
           <div className="flex flex-col gap-2 *:hover:text-faded transition ease-in-out">
             <a href="#">Facebook</a>
-            <a href="#">Insta</a>
+            <a href="#">Instagram</a>
             <a href="#">TikTok</a>
             <a href="#">Email</a>
             <a href="#">Telefon</a>
@@ -35,8 +35,8 @@ export const Footer = () => {
           </div>
           <div className="flex flex-col gap-2 *:hover:text-faded transition ease-in-out">
             <Link href={"/tos"}>ÁSZF</Link>
-            <Link href={"/dataprotection"}>Adatvédelmi táj.</Link>
-            <Link href={"/events"}>Rólunk</Link>
+            <Link href={"/privacy"}>Adatvédelmi táj.</Link>
+            <Link href={"/about"}>Rólunk</Link>
           </div>
         </div>
       </div>

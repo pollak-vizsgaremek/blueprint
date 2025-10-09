@@ -1,5 +1,6 @@
 "use client";
 
+import axios from "axios";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 
@@ -50,18 +51,18 @@ const EventPage = () => {
   const fetchEvents = async () => {
     try {
       setIsLoadingEvents(true);
-      const response = await fetch(
+      const response = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/events`,
         {
-          credentials: "include", // Include cookies in request
+          withCredentials: true, // Include cookies in request
         }
       );
 
-      if (!response.ok) {
+      if (response.status !== 200) {
         throw new Error("Failed to fetch events");
       }
 
-      const eventsData = await response.json();
+      const eventsData = response.data;
       setEvents(eventsData);
     } catch (error) {
       console.error("Error fetching events:", error);
@@ -121,15 +122,18 @@ const EventPage = () => {
     }
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/events/${selectedEvent.id}`,
+      const response = await axios.delete(
+        `${process.env.NEXT_PUBLIC_API_URL}/admin/events/${selectedEvent.id}`,
         {
-          method: "DELETE",
-          credentials: "include", // Include cookies in request
+          withCredentials: true, // Include cookies in request
         }
       );
 
-      if (!response.ok) {
+      setMessage({
+        type: "success",
+        text: "Esemény sikeresen törölve!",
+      });
+      if (response.status !== 200) {
         throw new Error("Failed to delete event");
       }
 
@@ -170,24 +174,24 @@ const EventPage = () => {
 
       const url =
         isEditing && selectedEvent
-          ? `${process.env.NEXT_PUBLIC_API_URL}/events/${selectedEvent.id}`
-          : `${process.env.NEXT_PUBLIC_API_URL}/events`;
+          ? `${process.env.NEXT_PUBLIC_API_URL}/admin/events/${selectedEvent.id}`
+          : `${process.env.NEXT_PUBLIC_API_URL}/admin/events`;
 
       const method = isEditing ? "PUT" : "POST";
 
-      const response = await fetch(url, {
+      const response = await axios(url, {
         method: method,
-        credentials: "include", // Include cookies in request
-        body: formDataToSend,
+        withCredentials: true, // Include cookies in request
+        data: formDataToSend,
       });
 
-      if (!response.ok) {
+      if (response.status !== 200 && response.status !== 201) {
         throw new Error(
           isEditing ? "Failed to update event" : "Failed to create event"
         );
       }
 
-      const result = await response.json();
+      const result = await response.data;
       setMessage({
         type: "success",
         text: isEditing

@@ -121,8 +121,13 @@ export const Header = () => {
                     className="w-full justify-start"
                     size="sm"
                   >
-                    <User className="mr-2 h-4 w-4" />
-                    Profil
+                    <Link
+                      href="/app/profile"
+                      className="flex w-full justify-start items-center gap-1"
+                    >
+                      <User className="mr-2 h-4 w-4" />
+                      Profil
+                    </Link>
                   </Button>
                   <Button
                     variant="ghost"

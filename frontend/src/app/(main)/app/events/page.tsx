@@ -11,6 +11,8 @@ import { Evenlist } from "../../components/EventList";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Suspense } from "react";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 
 const EventsContent = () => {
   const searchParams = useSearchParams();
@@ -29,9 +31,12 @@ const EventsContent = () => {
   const view = searchParams.get("v") ?? "tiles";
   const filter = searchParams.get("f") ?? "all";
 
+  useGSAP(() => {
+    gsap.from(".filter", { y: -300, duration: 1, delay: 0, ease: "expo.in" });
+  }, []);
   return (
     <main className="w-7/8 m-auto mb-50">
-      <div className="flex justify-between border-b-[1px] border-slate-400 pb-1">
+      <div className="flex filter justify-between border-b-[1px] border-slate-400 pb-1">
         <div className="flex gap-1 text-xl">
           <Link
             href={`/app/events?v=${view}&f=all`}

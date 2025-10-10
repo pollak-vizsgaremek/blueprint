@@ -4,6 +4,8 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { useAuth } from "@/contexts/AuthContext";
 import { EventsPanel } from "../components/panels/EventsPanel";
+import { NewsPanel } from "../components/panels/NewsPanel";
+import { CalendarPanel } from "../components/panels/CalendarPanel";
 
 const DashboardPage = () => {
   const { user } = useAuth();
@@ -23,8 +25,9 @@ const DashboardPage = () => {
         Szép napot, <span className="font-bold text-accent">{user?.name}</span>
       </div>
       <div className="flex w-full gap-4 mb-4 max-md:flex-wrap" id="box">
-        <div className="card-box basis-2/5">
+        <div className="card-box flex flex-col basis-2/5">
           <div className="card-title">Hírek</div>
+          <NewsPanel />
         </div>
         <div className="card-box flex flex-col basis-3/5">
           <div className="card-title mb-3">Jelentkezett események</div>
@@ -32,8 +35,9 @@ const DashboardPage = () => {
         </div>
       </div>
       <div className="flex w-full gap-4 max-md:flex-wrap" id="box">
-        <div className="card-box basis-1/5">
+        <div className="card-box flex flex-col basis-1/5">
           <div className="card-title">Naptár</div>
+          <CalendarPanel />
         </div>
         <div className="card-box basis-3/5">
           <div className="card-title">Közelgő időpontok</div>

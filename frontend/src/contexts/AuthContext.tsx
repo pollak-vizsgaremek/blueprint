@@ -14,6 +14,12 @@ import axios from "axios";
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void | {}>;
+  register: (
+    name: string,
+    email: string,
+    password: string,
+    dateOfBirth: string
+  ) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
   isAdmin: boolean;
@@ -62,22 +68,49 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch(
+      const response = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/users/login`,
+        { email, password },
         {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include", // Include cookies in request
-          body: JSON.stringify({ email, password }),
-        },
+          withCredentials: true, // Include cookies in request
+        }
       );
 
-      const data = await response.json();
-      setUser(data.user);
-    } catch (error) {
-      return { message: "Hiba történt." };
+      setUser(response.data.user);
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        "Sikertelen bejelentkezés";
+      throw new Error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const register = async (
+    name: string,
+    email: string,
+    password: string,
+    dateOfBirth: string
+  ) => {
+    setIsLoading(true);
+    try {
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/users`,
+        { name, email, password, dateOfBirth },
+        {
+          withCredentials: true, // Include cookies in request
+        }
+      );
+
+      setUser(response.data.user);
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        "Sikertelen regisztráció";
+      throw new Error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -85,10 +118,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/logout`, {
-        method: "POST",
-        credentials: "include", // Include cookies in request
-      });
+      await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/users/logout`,
+        {},
+        {
+          withCredentials: true, // Include cookies in request
+        }
+      );
       router.push("/");
     } catch (error) {
       console.error("Logout error:", error);
@@ -100,6 +136,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const value: AuthContextType = {
     user,
     login,
+    register,
     logout,
     isLoading,
     isAdmin: user?.role === "admin",

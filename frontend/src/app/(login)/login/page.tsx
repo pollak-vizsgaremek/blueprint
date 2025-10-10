@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -25,7 +26,7 @@ const LoginPage = () => {
       router.push("/app");
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "A bejelentkezés sikertelen",
+        err instanceof Error ? err.message : "A bejelentkezés sikertelen"
       );
     } finally {
       setLoading(false);
@@ -39,6 +40,15 @@ const LoginPage = () => {
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Bejelentkezés
           </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            Vagy{" "}
+            <Link
+              href="/register"
+              className="font-medium text-accent hover:text-accent/80"
+            >
+              új fiók létrehozása
+            </Link>
+          </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
@@ -62,7 +72,7 @@ const LoginPage = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent"
                 placeholder="Írja be az email címét"
               />
             </div>
@@ -81,7 +91,7 @@ const LoginPage = () => {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent"
                 placeholder="Írja be a jelszavát"
               />
             </div>
@@ -91,7 +101,7 @@ const LoginPage = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2 px-4 text-sm rounded-md text-white bg-accent hover:bg-accent/80 cursor-pointer disabled:opacity-50"
+              className="w-full py-2 px-4 text-sm rounded-md text-white bg-accent hover:bg-accent/80 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "Bejelentkezés..." : "Bejelentkezés"}
             </button>

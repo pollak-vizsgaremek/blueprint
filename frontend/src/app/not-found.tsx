@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { FaArrowRight } from "react-icons/fa6";
 
 const NotFoundPage = () => {
@@ -6,12 +7,12 @@ const NotFoundPage = () => {
       <div className="">
         <div className="text-4xl mb-2">Oops...</div>
         <div className="mb-5">Ezt az oldalt nem találtuk</div>
-        <a
+        <Link
           href="/"
           className="flex gap-5 items-center text-accent underline decoration-accent"
         >
           Vissza a főoldalra <FaArrowRight size={40} />
-        </a>
+        </Link>
       </div>
     </div>
   );

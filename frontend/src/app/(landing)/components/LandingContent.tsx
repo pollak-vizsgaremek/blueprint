@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Header } from "../../(main)/components/Header";
+import { Header } from "./LandingHeader";
 import { Footer } from "../../(main)/components/Footer";
 import Background from "./Background";
 import { Montserrat } from "next/font/google";
@@ -25,7 +25,7 @@ export default function LandingContent({ children }: LandingContentProps) {
         color={[0, 1, 1]}
         mouseReact={false}
         amplitude={0.1}
-        speed={0.5}
+        speed={0.1}
         onReady={() => setIsBackgroundReady(true)}
       />
 

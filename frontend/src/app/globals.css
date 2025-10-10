@@ -28,3 +28,40 @@ body::before {
 .card-box {
   @apply bg-secondary/80 border-faded border-[1px] grow h-60 rounded-xl p-4 transition hover:shadow-lg shadow-md shadow-black/20 ease-in-out;
 }
+
+/* Landing page responsive improvements */
+@media (max-width: 480px) {
+  .landing-container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+    gap: 1rem;
+  }
+
+  .landing-title {
+    font-size: 2.25rem; /* text-4xl equivalent */
+    line-height: 1.1;
+  }
+
+  .landing-subtitle {
+    font-size: 1rem;
+  }
+}
+
+@media (max-height: 600px) and (orientation: landscape) {
+  .landing-container {
+    min-height: 100vh;
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+    gap: 1rem;
+  }
+
+  .landing-title {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .landing-subtitle {
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+  }
+}

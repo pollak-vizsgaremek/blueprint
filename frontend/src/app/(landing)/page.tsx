@@ -21,6 +21,12 @@ const LandingPage = () => {
     const svg = svgRef.current;
     if (!svg) return;
 
+    // Check if user prefers reduced motion or is on a smaller screen
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    const isSmallScreen = window.innerWidth < 768;
+
     // Get all drawable elements
     const drawableElements = svg.querySelectorAll(".drawable");
 
@@ -40,15 +46,19 @@ const LandingPage = () => {
       });
     });
 
-    // Create main drawing timeline
+    // Create main drawing timeline with conditional animation
     const tl = gsap.timeline();
+
+    // Reduce animation complexity on small screens or if user prefers reduced motion
+    const animationDuration = prefersReducedMotion || isSmallScreen ? 0.5 : 2;
+    const staggerAmount = prefersReducedMotion || isSmallScreen ? 0.1 : 0.3;
 
     // 1. Draw blueprint outline
     tl.to(".drawable.blueprint-outline", {
       strokeDashoffset: 0,
-      duration: 2,
+      duration: animationDuration,
       ease: "power2.inOut",
-      stagger: 0.3,
+      stagger: staggerAmount,
     })
 
       // 2. Draw grid lines
@@ -56,10 +66,10 @@ const LandingPage = () => {
         ".drawable.grid-line",
         {
           strokeDashoffset: 0,
-          duration: 0.5,
+          duration: animationDuration * 0.25,
           ease: "power1.inOut",
           stagger: {
-            amount: 2,
+            amount: prefersReducedMotion || isSmallScreen ? 0.5 : 2,
             from: "start",
           },
         },
@@ -71,9 +81,9 @@ const LandingPage = () => {
         ".drawable.blueprint-hole",
         {
           strokeDashoffset: 0,
-          duration: 0.3,
+          duration: animationDuration * 0.15,
           ease: "power2.out",
-          stagger: 0.1,
+          stagger: staggerAmount * 0.33,
         },
         "-=1"
       )
@@ -83,7 +93,7 @@ const LandingPage = () => {
         ".drawable.character-part",
         {
           strokeDashoffset: 0,
-          duration: 1.5,
+          duration: animationDuration * 0.75,
           ease: "power2.out",
         },
         "-=0.5"
@@ -94,9 +104,9 @@ const LandingPage = () => {
         ".drawable.decoration",
         {
           strokeDashoffset: 0,
-          duration: 1,
+          duration: animationDuration * 0.5,
           ease: "back.out(1.7)",
-          stagger: 0.3,
+          stagger: staggerAmount,
         },
         "-=0.8"
       )
@@ -121,45 +131,66 @@ const LandingPage = () => {
         "+=0.5"
       );
 
-    // Continuous floating animations for decorative elements
-    gsap.to(".floating-element", {
-      y: -10,
-      duration: 2,
-      ease: "sine.inOut",
-      yoyo: true,
-      repeat: -1,
-      stagger: 0.3,
-    });
+    // Continuous floating animations for decorative elements (reduced on small screens)
+    if (!prefersReducedMotion && !isSmallScreen) {
+      gsap.to(".floating-element", {
+        y: -10,
+        duration: 2,
+        ease: "sine.inOut",
+        yoyo: true,
+        repeat: -1,
+        stagger: 0.3,
+      });
 
-    // Subtle breathing animation for character
-    gsap.to(".character-figure", {
-      scale: 1.02,
-      duration: 3,
-      ease: "sine.inOut",
-      yoyo: true,
-      repeat: -1,
-    });
+      // Subtle breathing animation for character
+      gsap.to(".character-figure", {
+        scale: 1.02,
+        duration: 3,
+        ease: "sine.inOut",
+        yoyo: true,
+        repeat: -1,
+      });
+    }
   }, []);
 
   return (
     <>
-      <div className="relative z-10 flex flex-col pl-20 justify-center items-start min-h-screen gap-4 text-left text-white">
-        <h1 className="text-8xl font-extrabold">Blueprint</h1>
-        <p className="text-2xl font-bold">Placeholder slogan</p>
+      <div className="landing-container relative z-10 flex flex-col lg:flex-row justify-center items-center min-h-screen gap-6 sm:gap-8 lg:gap-16 text-center lg:text-left text-white px-4 sm:px-6 lg:px-20 py-8 lg:py-0 overflow-hidden max-w-7xl mx-auto">
+        {/* Content Section */}
+        <div className="flex flex-col justify-center items-center lg:items-start flex-1 max-w-2xl order-2 lg:order-1">
+          <h1 className="landing-title text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-extrabold mb-2 sm:mb-3 lg:mb-4 leading-tight">
+            Blueprint
+          </h1>
+          <p className="landing-subtitle text-base sm:text-lg md:text-xl lg:text-2xl font-bold mb-6 sm:mb-8 lg:mb-4 opacity-90">
+            A jövő eseménykezelő alkalmazása
+          </p>
 
-        <div className="flex gap-16 mt-4">
-          <GlassButton onClick={handleLogin}>Bejelentkezés</GlassButton>
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-6 lg:gap-16 w-full sm:w-auto max-w-sm sm:max-w-none">
+            <GlassButton
+              onClick={handleLogin}
+              className="w-full sm:w-auto min-w-[120px] md:min-w-[140px] text-center"
+            >
+              Bejelentkezés
+            </GlassButton>
 
-          <GlassButton onClick={handleRegister}>Regisztráció</GlassButton>
+            <GlassButton
+              onClick={handleRegister}
+              className="w-full sm:w-auto min-w-[120px] md:min-w-[140px] text-center"
+            >
+              Regisztráció
+            </GlassButton>
+          </div>
         </div>
-        <div className="absolute right-20 top-1/2 transform -translate-y-1/2">
+
+        {/* SVG Section */}
+        <div className="flex justify-center items-center flex-1 max-w-sm sm:max-w-md md:max-w-lg lg:max-w-none w-full order-1 lg:order-2">
           <svg
             ref={svgRef}
-            width="551"
-            height="451"
+            className="w-full h-auto max-w-[280px] sm:max-w-[350px] md:max-w-[400px] lg:max-w-[450px] xl:max-w-[500px] 2xl:max-w-[551px] drop-shadow-lg"
             viewBox="0 0 551 451"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
+            preserveAspectRatio="xMidYMid meet"
           >
             <path
               className="drawable decoration abstract-shape"

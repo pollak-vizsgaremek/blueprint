@@ -10,7 +10,11 @@ export const middleware = async (request: NextRequest) => {
   ) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
-  if (request.nextUrl.pathname.startsWith("/login") && token?.value) {
+  if (
+    (request.nextUrl.pathname.startsWith("/login") ||
+      request.nextUrl.pathname.startsWith("/register")) &&
+    token?.value
+  ) {
     return NextResponse.redirect(new URL("/app", request.url));
   }
   // return NextResponse.redirect(new URL("/login", request.url));

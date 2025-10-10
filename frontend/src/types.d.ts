@@ -43,7 +43,7 @@ export interface CreateUserRequest {
   name: string;
   email: string;
   password: string;
-  dateOfBirth?: string; // ISO date string format (YYYY-MM-DD)
+  dateOfBirth: string; // ISO date string format (YYYY-MM-DD)
 }
 
 export interface CreateUserResponse {

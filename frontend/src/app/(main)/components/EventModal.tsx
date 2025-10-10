@@ -12,7 +12,7 @@ export const EventModal = () => {
         <div className="w-screen h-screen fixed z-[1000] left-0 top-0 bg-black/40" />
         <div className=""></div>
         <div className="w-screen h-screen fixed z-[2000] left-0 top-0 flex justify-center items-center">
-          <div className="w-full rounded-xl p-5 border-faded border-[1px]  max-w-[1000px] h-6/10 bg-secondary">
+          <div className="w-full rounded-xl overflow-scroll p-5 border-faded border-[1px]  max-w-[1000px] h-6/10 bg-secondary">
             <button className="cursor-pointer mb-10" onClick={closeModal}>
               <X size={30} />
             </button>

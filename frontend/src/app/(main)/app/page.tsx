@@ -10,7 +10,7 @@ import { AppointmentsPanel } from "../components/panels/AppointmentsPanel";
 import { LogOut, Settings, User } from "lucide-react";
 
 const DashboardPage = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   useGSAP(() => {
     let lt = gsap.timeline();
     lt.from("#name", { x: -500, ease: "expo.in", duration: 1 });
@@ -58,7 +58,10 @@ const DashboardPage = () => {
         <button className="bg-secondary/50 py-2 px-3 rounded-xl border-[1px] border-faded transition hover:shadow-lg shadow-md shadow-black/20 ease-in-out hover:bg-faded/20 cursor-pointer">
           <Settings />
         </button>
-        <button className="flex gap-2 justify-center items-center text-red-500 bg-secondary/50 py-2 px-3 rounded-xl border-[1px] border-faded transition hover:shadow-lg shadow-md shadow-black/20 ease-in-out hover:bg-red-100 cursor-pointer">
+        <button
+          onClick={logout}
+          className="flex gap-2 justify-center items-center text-red-500 bg-secondary/50 py-2 px-3 rounded-xl border-[1px] border-faded transition hover:shadow-lg shadow-md shadow-black/20 ease-in-out hover:bg-red-100 cursor-pointer"
+        >
           <LogOut />
           Kijelentkezés
         </button>

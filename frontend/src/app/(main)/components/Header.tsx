@@ -101,8 +101,10 @@ export const Header = () => {
             />
             <Popover>
               <PopoverTrigger asChild className="max-md:hidden">
-                <div className="rounded-full bg-faded flex justify-center items-center text-white size-10 shrink-0 cursor-pointer select-none hover:scale-90 transition ease-in-out">
-                  {user?.name.slice(0, 1)}
+                <div className="">
+                  <div className="rounded-full bg-faded flex justify-center items-center text-white size-10 shrink-0 cursor-pointer select-none hover:scale-90 transition ease-in-out">
+                    {user?.name.slice(0, 1)}
+                  </div>
                 </div>
               </PopoverTrigger>
               <PopoverContent className="flex flex-col" align="end">

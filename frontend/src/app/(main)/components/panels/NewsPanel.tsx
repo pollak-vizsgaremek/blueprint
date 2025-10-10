@@ -6,7 +6,7 @@ export const NewsPanel = () => {
       <div className="">
         <div className="text-xl">Új frissítés</div>
         <div className="text-faded">
-          Fríssités 0.1.2. új feature és school project in one hour time.
+          Fríssités 0.1.2. új feature és pollak blah in vmi.
         </div>
       </div>
       <div className="">

@@ -1,9 +1,15 @@
+"Use client";
+import { useModal } from "@/contexts/ModalContext";
 import { Event } from "@/types";
 import Image from "next/image";
 
 export const EventTile = ({ event }: { event: Event }) => {
+  const { openModal } = useModal();
   return (
-    <div className="w-80 h-80 max-w-[600px] grow basis-[320px] shrink-0 cursor-pointer flex flex-col hover:shadow-md hover:shadow-gray-500 transition rounded-2xl">
+    <div
+      onClick={() => openModal(event)}
+      className="w-80 h-80 max-w-[600px] grow basis-[320px] shrink-0 cursor-pointer flex flex-col hover:shadow-md hover:shadow-gray-500 transition rounded-2xl"
+    >
       <div className="h-[60%] w-full relative">
         <Image
           src={event.imageUrl!}

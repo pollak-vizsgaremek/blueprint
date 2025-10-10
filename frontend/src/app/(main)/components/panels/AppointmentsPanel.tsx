@@ -1,12 +1,10 @@
 "use client";
-import { useModal } from "@/contexts/ModalContext";
 import { Event, RegistrationWithEvent } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import Image from "next/image";
 
-export const EventsPanel = () => {
-  const { openModal } = useModal();
+export const AppointmentsPanel = () => {
   const { data, isLoading } = useQuery({
     queryKey: ["myevents"],
     queryFn: async () => {
@@ -31,7 +29,6 @@ export const EventsPanel = () => {
             .map((registration: RegistrationWithEvent) => {
               return (
                 <div
-                  onClick={() => openModal(registration.event as Event)}
                   key={registration.event.id}
                   className="grow basis-[60px] border-faded border-[1px] rounded-xl flex flex-col group"
                 >

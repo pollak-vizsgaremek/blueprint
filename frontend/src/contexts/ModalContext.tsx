@@ -27,12 +27,15 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
   const openModal = (event: Event) => {
     setIsOpen(true);
     setSelectedEvent(event);
+    document.body.style.overflow = "hidden"; // Disable scrolling
   };
 
   const closeModal = () => {
     setIsOpen(false);
     setSelectedEvent(null);
+    document.body.style.overflow = "auto"; // Enable scrolling
   };
+
   const setEvent = (event: Event) => {
     setSelectedEvent(event);
   };

@@ -59,35 +59,42 @@ export const Header = () => {
       <div className="fixed top-5 w-full z-50 header">
         <header className="h-20 px-10 max-md:px-5 py-2 flex justify-between items-center bg-secondary/50 backdrop-blur-lg w-9/10 hover:bg-secondary transition ease-in-out shadow-sm shadow-accent/30 hover:shadow-lg rounded-2xl m-auto">
           <Link href="/">
-            <div className="flex items-center gap-3 text-2xl hover:text-accent hover:scale-90 transition ease-in-out">
+            <div className="flex items-center select-none gap-3 text-2xl hover:text-accent hover:scale-90 transition ease-in-out">
               <Image src="/blueprint.png" alt="Logo" width={50} height={50} />
               <div className={roboto.className}>Blueprint</div>
             </div>
           </Link>
-          <div className="flex gap-5 pr-20 items-center max-md:hidden justify-center text-xl *:hover:text-faded *:hover:scale-90 *:transition *:ease-in-out">
+          <div className="flex gap-5 items-center relative max-md:hidden justify-center text-xl *:hover:text-faded *:hover:scale-90 *:transition *:ease-in-out">
+            <div
+              className={cn(
+                "bg-accent h-[2px] absolute bottom-0 transition left-0 ease-in-out",
+                {
+                  "w-[70px] translate-x-[0]": path === "/app",
+                  "w-[101px] translate-x-[87px]": path === "/app/events",
+                  "w-[90px] translate-x-[209px]": path === "/app/appointments",
+                },
+              )}
+            ></div>
             <Link
               href="/app"
-              className={cn({
-                "border-b-accent border-b-2 pointer-events-none":
-                  path === "/app",
+              className={cn("select-none", {
+                "pointer-events-none": path === "/app",
               })}
             >
               Főoldal
             </Link>
             <Link
               href="/app/events"
-              className={cn({
-                "border-b-accent border-b-2 pointer-events-none":
-                  path === "/app/events",
+              className={cn("select-none", {
+                "pointer-events-none": path === "/app/events",
               })}
             >
               Események
             </Link>
             <Link
               href="/app/appointments"
-              className={cn({
-                "border-b-accent border-b-2 pointer-events-none":
-                  path === "/app/appointments",
+              className={cn("select-none", {
+                "pointer-events-none": path === "/app/appointments",
               })}
             >
               Időpontok

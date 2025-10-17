@@ -5,20 +5,12 @@ import path from "path";
 
 // Configuration variables
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB limit for event images
-const MINIO_ENDPOINT = process.env.MINIO_ENDPOINT || "localhost";
-const MINIO_PORT = parseInt(process.env.MINIO_PORT) || 9000;
-const MINIO_USE_SSL = process.env.MINIO_USE_SSL === "true" || false;
+const PUBLIC_URL = process.env.PUBLIC_URL || "http://localhost";
 
-// Helper function to generate permanent direct URLs
+// Helper function to generate permanent public URLs via Nginx proxy
 const generatePermanentUrl = (objectName) => {
-  const protocol = MINIO_USE_SSL ? "https" : "http";
-  const port =
-    (MINIO_USE_SSL && MINIO_PORT === 443) ||
-    (!MINIO_USE_SSL && MINIO_PORT === 80)
-      ? ""
-      : `:${MINIO_PORT}`;
-
-  return `${protocol}://${MINIO_ENDPOINT}${port}/${BUCKET_NAME}/${objectName}`;
+  // Return URL that will be proxied through Nginx /s3/ endpoint
+  return `${PUBLIC_URL}/s3/${BUCKET_NAME}/${objectName}`;
 };
 
 // Configure multer for memory storage
@@ -91,20 +83,25 @@ export const deleteEventImageFromMinio = async (imageUrl) => {
   try {
     if (!imageUrl) return true;
 
-    // Extract object name from URL (works with both direct URLs and presigned URLs)
+    // Extract object name from URL
     let objectName;
 
-    if (imageUrl.includes(MINIO_ENDPOINT)) {
-      // Handle presigned URLs or direct URLs
+    // Handle URLs proxied through /s3/ endpoint
+    if (imageUrl.includes("/s3/")) {
       const url = new URL(imageUrl);
-      objectName = url.pathname.substring(1); // Remove leading slash
+      const pathname = url.pathname;
+
+      // Remove /s3/ prefix
+      const s3Path = pathname.replace(/^\/s3\//, "");
 
       // Remove bucket name from path if it exists
-      if (objectName.startsWith(`${BUCKET_NAME}/`)) {
-        objectName = objectName.substring(BUCKET_NAME.length + 1);
+      if (s3Path.startsWith(`${BUCKET_NAME}/`)) {
+        objectName = s3Path.substring(BUCKET_NAME.length + 1);
+      } else {
+        objectName = s3Path;
       }
     } else {
-      // Fallback for old URL format
+      // Fallback for old URL formats
       const urlParts = imageUrl.split("/");
       const bucketIndex = urlParts.indexOf(BUCKET_NAME);
 

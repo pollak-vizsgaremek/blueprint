@@ -49,10 +49,10 @@ export const createUser = async (req, res) => {
     // Set token as httpOnly cookie
     res.cookie("token", token, {
       httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      domain: process.env.COOKIE_DOMAIN || "localhost",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      path: "/",
     });
 
     // Return user data without password
@@ -94,10 +94,10 @@ export const userLogin = async (req, res) => {
     // Set token as httpOnly cookie
     res.cookie("token", token, {
       httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      domain: process.env.COOKIE_DOMAIN || "localhost",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      path: "/",
     });
 
     res.json({
@@ -142,9 +142,9 @@ export const userLogout = async (req, res) => {
   try {
     res.clearCookie("token", {
       httpOnly: true,
-      secure: true,
-      domain: process.env.COOKIE_DOMAIN || "localhost",
-      sameSite: "none",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      path: "/",
     });
     res.json({ message: "Logout successful" });
   } catch (error) {

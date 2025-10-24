@@ -18,12 +18,23 @@ model user {
   id           Int            @id @default(autoincrement())
   name         String   
   email        String         @unique
+  emailVerified Boolean       @default(false)
   password     String  
   dateOfBirth  DateTime       @db.Date
-  isAdmin      Boolean        @default(false)
+  role         String         @default("user")
+  status       String         @default("active") // active, inactive, banned
+  settingJson  Json?          @default("{}") // JSON field for user settings
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
+  deletedAt    DateTime?
   registrations registration[]
+  eventsUpdated event[]        @relation("EventUpdater")
+  notifications notification[]
+  teacherReservations teacherReservation[] @relation("TeacherReservations")
+  studentReservations teacherReservation[] @relation("StudentReservations")
+  news          news[]         @relation("NewsAuthor")
+  eventNews     eventNews[]    @relation("EventNewsAuthor")
+  eventComments eventComment[]
 }
 
 model event {
@@ -36,7 +47,13 @@ model event {
   date          DateTime
   maxParticipants Int?         // Optional field for maximum number of participants
   createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  updatedBy     Int?
+  deletedAt     DateTime?
+  updater       user?          @relation("EventUpdater", fields: [updatedBy], references: [id])
   registrations registration[]
+  eventNews     eventNews[]
+  comments      eventComment[]
 }
 
 model registration {
@@ -50,4 +67,93 @@ model registration {
   event        event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   
   @@unique([userId, eventId])
+}
+
+model notification {
+  id          Int      @id @default(autoincrement())
+  userId      Int      // Recipient of the notification
+  url         String?  // Optional: link to related content (news, event, etc.)
+  title       String
+  message     String   @db.Text
+  type        String   @default("info") // info, warning, success, error
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  
+  user        user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, isRead])
+}
+
+model teacherReservation {
+  id          Int      @id @default(autoincrement())
+  teacherId   Int
+  studentId   Int
+  startTime   DateTime
+  endTime     DateTime
+  status      String   @default("pending") // pending, confirmed, cancelled, completed
+  purpose     String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  teacher     user     @relation("TeacherReservations", fields: [teacherId], references: [id], onDelete: Cascade)
+  student     user     @relation("StudentReservations", fields: [studentId], references: [id], onDelete: Cascade)
+  
+  @@unique([teacherId, startTime])
+  @@index([teacherId, startTime, endTime])
+  @@index([studentId])
+}
+
+model news {
+  id          Int      @id @default(autoincrement())
+  title       String
+  content     String   @db.Text
+  imageUrl    String?  @db.Text
+  authorId    Int
+  isPublished Boolean  @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+  
+  author      user     @relation("NewsAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  
+  @@index([isPublished, publishedAt])
+  @@index([authorId])
+}
+
+model eventNews {
+  id          Int      @id @default(autoincrement())
+  eventId     Int      // Event this news is related to
+  authorId    Int      // Who created this event news
+  title       String
+  content     String   @db.Text
+  imageUrl    String?  @db.Text
+  isPublished Boolean  @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+  
+  event       event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  author      user     @relation("EventNewsAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  
+  @@index([eventId, isPublished])
+  @@index([authorId])
+}
+
+model eventComment {
+  id        Int      @id @default(autoincrement())
+  eventId   Int
+  userId    Int
+  content   String   @db.Text
+  isVerified Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+  
+  event     event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([eventId, createdAt])
+  @@index([userId])
 }

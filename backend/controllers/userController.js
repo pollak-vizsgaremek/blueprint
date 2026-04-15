@@ -39,7 +39,6 @@ export const createUser = async (req, res) => {
         email,
         password: hashedPassword,
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
-        isAdmin: false,
       },
     });
 

@@ -1,11 +1,86 @@
 "use client";
 
 import { useModal } from "@/contexts/ModalContext";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
 import { X } from "lucide-react";
 import Image from "next/image";
 
 export const EventModal = () => {
-  const { isOpen, closeModal, selectedEvent } = useModal();
+  const { isOpen, closeModal, selectedEvent, setEvent } = useModal();
+  const queryClient = useQueryClient();
+
+  const { mutate: toggleRegistration, isPending } = useMutation({
+    mutationFn: async () => {
+      if (!selectedEvent) {
+        return;
+      }
+
+      if (selectedEvent.isUserRegistered) {
+        await axios.delete(
+          `${process.env.NEXT_PUBLIC_API_URL}/events/${selectedEvent.id}/register`,
+          {
+            withCredentials: true,
+          },
+        );
+        return;
+      }
+
+      await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/events/${selectedEvent.id}/register`,
+        {},
+        {
+          withCredentials: true,
+        },
+      );
+    },
+    onSuccess: () => {
+      if (!selectedEvent) {
+        return;
+      }
+
+      const nextRegistrationCount = selectedEvent.isUserRegistered
+        ? Math.max(0, selectedEvent.registrationCount - 1)
+        : selectedEvent.registrationCount + 1;
+
+      const maxParticipants = selectedEvent.maxParticipants;
+
+      setEvent({
+        ...selectedEvent,
+        isUserRegistered: !selectedEvent.isUserRegistered,
+        userRegistration: selectedEvent.isUserRegistered
+          ? null
+          : {
+              id: 0,
+              registeredAt: new Date().toISOString(),
+              status: "registered",
+            },
+        registrationCount: nextRegistrationCount,
+        isFull: Boolean(
+          maxParticipants && nextRegistrationCount >= maxParticipants,
+        ),
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      queryClient.invalidateQueries({ queryKey: ["myevents"] });
+    },
+    onError: (error) => {
+      if (axios.isAxiosError(error)) {
+        const errorMessage =
+          error.response?.data?.message ??
+          error.response?.data?.error ??
+          "Jelentkezés sikertelen.";
+        window.alert(errorMessage);
+        return;
+      }
+
+      window.alert("Jelentkezés sikertelen.");
+    },
+  });
+
+  const canRegister =
+    selectedEvent && (selectedEvent.isUserRegistered || !selectedEvent.isFull);
+
   return (
     isOpen && (
       <>
@@ -44,9 +119,24 @@ export const EventModal = () => {
               <div className="text-faded">
                 Létrehozva: {selectedEvent?.createdAt.slice(0, 10)}
               </div>
-              <button className="bg-accent text-white px-3 py-2 hover:bg-accent/60 transition ease-in-out active:scale-95 active:duration-75 rounded-xl cursor-pointer">
-                Jelentkezés
+              <button
+                onClick={() => toggleRegistration()}
+                disabled={!canRegister || isPending}
+                className="bg-accent text-white px-3 py-2 hover:bg-accent/60 transition ease-in-out active:scale-95 active:duration-75 rounded-xl cursor-pointer disabled:bg-faded disabled:cursor-not-allowed"
+              >
+                {isPending
+                  ? "Feldolgozás..."
+                  : selectedEvent?.isUserRegistered
+                    ? "Jelentkezés lemondása"
+                    : "Jelentkezés"}
               </button>
+            </div>
+            <div className="w-full mt-4 px-10 text-sm text-faded flex justify-end">
+              {selectedEvent && selectedEvent.maxParticipants
+                ? `${selectedEvent.registrationCount}/${selectedEvent.maxParticipants} jelentkező`
+                : selectedEvent
+                  ? `${selectedEvent.registrationCount} jelentkező`
+                  : ""}
             </div>
           </div>
         </div>

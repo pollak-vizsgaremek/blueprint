@@ -126,6 +126,7 @@ export interface RegistrationWithEvent extends Omit<Registration, "userId"> {
     creator: string;
     location: string;
     date: string; // ISO datetime string
+    maxParticipants: number | null;
     createdAt: string; // ISO datetime string
   };
 }

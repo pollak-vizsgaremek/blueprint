@@ -1,6 +1,6 @@
 "use client";
 import { useModal } from "@/contexts/ModalContext";
-import { Event, RegistrationWithEvent } from "@/types";
+import { EventWithRegistrationInfo, RegistrationWithEvent } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import Image from "next/image";
@@ -29,9 +29,21 @@ export const EventsPanel = () => {
           data.registrations
             .slice(0, 4)
             .map((registration: RegistrationWithEvent) => {
+              const eventForModal: EventWithRegistrationInfo = {
+                ...registration.event,
+                registrationCount: 0,
+                userRegistration: {
+                  id: registration.id,
+                  registeredAt: registration.registeredAt,
+                  status: registration.status,
+                },
+                isUserRegistered: registration.status === "registered",
+                isFull: false,
+              };
+
               return (
                 <div
-                  onClick={() => openModal(registration.event as Event)}
+                  onClick={() => openModal(eventForModal)}
                   key={registration.event.id}
                   className="grow basis-[60px] border-faded border-[1px] rounded-xl flex flex-col group"
                 >

@@ -1,14 +1,30 @@
 "use client";
-import { Event } from "@/types";
+import { Event, EventWithRegistrationInfo } from "@/types";
 import React, { createContext, ReactNode, useContext, useState } from "react";
+
+type ModalEvent = EventWithRegistrationInfo;
+
+const normalizeEventForModal = (
+  event: Event | EventWithRegistrationInfo,
+): ModalEvent => {
+  const enrichedEvent = event as EventWithRegistrationInfo;
+
+  return {
+    ...event,
+    registrationCount: enrichedEvent.registrationCount ?? 0,
+    userRegistration: enrichedEvent.userRegistration ?? null,
+    isUserRegistered: enrichedEvent.isUserRegistered ?? false,
+    isFull: enrichedEvent.isFull ?? false,
+  };
+};
 
 const ModalContext = createContext<
   | {
       isOpen: boolean;
-      openModal: (event: Event) => void;
+      openModal: (event: Event | EventWithRegistrationInfo) => void;
       closeModal: () => void;
-      selectedEvent: Event | null;
-      setEvent: (event: Event) => void;
+      selectedEvent: ModalEvent | null;
+      setEvent: (event: ModalEvent) => void;
     }
   | undefined
 >(undefined);
@@ -23,10 +39,10 @@ export const useModal = () => {
 
 export const ModalProvider = ({ children }: { children: ReactNode }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const openModal = (event: Event) => {
+  const [selectedEvent, setSelectedEvent] = useState<ModalEvent | null>(null);
+  const openModal = (event: Event | EventWithRegistrationInfo) => {
     setIsOpen(true);
-    setSelectedEvent(event);
+    setSelectedEvent(normalizeEventForModal(event));
     document.body.style.overflow = "hidden"; // Disable scrolling
   };
 
@@ -36,7 +52,7 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
     document.body.style.overflow = "auto"; // Enable scrolling
   };
 
-  const setEvent = (event: Event) => {
+  const setEvent = (event: ModalEvent) => {
     setSelectedEvent(event);
   };
 

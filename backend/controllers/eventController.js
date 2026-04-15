@@ -247,6 +247,7 @@ export const getUserEventRegistrations = async (req, res) => {
             creator: true,
             location: true,
             date: true,
+            maxParticipants: true,
             createdAt: true,
           },
         },

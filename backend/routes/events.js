@@ -5,6 +5,9 @@ import {
   unregisterFromEvent,
   getUserEventRegistrations,
   getEventRegistrations,
+  getEventComments,
+  createEventComment,
+  deleteEventComment,
 } from "../controllers/eventController.js";
 import { authenticateToken } from "../middleware/auth.js";
 
@@ -24,5 +27,18 @@ router.delete("/:eventId/register", authenticateToken, unregisterFromEvent);
 
 // GET /events/:eventId/registrations - Get event registrations (requires authentication)
 router.get("/:eventId/registrations", authenticateToken, getEventRegistrations);
+
+// GET /events/:eventId/comments - Get event comments (requires authentication)
+router.get("/:eventId/comments", authenticateToken, getEventComments);
+
+// POST /events/:eventId/comments - Create event comment (requires authentication)
+router.post("/:eventId/comments", authenticateToken, createEventComment);
+
+// DELETE /events/:eventId/comments/:commentId - Delete event comment (requires authentication)
+router.delete(
+  "/:eventId/comments/:commentId",
+  authenticateToken,
+  deleteEventComment,
+);
 
 export default router;

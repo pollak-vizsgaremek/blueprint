@@ -167,6 +167,48 @@ export interface GetEventRegistrationsResponse {
   registrations: RegistrationWithUser[];
 }
 
+// Event comments
+export interface EventComment {
+  id: number;
+  content: string;
+  isVerified: boolean;
+  deletedAt: string | null;
+  isDeleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+  user: {
+    id: number;
+    name: string;
+  };
+}
+
+export interface EventCommentEventInfo {
+  id: number;
+  name: string;
+  date: string;
+  location: string;
+}
+
+export interface GetEventCommentsResponse {
+  message: string;
+  event: EventCommentEventInfo;
+  comments: EventComment[];
+}
+
+export interface CreateEventCommentResponse {
+  message: string;
+  comment: EventComment;
+  verification?: {
+    isVerified: boolean;
+    reason: string;
+    source: "ai" | "fallback" | "skipped" | string;
+  };
+}
+
+export interface DeleteEventCommentResponse {
+  message: string;
+}
+
 // API endpoint response types
 export type GetAllEventsResponse = EventWithRegistrationInfo[];
 export type GetAllUsersResponse = User[];

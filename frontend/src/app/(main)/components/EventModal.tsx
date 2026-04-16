@@ -353,7 +353,7 @@ export const EventModal = () => {
                               </span>
                             )}
                           </div>
-                          {!comment.isDeleted && (
+                          {comment.canDelete && !comment.isDeleted && (
                             <button
                               onClick={() => {
                                 if (

@@ -12,7 +12,7 @@ export const generateToken = (user) => {
     userId: user.id,
     email: user.email,
     name: user.name,
-    role: user.isAdmin ? "admin" : "user",
+    role: user.role === "admin" ? "admin" : "user",
     dateOfBirth: user.dateOfBirth
       ? user.dateOfBirth.toISOString().slice(0, 10)
       : null,
@@ -104,7 +104,7 @@ export const userLogin = async (req, res) => {
       user: {
         name: user.name,
         email: user.email,
-        role: user.isAdmin ? "admin" : "user",
+        role: user.role === "admin" ? "admin" : "user",
         dateOfBirth: user.dateOfBirth
           ? user.dateOfBirth.toISOString().slice(0, 10)
           : null,
@@ -183,7 +183,7 @@ export const updateCurrentUser = async (req, res) => {
         name: name ?? undefined,
         email: email ?? undefined,
         dateOfBirth: dateOfBirth
-          ? new Date(dateOfBirth) ?? undefined
+          ? (new Date(dateOfBirth) ?? undefined)
           : undefined,
         password: (await bcrypt.hash(password, 10)) ?? undefined,
       },

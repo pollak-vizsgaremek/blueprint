@@ -174,6 +174,7 @@ export interface EventComment {
   isVerified: boolean;
   deletedAt: string | null;
   isDeleted: boolean;
+  canDelete: boolean;
   createdAt: string;
   updatedAt: string;
   user: {

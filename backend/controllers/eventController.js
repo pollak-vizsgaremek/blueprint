@@ -147,7 +147,7 @@ const verifyCommentWithAI = async ({ content, event, userId }) => {
         systemInstruction: {
           parts: [
             {
-              text: "You verify event discussion comments. Return ONLY JSON with keys isVerified (boolean) and reason (string). Mark true only for respectful, non-spam comments that are related to the event.",
+              text: "You verify event discussion comments. Return ONLY JSON with keys isVerified (boolean) and reason (string). Mark true only for respectful, non-spam comments.",
             },
           ],
         },
@@ -601,7 +601,6 @@ export const getEventComments = async (req, res) => {
   const { eventId } = req.params;
   const parsedEventId = parseInt(eventId);
   const parsedLimit = req.query.limit ? parseInt(req.query.limit) : null;
-  const isAdmin = req.user?.role === "admin";
 
   if (Number.isNaN(parsedEventId)) {
     return res.status(400).json({
@@ -618,6 +617,14 @@ export const getEventComments = async (req, res) => {
   }
 
   try {
+    const requester = req.user?.id
+      ? await prisma.user.findUnique({
+          where: { id: req.user.id },
+          select: { role: true },
+        })
+      : null;
+    const isAdmin = requester?.role === "admin" || req.user?.role === "admin";
+
     const event = await prisma.event.findUnique({
       where: { id: parsedEventId },
       select: {
@@ -657,6 +664,7 @@ export const getEventComments = async (req, res) => {
       isVerified: comment.isVerified,
       deletedAt: comment.deletedAt,
       isDeleted: Boolean(comment.deletedAt),
+      canDelete: isAdmin || comment.userId === req.user.id,
       createdAt: comment.createdAt,
       updatedAt: comment.updatedAt,
       user: comment.user,
@@ -792,6 +800,7 @@ export const createEventComment = async (req, res) => {
         isVerified: comment.isVerified,
         deletedAt: comment.deletedAt,
         isDeleted: Boolean(comment.deletedAt),
+        canDelete: true,
         createdAt: comment.createdAt,
         updatedAt: comment.updatedAt,
         user: comment.user,
@@ -823,6 +832,11 @@ export const deleteEventComment = async (req, res) => {
   }
 
   try {
+    const requester = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+
     const comment = await prisma.eventComment.findFirst({
       where: {
         id: parsedCommentId,
@@ -839,7 +853,7 @@ export const deleteEventComment = async (req, res) => {
       return res.status(404).json({ error: "Comment not found" });
     }
 
-    const isAdmin = req.user.role === "admin";
+    const isAdmin = requester?.role === "admin" || req.user.role === "admin";
     const isOwner = comment.userId === userId;
 
     if (!isAdmin && !isOwner) {

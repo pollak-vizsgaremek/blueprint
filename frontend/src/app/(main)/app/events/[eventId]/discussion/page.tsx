@@ -199,7 +199,7 @@ const EventDiscussionPage = () => {
                   <div className="text-sm text-faded">
                     {new Date(comment.createdAt).toLocaleString("hu-HU")}
                   </div>
-                  {!comment.isDeleted && (
+                  {comment.canDelete && !comment.isDeleted && (
                     <button
                       onClick={() => {
                         if (

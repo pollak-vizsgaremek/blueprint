@@ -11,14 +11,34 @@ const app = express();
 // CORS configuration to allow credentials (cookies)
 // Get CORS origins from environment and normalize missing protocols.
 const normalizeOrigin = (value) => {
-  const trimmed = value.trim();
+  const trimmed = value.trim().replace(/\/+$/, "");
   if (!trimmed) return null;
 
-  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-    return trimmed;
-  }
+  const withProtocol =
+    trimmed.startsWith("http://") || trimmed.startsWith("https://")
+      ? trimmed
+      : `http://${trimmed}`;
 
-  return `http://${trimmed}`;
+  try {
+    const parsed = new URL(withProtocol);
+    return `${parsed.protocol}//${parsed.host}`;
+  } catch {
+    return null;
+  }
+};
+
+const isLocalhostOrigin = (origin) => {
+  try {
+    const parsed = new URL(origin);
+    return (
+      parsed.hostname === "localhost" ||
+      parsed.hostname === "127.0.0.1" ||
+      parsed.hostname === "::1" ||
+      parsed.hostname.endsWith(".localhost")
+    );
+  } catch {
+    return false;
+  }
 };
 
 const configuredOrigins = [process.env.PUBLIC_URL, process.env.CORS_ORIGINS]
@@ -40,7 +60,7 @@ const corsOptions = {
     // Allow requests with no origin (like mobile apps, Postman, or same-origin)
     if (!origin) return callback(null, true);
 
-    if (allowedOrigins.includes(origin)) {
+    if (allowedOrigins.includes(origin) || isLocalhostOrigin(origin)) {
       return callback(null, true);
     }
 

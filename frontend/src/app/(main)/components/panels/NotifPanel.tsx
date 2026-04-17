@@ -2,9 +2,14 @@
 import { BellRing, Circle } from "lucide-react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
+import { isReducedMotionEnabled } from "@/lib/motion";
 
 export const NotifPanel = () => {
   useGSAP(() => {
+    if (isReducedMotionEnabled()) {
+      return;
+    }
+
     gsap.fromTo(
       ".bell",
       { repeat: -1, rotate: 10, yoyo: true, duration: 0.5 },

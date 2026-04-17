@@ -1,5 +1,5 @@
 const ResPage = () => {
-  return <div></div>;
+  return <div className="h-screen"></div>;
 };
 
 export default ResPage;

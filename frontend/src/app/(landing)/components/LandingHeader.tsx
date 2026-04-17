@@ -5,6 +5,7 @@ import { Roboto_Mono } from "next/font/google";
 import { Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { isReducedMotionEnabled } from "@/lib/motion";
 const roboto = Roboto_Mono({
   subsets: ["latin"],
 });
@@ -16,6 +17,10 @@ export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const path = usePathname();
   useGSAP(() => {
+    if (isReducedMotionEnabled()) {
+      return;
+    }
+
     gsap.from(".header", {
       y: -100,
       scale: 0.9,

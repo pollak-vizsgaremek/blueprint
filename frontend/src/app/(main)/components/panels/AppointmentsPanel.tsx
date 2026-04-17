@@ -30,7 +30,7 @@ export const AppointmentsPanel = () => {
               return (
                 <div
                   key={registration.event.id}
-                  className="grow basis-[60px] border-faded border-[1px] rounded-xl flex flex-col group"
+                  className="grow basis-[60px] border-faded/30 cursor-pointer border-[0.5px] rounded-xl flex flex-col group"
                 >
                   <div className="w-full h-28 relative">
                     <Image

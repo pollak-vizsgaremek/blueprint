@@ -23,7 +23,7 @@ const LandingPage = () => {
 
     // Check if user prefers reduced motion or is on a smaller screen
     const prefersReducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
+      "(prefers-reduced-motion: reduce)",
     ).matches;
     const isSmallScreen = window.innerWidth < 768;
 
@@ -73,7 +73,7 @@ const LandingPage = () => {
             from: "start",
           },
         },
-        "-=0.5"
+        "-=0.5",
       )
 
       // 3. Draw blueprint holes
@@ -85,7 +85,7 @@ const LandingPage = () => {
           ease: "power2.out",
           stagger: staggerAmount * 0.33,
         },
-        "-=1"
+        "-=1",
       )
 
       // 4. Draw entire character figure at once
@@ -96,7 +96,7 @@ const LandingPage = () => {
           duration: animationDuration * 0.75,
           ease: "power2.out",
         },
-        "-=0.5"
+        "-=0.5",
       )
 
       // 5. Draw decorative elements
@@ -108,7 +108,7 @@ const LandingPage = () => {
           ease: "back.out(1.7)",
           stagger: staggerAmount,
         },
-        "-=0.8"
+        "-=0.8",
       )
 
       // 6. Fill in the drawn elements after drawing
@@ -128,7 +128,7 @@ const LandingPage = () => {
           stagger: 0.1,
           ease: "power2.inOut",
         },
-        "+=0.5"
+        "+=0.5",
       );
 
     // Continuous floating animations for decorative elements (reduced on small screens)
@@ -158,10 +158,10 @@ const LandingPage = () => {
       <div className="landing-container relative z-10 flex flex-col lg:flex-row justify-center items-center min-h-screen gap-6 sm:gap-8 lg:gap-16 text-center lg:text-left text-white px-4 sm:px-6 lg:px-20 py-8 lg:py-0 overflow-hidden max-w-7xl mx-auto">
         {/* Content Section */}
         <div className="flex flex-col justify-center items-center lg:items-start flex-1 max-w-2xl order-2 lg:order-1">
-          <h1 className="landing-title text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-extrabold mb-2 sm:mb-3 lg:mb-4 leading-tight">
+          <h1 className="landing-title text-black text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-extrabold mb-2 sm:mb-3 lg:mb-4 leading-tight">
             Blueprint
           </h1>
-          <p className="landing-subtitle text-base sm:text-lg md:text-xl lg:text-2xl font-bold mb-6 sm:mb-8 lg:mb-4 opacity-90">
+          <p className="landing-subtitle text-gray-700 text-base sm:text-lg md:text-xl lg:text-2xl font-bold mb-6 sm:mb-8 lg:mb-4 opacity-90">
             A jövő eseménykezelő alkalmazása
           </p>
 
@@ -175,7 +175,7 @@ const LandingPage = () => {
 
             <GlassButton
               onClick={handleRegister}
-              className="w-full sm:w-auto min-w-[120px] md:min-w-[140px] text-center"
+              className="w-full sm:w-auto min-w-[120px md:min-w-[140px] text-center"
             >
               Regisztráció
             </GlassButton>

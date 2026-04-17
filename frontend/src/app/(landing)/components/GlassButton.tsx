@@ -12,7 +12,7 @@ export const GlassButton = ({
 }: GlassButtonProps) => {
   return (
     <button
-      className={`group relative px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 text-sm sm:text-base font-semibold text-white rounded-full overflow-hidden transition-all duration-300 ease-out hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl cursor-pointer ${className}`}
+      className={`group relative px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 text-sm sm:text-base font-semibold text-black rounded-full overflow-hidden transition-all duration-300 ease-out hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl cursor-pointer ${className}`}
       {...props}
     >
       {/* Enhanced glass background layers */}

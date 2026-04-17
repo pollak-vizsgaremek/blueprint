@@ -21,25 +21,9 @@ export default function LandingContent({ children }: LandingContentProps) {
   return (
     <>
       <Header />
-      <Background
-        color={[0, 1, 1]}
-        mouseReact={false}
-        amplitude={0.1}
-        speed={0.1}
-        onReady={() => setIsBackgroundReady(true)}
-      />
-
-      {/* Loading overlay */}
-      {!isBackgroundReady && (
-        <div className="fixed inset-0 z-50 bg-white flex items-center justify-center">
-          <Spinner />
-        </div>
-      )}
 
       <main
-        className={`${montserrat.className} ${
-          !isBackgroundReady ? "opacity-0" : "opacity-100"
-        } transition-opacity duration-500`}
+        className={`${montserrat.className} ${"opacity-100"} transition-opacity duration-500`}
       >
         {children}
       </main>

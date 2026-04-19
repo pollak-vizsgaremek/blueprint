@@ -1,6 +1,8 @@
 import express from "express";
 import {
   getAllEvents,
+  getPublishedNews,
+  getLatestPublishedNews,
   registerForEvent,
   unregisterFromEvent,
   getUserEventRegistrations,
@@ -15,6 +17,12 @@ const router = express.Router();
 
 // GET /events - Get all events (public route with optional auth)
 router.get("/", authenticateToken, getAllEvents);
+
+// GET /events/news/latest - Get latest published news item
+router.get("/news/latest", authenticateToken, getLatestPublishedNews);
+
+// GET /events/news - Get all published news items
+router.get("/news", authenticateToken, getPublishedNews);
 
 // GET /events/my-registrations - Get user's event registrations (requires authentication)
 router.get("/my-registrations", authenticateToken, getUserEventRegistrations);

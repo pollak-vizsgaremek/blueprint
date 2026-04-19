@@ -2,6 +2,7 @@ import express from "express";
 import {
   createUser,
   getCurrentUser,
+  getTeachers,
   updateCurrentUser,
   userLogin,
   userLogout,
@@ -21,6 +22,9 @@ router.post("/logout", userLogout);
 
 // GET /users/profile - Get current user profile
 router.get("/profile", authenticateToken, getCurrentUser);
+
+// GET /users/teachers - Get all teachers
+router.get("/teachers", authenticateToken, getTeachers);
 
 // PUT /users/profile - Update current user profile
 router.put("/profile", authenticateToken, updateCurrentUser);

@@ -5,6 +5,7 @@ import eventRoutes from "./routes/events.js";
 import userRoutes from "./routes/users.js";
 import adminEventsRoutes from "./routes/admin/adminEvents.js";
 import adminUserRoutes from "./routes/admin/adminUsers.js";
+import appointmentRoutes from "./routes/appointments.js";
 
 const app = express();
 
@@ -82,6 +83,7 @@ app.get("/health", (req, res) => {
 // Routes
 app.use("/events", eventRoutes);
 app.use("/users", userRoutes);
+app.use("/appointments", appointmentRoutes);
 app.use("/admin/events", adminEventsRoutes);
 app.use("/admin/users", adminUserRoutes);
 

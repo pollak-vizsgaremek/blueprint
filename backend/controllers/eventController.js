@@ -333,6 +333,74 @@ export const getAllEvents = async (req, res) => {
   }
 };
 
+export const getLatestPublishedNews = async (req, res) => {
+  try {
+    const latestNews = await prisma.news.findFirst({
+      where: {
+        isPublished: true,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        imageUrl: true,
+        publishedAt: true,
+        createdAt: true,
+        author: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+    });
+
+    res.json({
+      message: "Latest published news retrieved successfully",
+      news: latestNews,
+    });
+  } catch (error) {
+    console.error("Error fetching latest published news:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+export const getPublishedNews = async (req, res) => {
+  try {
+    const news = await prisma.news.findMany({
+      where: {
+        isPublished: true,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        imageUrl: true,
+        publishedAt: true,
+        createdAt: true,
+        author: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+    });
+
+    res.json({
+      message: "Published news retrieved successfully",
+      news,
+    });
+  } catch (error) {
+    console.error("Error fetching published news:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 // Register user for an event
 export const registerForEvent = async (req, res) => {
   const { eventId } = req.params;

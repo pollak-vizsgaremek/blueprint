@@ -4,16 +4,20 @@ import { Spinner } from "@/components/Spinner";
 import { useModal } from "@/contexts/ModalContext";
 import { useAppSettings } from "@/lib/useAppSettings";
 import {
+  Appointment,
   EventWithRegistrationInfo,
+  GetAppointmentsResponse,
   GetUserEventRegistrationsResponse,
   RegistrationWithEvent,
 } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import {
+  CalendarClock,
   ChevronLeft,
   ChevronRight,
   Clock3,
+  GraduationCap,
   MapPin,
   Ticket,
 } from "lucide-react";
@@ -28,6 +32,15 @@ type CalendarEventItem = {
   date: Date;
   status: RegistrationWithEvent["status"];
   modalEvent: EventWithRegistrationInfo;
+};
+
+type CalendarAppointmentItem = {
+  id: number;
+  teacherName: string;
+  title: string;
+  status: Appointment["status"];
+  startTime: Date;
+  endTime: Date;
 };
 
 const monthNames = [
@@ -86,6 +99,24 @@ const formatTime = (date: Date) =>
     minute: "2-digit",
   }).format(date);
 
+const formatTimeRange = (start: Date, end: Date) => {
+  return `${formatTime(start)} - ${formatTime(end)}`;
+};
+
+const appointmentStatusLabel: Record<Appointment["status"], string> = {
+  pending: "Függőben",
+  confirmed: "Megerősítve",
+  cancelled: "Lemondva",
+  completed: "Teljesítve",
+};
+
+const appointmentStatusClass: Record<Appointment["status"], string> = {
+  pending: "bg-amber-100 text-amber-800",
+  confirmed: "bg-emerald-100 text-emerald-800",
+  cancelled: "bg-red-100 text-red-700",
+  completed: "bg-sky-100 text-sky-700",
+};
+
 const CalendarContent = () => {
   const searchParams = useSearchParams();
   const { openModal } = useModal();
@@ -121,6 +152,23 @@ const CalendarContent = () => {
     queryFn: async () => {
       const { data } = await axios.get<GetUserEventRegistrationsResponse>(
         `${process.env.NEXT_PUBLIC_API_URL}/events/my-registrations`,
+        {
+          withCredentials: true,
+        },
+      );
+      return data;
+    },
+  });
+
+  const {
+    data: appointmentsData,
+    isLoading: isAppointmentsLoading,
+    isError: isAppointmentsError,
+  } = useQuery({
+    queryKey: ["appointments"],
+    queryFn: async () => {
+      const { data } = await axios.get<GetAppointmentsResponse>(
+        `${process.env.NEXT_PUBLIC_API_URL}/appointments`,
         {
           withCredentials: true,
         },
@@ -169,6 +217,41 @@ const CalendarContent = () => {
       .sort((a, b) => a.date.getTime() - b.date.getTime());
   }, [registrationsData, settings.showPastEvents]);
 
+  const allAppointments = useMemo(() => {
+    const appointments = appointmentsData?.appointments ?? [];
+    const now = new Date();
+    const todayStart = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
+
+    return appointments
+      .map((appointment) => {
+        const startTime = new Date(appointment.startTime);
+        const endTime = new Date(appointment.endTime);
+
+        return {
+          id: appointment.id,
+          teacherName: appointment.teacher?.name ?? "Ismeretlen tanár",
+          title: appointment.title || appointment.purpose || "Időpont",
+          status: appointment.status,
+          startTime,
+          endTime,
+        } satisfies CalendarAppointmentItem;
+      })
+      .filter(
+        (appointment) =>
+          !Number.isNaN(appointment.startTime.getTime()) &&
+          !Number.isNaN(appointment.endTime.getTime()),
+      )
+      .filter(
+        (appointment) =>
+          settings.showPastEvents || appointment.endTime >= todayStart,
+      )
+      .sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+  }, [appointmentsData, settings.showPastEvents]);
+
   const eventsByDay = useMemo(() => {
     return allRegisteredEvents.reduce<Map<string, CalendarEventItem[]>>(
       (acc, event) => {
@@ -186,6 +269,23 @@ const CalendarContent = () => {
     return eventsByDay.get(toDateKey(selectedDate)) ?? [];
   }, [eventsByDay, selectedDate]);
 
+  const appointmentsByDay = useMemo(() => {
+    return allAppointments.reduce<Map<string, CalendarAppointmentItem[]>>(
+      (acc, appointment) => {
+        const key = toDateKey(appointment.startTime);
+        const current = acc.get(key) ?? [];
+        current.push(appointment);
+        acc.set(key, current);
+        return acc;
+      },
+      new Map(),
+    );
+  }, [allAppointments]);
+
+  const selectedDayAppointments = useMemo(() => {
+    return appointmentsByDay.get(toDateKey(selectedDate)) ?? [];
+  }, [appointmentsByDay, selectedDate]);
+
   const calendarDays = useMemo(() => {
     const year = visibleMonth.getFullYear();
     const month = visibleMonth.getMonth();
@@ -202,10 +302,14 @@ const CalendarContent = () => {
         date,
         dateKey,
         isCurrentMonth: date.getMonth() === month,
-        eventCount: eventsByDay.get(dateKey)?.length ?? 0,
+        eventEntries: eventsByDay.get(dateKey)?.length ?? 0,
+        appointmentEntries: appointmentsByDay.get(dateKey)?.length ?? 0,
+        eventCount:
+          (eventsByDay.get(dateKey)?.length ?? 0) +
+          (appointmentsByDay.get(dateKey)?.length ?? 0),
       };
     });
-  }, [eventsByDay, settings.weekStart, visibleMonth]);
+  }, [appointmentsByDay, eventsByDay, settings.weekStart, visibleMonth]);
 
   const weekDayNames = weekDayNamesByWeekStart[settings.weekStart];
 
@@ -244,16 +348,20 @@ const CalendarContent = () => {
     lastAutoOpenedDayKeyRef.current = selectedDayKey;
   }, [openModal, selectedDate, selectedDayEvents, settings.autoOpenEventModal]);
 
-  if (isLoading) {
-    return <Spinner />;
+  if (isLoading || isAppointmentsLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen w-full">
+        <Spinner />
+      </div>
+    );
   }
 
-  if (isError) {
+  if (isError || isAppointmentsError) {
     return (
       <main className="w-7/8 m-auto min-h-screen pt-24 pb-20">
         <div className="card-box h-auto">
           <div className="text-xl text-red-600">
-            Nem sikerült betölteni az eseményeket.
+            Nem sikerült betölteni a naptár adatokat.
           </div>
         </div>
       </main>
@@ -352,9 +460,26 @@ const CalendarContent = () => {
                   </div>
 
                   {day.eventCount > 0 ? (
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="size-2 rounded-full bg-accent" />
-                      <span className="text-xs bg-accent/15 text-accent px-2 py-0.5 rounded-full">
+                    <div className="flex items-center justify-between mt-2 gap-1">
+                      <div className="flex items-center gap-1">
+                        {day.appointmentEntries > 0 && (
+                          <span
+                            className="inline-flex items-center justify-center size-7 rounded-full bg-amber-100 text-amber-700"
+                            title="Van időpont"
+                          >
+                            <CalendarClock size={20} className="shrink-0" />
+                          </span>
+                        )}
+                        {day.eventEntries > 0 && (
+                          <span
+                            className="inline-flex items-center justify-center size-7 rounded-full bg-emerald-100 text-emerald-700"
+                            title="Van esemény"
+                          >
+                            <GraduationCap size={20} />
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs bg-accent/15 text-accent px-2 py-0.5 rounded-full shrink-0">
                         {day.eventCount}
                       </span>
                     </div>
@@ -371,22 +496,63 @@ const CalendarContent = () => {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-semibold">Napi nézet</h3>
             <span className="text-xs text-faded">
-              {selectedDayEvents.length} esemény
+              {selectedDayEvents.length + selectedDayAppointments.length}{" "}
+              bejegyzés
             </span>
           </div>
 
           <div className="text-faded mb-4 capitalize">{selectedDateLabel}</div>
 
-          {allRegisteredEvents.length === 0 ? (
+          {allRegisteredEvents.length === 0 && allAppointments.length === 0 ? (
             <div className="h-48 border border-dashed border-faded/30 rounded-xl flex items-center justify-center text-faded text-center px-4">
-              Még nincs jelentkezett eseményed.
+              Még nincs naptárbejegyzésed.
             </div>
-          ) : selectedDayEvents.length === 0 ? (
+          ) : selectedDayEvents.length === 0 &&
+            selectedDayAppointments.length === 0 ? (
             <div className="h-48 border border-dashed border-faded/30 rounded-xl flex items-center justify-center text-faded text-center px-4">
-              Erre a napra nincs eseményed.
+              Erre a napra nincs bejegyzésed.
             </div>
           ) : (
             <div className="space-y-3 max-h-[550px] overflow-y-auto pr-1">
+              {selectedDayAppointments.map((appointment) => (
+                <div
+                  key={`appointment-${appointment.id}`}
+                  className="w-full border border-faded/20 rounded-xl p-3 text-left bg-secondary/30"
+                >
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <h4 className="font-semibold text-lg leading-tight">
+                      {appointment.title}
+                    </h4>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span
+                        className={cn(
+                          "text-xs px-2 py-1 rounded-full",
+                          appointmentStatusClass[appointment.status],
+                        )}
+                      >
+                        {appointmentStatusLabel[appointment.status]}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1 text-sm text-faded">
+                    <div className="flex items-center gap-2">
+                      <Clock3 size={14} />
+                      <span>
+                        {formatTimeRange(
+                          appointment.startTime,
+                          appointment.endTime,
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Ticket size={14} />
+                      <span>Tanár: {appointment.teacherName}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
               {selectedDayEvents.map((event) => (
                 <button
                   key={`${event.id}-${event.date.toISOString()}`}

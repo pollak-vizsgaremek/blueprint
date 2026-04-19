@@ -15,7 +15,7 @@ export interface User {
   id: number;
   name: string;
   email: string;
-  role: "admin" | "user";
+  role: "admin" | "user" | "teacher";
   dateOfBirth: string | null; // ISO date string format (YYYY-MM-DD)
   createdAt?: string; // ISO datetime string
   updatedAt?: string; // ISO datetime string
@@ -33,10 +33,70 @@ export interface LoginResponse {
   user: {
     name: string;
     email: string;
-    role: "admin" | "user";
+    role: "admin" | "user" | "teacher";
     dateOfBirth: string | null;
   };
   token: string;
+}
+
+// Appointment-related types
+export interface TeacherOption {
+  id: number;
+  name: string;
+  email: string;
+  role: "teacher";
+}
+
+export interface Appointment {
+  id: number;
+  teacherId: number;
+  studentId: number;
+  title: string;
+  purpose: string | null;
+  status: "pending" | "confirmed" | "cancelled" | "completed";
+  startTime: string;
+  endTime: string;
+  createdAt: string;
+  updatedAt: string;
+  teacher: TeacherOption | null;
+}
+
+export interface GetAppointmentsResponse {
+  message: string;
+  appointments: Appointment[];
+}
+
+export interface GetTeachersResponse {
+  message: string;
+  teachers: TeacherOption[];
+}
+
+export interface CreateAppointmentRequest {
+  teacherId: number;
+  title: string;
+  startTime: string;
+  endTime: string;
+}
+
+export interface UpdateAppointmentRequest {
+  teacherId?: number;
+  title?: string;
+  startTime?: string;
+  endTime?: string;
+}
+
+export interface CreateAppointmentResponse {
+  message: string;
+  appointment: Appointment;
+}
+
+export interface UpdateAppointmentResponse {
+  message: string;
+  appointment: Appointment;
+}
+
+export interface DeleteAppointmentResponse {
+  message: string;
 }
 
 export interface CreateUserRequest {
@@ -208,6 +268,31 @@ export interface CreateEventCommentResponse {
 
 export interface DeleteEventCommentResponse {
   message: string;
+}
+
+export interface NewsAuthor {
+  id: number;
+  name: string;
+}
+
+export interface NewsItem {
+  id: number;
+  title: string;
+  content: string;
+  imageUrl: string | null;
+  publishedAt: string | null;
+  createdAt: string;
+  author: NewsAuthor | null;
+}
+
+export interface GetLatestPublishedNewsResponse {
+  message: string;
+  news: NewsItem | null;
+}
+
+export interface GetPublishedNewsResponse {
+  message: string;
+  news: NewsItem[];
 }
 
 // API endpoint response types

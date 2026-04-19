@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/Separator";
 import {
   Bell,
   Calendar,
+  Newspaper,
   LogOut,
   Menu,
   Pen,
@@ -168,6 +169,19 @@ export const Header = () => {
                     >
                       <Calendar className="mr-2 h-4 w-4" />
                       Naptár
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start"
+                    size="sm"
+                  >
+                    <Link
+                      href="/app/news"
+                      className="flex w-full justify-start items-center gap-1"
+                    >
+                      <Newspaper className="mr-2 h-4 w-4" />
+                      Hírek
                     </Link>
                   </Button>
                   <Button

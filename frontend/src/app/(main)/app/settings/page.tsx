@@ -186,7 +186,7 @@ const SettingsPage = () => {
       </div>
 
       <section className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-        <div className="card-box h-auto p-5 min-w-0">
+        <div className="card-box h-auto! p-5 min-w-0">
           <div className="flex items-center gap-2 mb-4">
             <User size={18} className="text-accent" />
             <h2 className="text-xl font-semibold">Fiók</h2>
@@ -224,7 +224,7 @@ const SettingsPage = () => {
           </div>
         </div>
 
-        <div className="card-box h-auto p-5 min-w-0">
+        <div className="card-box h-auto! p-5 min-w-0">
           <div className="flex items-center gap-2 mb-4">
             <Bell size={18} className="text-accent" />
             <h2 className="text-xl font-semibold">Értesítések</h2>
@@ -241,7 +241,7 @@ const SettingsPage = () => {
           </div>
         </div>
 
-        <div className="card-box h-auto p-5 min-w-0">
+        <div className="card-box h-auto! p-5 min-w-0">
           <div className="flex items-center gap-2 mb-4">
             <CalendarDays size={18} className="text-accent" />
             <h2 className="text-xl font-semibold">Naptár és események</h2>
@@ -274,7 +274,7 @@ const SettingsPage = () => {
           </div>
         </div>
 
-        <div className="card-box h-auto p-5 min-w-0">
+        <div className="card-box h-auto! p-5 min-w-0">
           <div className="flex items-center gap-2 mb-4">
             <Eye size={18} className="text-accent" />
             <h2 className="text-xl font-semibold">Adatvédelem</h2>
@@ -294,7 +294,7 @@ const SettingsPage = () => {
           </div>
         </div>
 
-        <div className="card-box h-auto p-5 min-w-0">
+        <div className="card-box h-auto! p-5 min-w-0">
           <div className="flex items-center gap-2 mb-4">
             <Palette size={18} className="text-accent" />
             <h2 className="text-xl font-semibold">Megjelenés</h2>
@@ -336,7 +336,7 @@ const SettingsPage = () => {
           </div>
         </div>
 
-        <div className="card-box h-auto p-5 min-w-0">
+        <div className="card-box h-auto! p-5 min-w-0">
           <div className="flex items-center gap-2 mb-4">
             <Globe size={18} className="text-accent" />
             <h2 className="text-xl font-semibold">Régió</h2>
@@ -377,7 +377,7 @@ const SettingsPage = () => {
           </div>
         </div>
 
-        <div className="card-box h-auto p-5 xl:col-span-2 min-w-0">
+        <div className="card-box h-auto! p-5 xl:col-span-2 min-w-0">
           <div className="flex items-center gap-2 mb-4">
             <Lock size={18} className="text-accent" />
             <h2 className="text-xl font-semibold">Biztonság és hozzáférés</h2>
@@ -409,7 +409,7 @@ const SettingsPage = () => {
           </div>
         </div>
 
-        <div className="card-box h-auto p-5 xl:col-span-2 border-red-300/40 min-w-0">
+        <div className="card-box h-auto! p-5 xl:col-span-2 border-red-300/40 min-w-0">
           <h2 className="text-xl font-semibold text-red-700 mb-2">
             Veszélyzóna
           </h2>

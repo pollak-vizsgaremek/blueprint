@@ -12,7 +12,7 @@ export const generateToken = (user) => {
     userId: user.id,
     email: user.email,
     name: user.name,
-    role: user.role === "admin" ? "admin" : "user",
+    role: user.role,
     dateOfBirth: user.dateOfBirth
       ? user.dateOfBirth.toISOString().slice(0, 10)
       : null,
@@ -104,7 +104,7 @@ export const userLogin = async (req, res) => {
       user: {
         name: user.name,
         email: user.email,
-        role: user.role === "admin" ? "admin" : "user",
+        role: user.role,
         dateOfBirth: user.dateOfBirth
           ? user.dateOfBirth.toISOString().slice(0, 10)
           : null,
@@ -132,6 +132,33 @@ export const getCurrentUser = async (req, res) => {
       },
     });
   } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+export const getTeachers = async (req, res) => {
+  try {
+    const teachers = await prisma.user.findMany({
+      where: {
+        role: "teacher",
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+      },
+      orderBy: {
+        name: "asc",
+      },
+    });
+
+    res.json({
+      message: "Teachers retrieved successfully",
+      teachers,
+    });
+  } catch (error) {
+    console.error("Error fetching teachers:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };

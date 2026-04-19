@@ -1,15 +1,29 @@
 "use client";
-import { Event, RegistrationWithEvent } from "@/types";
+import { Appointment, GetAppointmentsResponse } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
-import Image from "next/image";
+import Link from "next/link";
+
+const statusLabelMap: Record<Appointment["status"], string> = {
+  pending: "Függőben",
+  confirmed: "Megerősítve",
+  cancelled: "Lemondva",
+  completed: "Teljesítve",
+};
+
+const statusClassMap: Record<Appointment["status"], string> = {
+  pending: "bg-amber-100 text-amber-800",
+  confirmed: "bg-emerald-100 text-emerald-800",
+  cancelled: "bg-red-100 text-red-700",
+  completed: "bg-sky-100 text-sky-700",
+};
 
 export const AppointmentsPanel = () => {
   const { data, isLoading } = useQuery({
-    queryKey: ["myevents"],
+    queryKey: ["appointments"],
     queryFn: async () => {
-      const { data } = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/events/my-registrations`,
+      const { data } = await axios.get<GetAppointmentsResponse>(
+        `${process.env.NEXT_PUBLIC_API_URL}/appointments`,
         {
           withCredentials: true,
         },
@@ -17,38 +31,72 @@ export const AppointmentsPanel = () => {
       return data;
     },
   });
+
+  const upcomingAppointments = (data?.appointments ?? [])
+    .filter(
+      (appointment) => new Date(appointment.endTime).getTime() > Date.now(),
+    )
+    .sort(
+      (first, second) =>
+        new Date(first.startTime).getTime() -
+        new Date(second.startTime).getTime(),
+    )
+    .slice(0, 4);
+
   return (
-    <div className="flex gap-2 grow w-full">
-      {isLoading
-        ? Array.from({ length: 4 }).map((_, index) => {
-            return <div key={index} className="grow bg-faded/20 rounded-xl" />;
-          })
-        : data.registrations.length > 0 &&
-          data.registrations
-            .slice(0, 4)
-            .map((registration: RegistrationWithEvent) => {
-              return (
-                <div
-                  key={registration.event.id}
-                  className="grow basis-[60px] border-faded/30 cursor-pointer border-[0.5px] rounded-xl flex flex-col group"
-                >
-                  <div className="w-full h-28 relative">
-                    <Image
-                      src={registration.event.imageUrl!}
-                      alt={registration.event.name}
-                      fill
-                      className="rounded-t-xl w-full object-center"
-                    />
-                  </div>
-                  <div className="flex justify-between p-2 items-end group-hover:bg-faded/20 transition ease-in-out group rounded-b-xl grow">
-                    <div className="">{registration.event.name}</div>
-                    <div className="">
-                      {registration.event.date.slice(0, 10)}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+    <div className="flex gap-2 grow w-full max-md:flex-col">
+      {isLoading ? (
+        Array.from({ length: 4 }).map((_, index) => {
+          return <div key={index} className="grow bg-faded/20 rounded-xl" />;
+        })
+      ) : upcomingAppointments.length > 0 ? (
+        upcomingAppointments.map((appointment) => {
+          const dateLabel = new Date(appointment.startTime).toLocaleDateString(
+            "hu-HU",
+            {
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+            },
+          );
+
+          const timeLabel = `${new Date(
+            appointment.startTime,
+          ).toLocaleTimeString("hu-HU", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })} - ${new Date(appointment.endTime).toLocaleTimeString("hu-HU", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}`;
+
+          return (
+            <Link
+              key={appointment.id}
+              href="/app/appointments"
+              className="grow basis-[60px] border-faded/30 cursor-pointer border-[0.5px] rounded-xl flex flex-col p-3 hover:bg-faded/20 transition ease-in-out"
+            >
+              <div className="text-sm text-faded mb-1">{dateLabel}</div>
+              <div className="font-medium line-clamp-2 mb-2">
+                {appointment.title || "Időpont"}
+              </div>
+              <div className="text-sm text-faded truncate mb-2">
+                Tanár: {appointment.teacher?.name ?? "Ismeretlen"}
+              </div>
+              <div className="text-xs text-faded mb-3">{timeLabel}</div>
+              <div
+                className={`text-[10px] px-2 py-1 rounded-full self-start ${statusClassMap[appointment.status]}`}
+              >
+                {statusLabelMap[appointment.status]}
+              </div>
+            </Link>
+          );
+        })
+      ) : (
+        <div className="text-faded h-full w-full flex items-center justify-center text-sm">
+          Nincs közelgő időpont.
+        </div>
+      )}
     </div>
   );
 };

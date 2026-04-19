@@ -44,7 +44,7 @@ export const AppointmentsPanel = () => {
     .slice(0, 4);
 
   return (
-    <div className="flex gap-2 grow w-full max-md:flex-col">
+    <div className="gap-2 grow w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
       {isLoading ? (
         Array.from({ length: 4 }).map((_, index) => {
           return <div key={index} className="grow bg-faded/20 rounded-xl" />;
@@ -74,7 +74,7 @@ export const AppointmentsPanel = () => {
             <Link
               key={appointment.id}
               href="/app/appointments"
-              className="grow basis-[60px] border-faded/30 cursor-pointer border-[0.5px] rounded-xl flex flex-col p-3 hover:bg-faded/20 transition ease-in-out"
+              className=" border-faded/30 cursor-pointer border-[0.5px] rounded-xl flex flex-col p-3 hover:bg-faded/20 transition ease-in-out"
             >
               <div className="text-sm text-faded mb-1">{dateLabel}</div>
               <div className="font-medium line-clamp-2 mb-2">

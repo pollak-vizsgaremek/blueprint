@@ -129,35 +129,22 @@ export const Header = () => {
                     <h4 className="text-sm font-semibold">{user?.name}</h4>
                     <p className="text-xs text-faded">{user?.email}</p>
                   </div>
+                  <div className="">
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start"
+                      size="sm"
+                    >
+                      <Link
+                        href="/app/settings"
+                        className="flex w-full justify-start items-center gap-1"
+                      >
+                        <Settings className="mr-2 size-6" />
+                      </Link>
+                    </Button>
+                  </div>
                 </div>
                 <div className="grid gap-1 px-4">
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start"
-                    size="sm"
-                  >
-                    <Link
-                      href="/app/profile"
-                      className="flex w-full justify-start items-center gap-1"
-                    >
-                      <User className="mr-2 h-4 w-4" />
-                      Profil
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start"
-                    size="sm"
-                  >
-                    <Link
-                      href="/app/settings"
-                      className="flex w-full justify-start items-center gap-1"
-                    >
-                      <Settings className="mr-2 h-4 w-4" />
-                      Beállítások
-                    </Link>
-                  </Button>
-                  <Separator className="my-1 bg-black/20" />
                   <Button
                     variant="ghost"
                     className="w-full justify-start"
@@ -200,7 +187,7 @@ export const Header = () => {
                     <Bell className="mr-2 h-4 w-4" />
                     Értesítések
                   </Button>
-                  <Separator className="my-1 bg-black/20" />
+                  <Separator className="my-1 bg-faded/20" />
                   <Button
                     variant="destructive"
                     className="w-full justify-start cursor-pointer hover:bg-red-600/20 shadow-none text-red-600"

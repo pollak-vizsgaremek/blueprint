@@ -14,7 +14,7 @@ import {
 } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import { X } from "lucide-react";
+import { ExternalLink, X } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -739,12 +739,23 @@ export const EventModal = () => {
         >
           <div className="rounded-xl w-[1000px] h-[750px] flex flex-col bg-secondary/70 backdrop-blur-xl">
             <div className="relative shrink-0 w-auto h-[300px]">
-              <button
-                className="cursor-pointer absolute top-5 right-5 z-100 bg-white/30 backdrop-blur-sm p-1 rounded-full"
-                onClick={closeModal}
-              >
-                <X size={25} />
-              </button>
+              <div className="absolute top-5 right-5 z-100 flex items-center gap-2">
+                <Link
+                  href={`/app/events/${selectedEvent?.id}/details`}
+                  prefetch
+                  className="bg-white/30 backdrop-blur-sm p-1.5 rounded-full hover:bg-white/45 transition ease-in-out"
+                  aria-label="Esemény oldal megnyitása"
+                >
+                  <ExternalLink size={22} />
+                </Link>
+                <button
+                  className="cursor-pointer bg-white/30 backdrop-blur-sm p-1 rounded-full hover:bg-white/45 transition ease-in-out"
+                  onClick={closeModal}
+                  aria-label="Bezárás"
+                >
+                  <X size={25} />
+                </button>
+              </div>
               <Image
                 src={selectedEvent!.imageUrl!}
                 alt="Event"

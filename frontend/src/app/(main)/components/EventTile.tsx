@@ -1,7 +1,9 @@
 "Use client";
 import { useModal } from "@/contexts/ModalContext";
 import { Event } from "@/types";
+import { ExternalLink } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 export const EventTile = ({ event }: { event: Event }) => {
   const { openModal } = useModal();
@@ -28,7 +30,18 @@ export const EventTile = ({ event }: { event: Event }) => {
         </div>
         <div className="flex justify-between">
           <div className="">{event.location}</div>
-          <div className="">{event.date.slice(0, 10)}</div>
+          <div className="flex items-center gap-2">
+            <div className="">{event.date.slice(0, 10)}</div>
+            <Link
+              href={`/app/events/${event.id}/details`}
+              prefetch
+              onClick={(e) => e.stopPropagation()}
+              className="p-1 rounded-md hover:bg-faded/30 transition ease-in-out"
+              aria-label="Esemény oldal megnyitása"
+            >
+              <ExternalLink size={14} />
+            </Link>
+          </div>
         </div>
       </div>
     </div>

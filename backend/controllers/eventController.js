@@ -401,6 +401,391 @@ export const getPublishedNews = async (req, res) => {
   }
 };
 
+export const getEventNews = async (req, res) => {
+  const parsedEventId = parseInt(req.params.eventId, 10);
+
+  if (Number.isNaN(parsedEventId)) {
+    return res.status(400).json({
+      error: "Invalid event ID",
+      message: "Event ID must be a number",
+    });
+  }
+
+  try {
+    const event = await prisma.event.findUnique({
+      where: { id: parsedEventId },
+      select: {
+        id: true,
+        name: true,
+        creator: true,
+      },
+    });
+
+    if (!event) {
+      return res.status(404).json({ error: "Event not found" });
+    }
+
+    const canManageNews =
+      req.user.role === "admin" || event.creator === req.user.name;
+
+    const news = await prisma.eventNews.findMany({
+      where: {
+        eventId: parsedEventId,
+        deletedAt: null,
+        ...(canManageNews ? {} : { isPublished: true }),
+      },
+      select: {
+        id: true,
+        eventId: true,
+        title: true,
+        content: true,
+        imageUrl: true,
+        isPublished: true,
+        publishedAt: true,
+        createdAt: true,
+        updatedAt: true,
+        author: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+    });
+
+    res.json({
+      message: "Event news retrieved successfully",
+      event,
+      canManageNews,
+      news,
+    });
+  } catch (error) {
+    console.error("Error fetching event news:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+export const createEventNews = async (req, res) => {
+  const parsedEventId = parseInt(req.params.eventId, 10);
+  const title = req.body?.title?.trim();
+  const content = req.body?.content?.trim();
+  const imageUrl = req.body?.imageUrl?.trim() || null;
+  const shouldPublishNow =
+    req.body?.isPublished === true || req.body?.isPublished === "true";
+
+  if (Number.isNaN(parsedEventId)) {
+    return res.status(400).json({
+      error: "Invalid event ID",
+      message: "Event ID must be a number",
+    });
+  }
+
+  if (!title) {
+    return res.status(400).json({
+      error: "Invalid title",
+      message: "Title is required",
+    });
+  }
+
+  if (!content) {
+    return res.status(400).json({
+      error: "Invalid content",
+      message: "Content is required",
+    });
+  }
+
+  try {
+    const event = await prisma.event.findUnique({
+      where: { id: parsedEventId },
+      select: {
+        id: true,
+        creator: true,
+      },
+    });
+
+    if (!event) {
+      return res.status(404).json({ error: "Event not found" });
+    }
+
+    const canManageNews =
+      req.user.role === "admin" || event.creator === req.user.name;
+
+    if (!canManageNews) {
+      return res.status(403).json({
+        error: "Access denied",
+        message: "Only the event owner can manage event news",
+      });
+    }
+
+    const createdNews = await prisma.eventNews.create({
+      data: {
+        eventId: parsedEventId,
+        authorId: req.user.id,
+        title,
+        content,
+        imageUrl,
+        isPublished: shouldPublishNow,
+        publishedAt: shouldPublishNow ? new Date() : null,
+      },
+      select: {
+        id: true,
+        eventId: true,
+        title: true,
+        content: true,
+        imageUrl: true,
+        isPublished: true,
+        publishedAt: true,
+        createdAt: true,
+        updatedAt: true,
+        author: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    res.status(201).json({
+      message: shouldPublishNow
+        ? "Event news published successfully"
+        : "Event news draft saved successfully",
+      news: createdNews,
+    });
+  } catch (error) {
+    console.error("Error creating event news:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+export const updateEventNews = async (req, res) => {
+  const parsedEventId = parseInt(req.params.eventId, 10);
+  const parsedNewsId = parseInt(req.params.newsId, 10);
+  const hasTitle = req.body?.title !== undefined;
+  const hasContent = req.body?.content !== undefined;
+  const hasImageUrl = req.body?.imageUrl !== undefined;
+  const hasIsPublished = req.body?.isPublished !== undefined;
+  const shouldPublish =
+    req.body?.isPublished === true || req.body?.isPublished === "true";
+
+  if (Number.isNaN(parsedEventId) || Number.isNaN(parsedNewsId)) {
+    return res.status(400).json({
+      error: "Invalid ID",
+      message: "Event ID and news ID must be numbers",
+    });
+  }
+
+  if (!hasTitle && !hasContent && !hasImageUrl && !hasIsPublished) {
+    return res.status(400).json({
+      error: "No valid fields to update",
+      message: "Provide at least one updatable field",
+    });
+  }
+
+  const title = hasTitle ? req.body?.title?.trim() : undefined;
+  const content = hasContent ? req.body?.content?.trim() : undefined;
+
+  if (hasTitle && !title) {
+    return res.status(400).json({
+      error: "Invalid title",
+      message: "Title cannot be empty",
+    });
+  }
+
+  if (hasContent && !content) {
+    return res.status(400).json({
+      error: "Invalid content",
+      message: "Content cannot be empty",
+    });
+  }
+
+  if (
+    hasImageUrl &&
+    req.body?.imageUrl !== null &&
+    typeof req.body?.imageUrl !== "string"
+  ) {
+    return res.status(400).json({
+      error: "Invalid imageUrl",
+      message: "imageUrl must be a string or null",
+    });
+  }
+
+  try {
+    const event = await prisma.event.findUnique({
+      where: { id: parsedEventId },
+      select: {
+        id: true,
+        creator: true,
+      },
+    });
+
+    if (!event) {
+      return res.status(404).json({ error: "Event not found" });
+    }
+
+    const canManageNews =
+      req.user.role === "admin" || event.creator === req.user.name;
+
+    if (!canManageNews) {
+      return res.status(403).json({
+        error: "Access denied",
+        message: "Only the event owner can manage event news",
+      });
+    }
+
+    const existingNews = await prisma.eventNews.findFirst({
+      where: {
+        id: parsedNewsId,
+        eventId: parsedEventId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        isPublished: true,
+        publishedAt: true,
+      },
+    });
+
+    if (!existingNews) {
+      return res.status(404).json({ error: "News not found" });
+    }
+
+    const updateData = {};
+
+    if (hasTitle) {
+      updateData.title = title;
+    }
+
+    if (hasContent) {
+      updateData.content = content;
+    }
+
+    if (hasImageUrl) {
+      if (req.body.imageUrl === null) {
+        updateData.imageUrl = null;
+      } else {
+        const normalizedImageUrl = req.body.imageUrl.trim();
+        updateData.imageUrl = normalizedImageUrl || null;
+      }
+    }
+
+    if (hasIsPublished) {
+      updateData.isPublished = shouldPublish;
+
+      if (shouldPublish) {
+        updateData.publishedAt = existingNews.isPublished
+          ? existingNews.publishedAt
+          : new Date();
+      } else {
+        updateData.publishedAt = null;
+      }
+    }
+
+    const updatedNews = await prisma.eventNews.update({
+      where: { id: parsedNewsId },
+      data: updateData,
+      select: {
+        id: true,
+        eventId: true,
+        title: true,
+        content: true,
+        imageUrl: true,
+        isPublished: true,
+        publishedAt: true,
+        createdAt: true,
+        updatedAt: true,
+        author: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    const wasPublicationOnlyUpdate =
+      !hasTitle && !hasContent && !hasImageUrl && hasIsPublished;
+
+    res.json({
+      message: wasPublicationOnlyUpdate
+        ? shouldPublish
+          ? "Event news published successfully"
+          : "Event news moved to drafts successfully"
+        : "Event news updated successfully",
+      news: updatedNews,
+    });
+  } catch (error) {
+    console.error("Error updating event news:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+export const deleteEventNews = async (req, res) => {
+  const parsedEventId = parseInt(req.params.eventId, 10);
+  const parsedNewsId = parseInt(req.params.newsId, 10);
+
+  if (Number.isNaN(parsedEventId) || Number.isNaN(parsedNewsId)) {
+    return res.status(400).json({
+      error: "Invalid ID",
+      message: "Event ID and news ID must be numbers",
+    });
+  }
+
+  try {
+    const event = await prisma.event.findUnique({
+      where: { id: parsedEventId },
+      select: {
+        id: true,
+        creator: true,
+      },
+    });
+
+    if (!event) {
+      return res.status(404).json({ error: "Event not found" });
+    }
+
+    const canManageNews =
+      req.user.role === "admin" || event.creator === req.user.name;
+
+    if (!canManageNews) {
+      return res.status(403).json({
+        error: "Access denied",
+        message: "Only the event owner can manage event news",
+      });
+    }
+
+    const existingNews = await prisma.eventNews.findFirst({
+      where: {
+        id: parsedNewsId,
+        eventId: parsedEventId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!existingNews) {
+      return res.status(404).json({ error: "News not found" });
+    }
+
+    await prisma.eventNews.update({
+      where: { id: parsedNewsId },
+      data: {
+        deletedAt: new Date(),
+      },
+    });
+
+    res.json({
+      message: "Event news deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting event news:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 // Register user for an event
 export const registerForEvent = async (req, res) => {
   const { eventId } = req.params;

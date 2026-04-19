@@ -295,6 +295,47 @@ export interface GetPublishedNewsResponse {
   news: NewsItem[];
 }
 
+export interface EventNewsItem {
+  id: number;
+  eventId: number;
+  title: string;
+  content: string;
+  imageUrl: string | null;
+  isPublished: boolean;
+  publishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  author: {
+    id: number;
+    name: string;
+  } | null;
+}
+
+export interface GetEventNewsResponse {
+  message: string;
+  event: {
+    id: number;
+    name: string;
+    creator: string;
+  };
+  canManageNews: boolean;
+  news: EventNewsItem[];
+}
+
+export interface CreateEventNewsResponse {
+  message: string;
+  news: EventNewsItem;
+}
+
+export interface UpdateEventNewsResponse {
+  message: string;
+  news: EventNewsItem;
+}
+
+export interface DeleteEventNewsResponse {
+  message: string;
+}
+
 // API endpoint response types
 export type GetAllEventsResponse = EventWithRegistrationInfo[];
 export type GetAllUsersResponse = User[];

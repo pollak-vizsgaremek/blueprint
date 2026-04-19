@@ -1,6 +1,9 @@
 import express from "express";
 import {
+  createEventNews,
+  deleteEventNews,
   getAllEvents,
+  getEventNews,
   getPublishedNews,
   getLatestPublishedNews,
   registerForEvent,
@@ -10,6 +13,7 @@ import {
   getEventComments,
   createEventComment,
   deleteEventComment,
+  updateEventNews,
 } from "../controllers/eventController.js";
 import { authenticateToken } from "../middleware/auth.js";
 
@@ -23,6 +27,18 @@ router.get("/news/latest", authenticateToken, getLatestPublishedNews);
 
 // GET /events/news - Get all published news items
 router.get("/news", authenticateToken, getPublishedNews);
+
+// GET /events/:eventId/news - Get event specific news (owner can see drafts)
+router.get("/:eventId/news", authenticateToken, getEventNews);
+
+// POST /events/:eventId/news - Create event news (owner/admin only)
+router.post("/:eventId/news", authenticateToken, createEventNews);
+
+// PUT /events/:eventId/news/:newsId - Publish/unpublish event news (owner/admin only)
+router.put("/:eventId/news/:newsId", authenticateToken, updateEventNews);
+
+// DELETE /events/:eventId/news/:newsId - Delete event news (owner/admin only)
+router.delete("/:eventId/news/:newsId", authenticateToken, deleteEventNews);
 
 // GET /events/my-registrations - Get user's event registrations (requires authentication)
 router.get("/my-registrations", authenticateToken, getUserEventRegistrations);

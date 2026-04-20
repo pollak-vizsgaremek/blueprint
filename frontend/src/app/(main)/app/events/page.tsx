@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { Suspense } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
+import { isReducedMotionEnabled } from "@/lib/motion";
 
 const EventsContent = () => {
   const searchParams = useSearchParams();
@@ -32,11 +33,27 @@ const EventsContent = () => {
   const filter = searchParams.get("f") ?? "all";
 
   useGSAP(() => {
-    gsap.from(".filter", { y: -300, duration: 1, delay: 0, ease: "expo.in" });
+    if (isReducedMotionEnabled()) {
+      return;
+    }
+
+    gsap.from(".filter", {
+      scale: 0.9,
+      opacity: 0,
+      delay: 0.1,
+      ease: "expo.in",
+      duration: 0.5,
+    });
   }, []);
   return (
-    <main className="w-7/8 m-auto mb-50">
-      <div className="flex filter justify-between border-b-[1px] border-slate-400 pb-1">
+    <main className="w-7/8 m-auto min-h-screen pt-24 mb-50">
+      <div className="mb-6">
+        <h1 className="text-3xl font-semibold">Események</h1>
+        <p className="text-faded mt-1">
+          Foglalj időpontot tanárral, és kezeld a meglévő bejegyzéseidet.
+        </p>
+      </div>
+      <div className="flex filter justify-between border-b-[1px] border-faded/40 pb-1">
         <div className="flex gap-1 text-xl">
           <Link
             href={`/app/events?v=${view}&f=all`}
@@ -109,7 +126,9 @@ const EventsContent = () => {
         </div>
       </div>
       {isLoading ? (
-        <Spinner />
+        <div className="flex justify-center items-center h-screen w-full">
+          <Spinner />
+        </div>
       ) : view === "tiles" ? (
         <EventTiles events={events} filter={filter} />
       ) : (
@@ -121,7 +140,13 @@ const EventsContent = () => {
 
 const EventsPage = () => {
   return (
-    <Suspense fallback={<Spinner />}>
+    <Suspense
+      fallback={
+        <div className="flex justify-center items-center h-screen w-full">
+          <Spinner />
+        </div>
+      }
+    >
       <EventsContent />
     </Suspense>
   );

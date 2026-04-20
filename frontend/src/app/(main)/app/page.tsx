@@ -3,27 +3,46 @@ import { NotifPanel } from "../components/panels/NotifPanel";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { useAuth } from "@/contexts/AuthContext";
+import { isReducedMotionEnabled } from "@/lib/motion";
 import { EventsPanel } from "../components/panels/EventsPanel";
 import { NewsPanel } from "../components/panels/NewsPanel";
 import { CalendarPanel } from "../components/panels/CalendarPanel";
 import { AppointmentsPanel } from "../components/panels/AppointmentsPanel";
 import { LogOut, Settings, User } from "lucide-react";
+import Link from "next/link";
 
 const DashboardPage = () => {
   const { user, logout } = useAuth();
   useGSAP(() => {
-    let lt = gsap.timeline();
-    lt.from("#name", { x: -500, ease: "expo.in", duration: 1 });
-    lt.from("#box", {
-      scale: 0,
-      duration: 1,
-      ease: "expo.inOut",
+    if (isReducedMotionEnabled()) {
+      return;
+    }
+
+    gsap.from("#name", {
+      scale: 0.9,
+      opacity: 0,
+      delay: 0.1,
+      ease: "expo.in",
+      duration: 0.5,
     });
-    lt.from("#icons", { y: -100, ease: "expo.in", duration: 1, opacity: 0 });
+    gsap.from("#box", {
+      scale: 0.9,
+      opacity: 0,
+      delay: 0.1,
+      ease: "expo.in",
+      duration: 0.5,
+    });
+    gsap.from("#icons", {
+      scale: 0.9,
+      opacity: 0,
+      delay: 0.1,
+      ease: "expo.in",
+      duration: 0.5,
+    });
   }, []);
 
   return (
-    <main className="w-7/8 m-auto mb-96">
+    <main className="w-7/8 pt-30 m-auto h-screen">
       <div className="text-3xl max-md:text-2xl mb-8" id="name">
         Szép napot, <span className="font-bold text-accent">{user?.name}</span>
       </div>
@@ -52,15 +71,19 @@ const DashboardPage = () => {
         </div>
       </div>
       <div className="w-full gap-3 flex justify-end mt-5" id="icons">
-        <button className="bg-secondary/50 py-2 px-3 rounded-xl border-[1px] border-faded transition hover:shadow-lg shadow-md shadow-black/20 ease-in-out hover:bg-faded/20 cursor-pointer">
-          <User />
-        </button>
-        <button className="bg-secondary/50 py-2 px-3 rounded-xl border-[1px] border-faded transition hover:shadow-lg shadow-md shadow-black/20 ease-in-out hover:bg-faded/20 cursor-pointer">
-          <Settings />
+        <Link href="/app/profile">
+          <button className="bg-secondary/40 backdrop-blur-xl py-2 px-3 rounded-xl border-[0.5px] border-faded/10 transition ease-in-out hover:bg-faded/40 cursor-pointer">
+            <User />
+          </button>
+        </Link>
+        <button className="bg-secondary/40 backdrop-blur-xl py-2 px-3 rounded-xl border-[0.5px] border-faded/10 transition ease-in-out hover:bg-faded/40 cursor-pointer">
+          <Link href="/app/settings">
+            <Settings />
+          </Link>
         </button>
         <button
           onClick={logout}
-          className="flex gap-2 justify-center items-center text-red-500 bg-secondary/50 py-2 px-3 rounded-xl border-[1px] border-faded transition hover:shadow-lg shadow-md shadow-black/20 ease-in-out hover:bg-red-100 cursor-pointer"
+          className="flex gap-2 justify-center items-center text-red-500 bg-secondary/40 backdrop-blur-xl py-2 px-3 rounded-xl border-[0.5px] border-faded/10 transition ease-in-out hover:bg-red-100 cursor-pointer"
         >
           <LogOut />
           Kijelentkezés

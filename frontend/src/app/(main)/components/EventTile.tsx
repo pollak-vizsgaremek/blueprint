@@ -1,14 +1,16 @@
 "Use client";
 import { useModal } from "@/contexts/ModalContext";
 import { Event } from "@/types";
+import { ExternalLink } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 export const EventTile = ({ event }: { event: Event }) => {
   const { openModal } = useModal();
   return (
     <div
       onClick={() => openModal(event)}
-      className="w-80 h-80 max-w-[600px] grow basis-[320px] shrink-0 cursor-pointer flex flex-col hover:shadow-md hover:shadow-gray-500 transition rounded-2xl"
+      className="h-80 cursor-pointer flex flex-col hover:shadow-md hover:shadow-gray-500 transition rounded-2xl"
     >
       <div className="h-[60%] w-full relative">
         <Image
@@ -19,7 +21,7 @@ export const EventTile = ({ event }: { event: Event }) => {
           className="rounded-t-2xl block object-center"
         />
       </div>
-      <div className="h-[40%] bg-secondary/50 border-[1px] border-black/20 rounded-b-2xl flex flex-col justify-between p-2">
+      <div className="h-[40%] bg-secondary/40 backdrop-blur-xl border-[0.5px] border-faded/10 rounded-b-2xl flex flex-col justify-between p-2">
         <div className="">
           <div className="">{event.name}</div>
           <div className="text-slate-500">
@@ -28,7 +30,18 @@ export const EventTile = ({ event }: { event: Event }) => {
         </div>
         <div className="flex justify-between">
           <div className="">{event.location}</div>
-          <div className="">{event.date.slice(0, 10)}</div>
+          <div className="flex items-center gap-2">
+            <div className="">{event.date.slice(0, 10)}</div>
+            <Link
+              href={`/app/events/${event.id}/details`}
+              prefetch
+              onClick={(e) => e.stopPropagation()}
+              className="p-1 rounded-md hover:bg-faded/30 transition ease-in-out"
+              aria-label="Esemény oldal megnyitása"
+            >
+              <ExternalLink size={14} />
+            </Link>
+          </div>
         </div>
       </div>
     </div>

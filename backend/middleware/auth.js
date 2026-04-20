@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import prisma from "../config/database.js";
 
 const JWT_SECRET =
   process.env.JWT_SECRET ||
@@ -24,13 +25,28 @@ export const authenticateToken = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    // Use user info from JWT payload (no database query needed)
+    const dbUser = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: {
+        id: true,
+        role: true,
+      },
+    });
+
+    if (!dbUser) {
+      return res.status(401).json({
+        error: "Access denied",
+        message: "User not found",
+      });
+    }
+
+    // Use JWT payload plus current role from database for up-to-date authorization
     const user = {
       id: decoded.userId,
       email: decoded.email,
       name: decoded.name,
-      role: decoded.role,
-      isAdmin: decoded.role === "admin",
+      role: dbUser.role,
+      isAdmin: dbUser.role === "admin",
       dateOfBirth: decoded.dateOfBirth,
     };
 
@@ -81,8 +97,23 @@ export const authenticateAdminToken = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
 
+    const dbUser = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: {
+        id: true,
+        role: true,
+      },
+    });
+
+    if (!dbUser) {
+      return res.status(401).json({
+        error: "Access denied",
+        message: "User not found",
+      });
+    }
+
     // Check if user is admin
-    if (decoded.role !== "admin") {
+    if (dbUser.role !== "admin") {
       return res.status(403).json({
         error: "Access denied",
         message: "Admin privileges required",
@@ -94,8 +125,8 @@ export const authenticateAdminToken = async (req, res, next) => {
       id: decoded.userId,
       email: decoded.email,
       name: decoded.name,
-      role: decoded.role,
-      isAdmin: decoded.role === "admin",
+      role: dbUser.role,
+      isAdmin: dbUser.role === "admin",
       dateOfBirth: decoded.dateOfBirth,
     };
 

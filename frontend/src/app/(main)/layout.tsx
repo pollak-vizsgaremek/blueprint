@@ -16,11 +16,9 @@ export default function RootLayout({
 }>) {
   return (
     <ModalProvider>
-      <div className="pt-36">
-        <Header />
-        {children}
-        <Footer />
-      </div>
+      <Header />
+      {children}
+      <Footer />
       <EventModal />
     </ModalProvider>
   );

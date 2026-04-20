@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/Separator";
 import {
   Bell,
   Calendar,
+  Newspaper,
   LogOut,
   Menu,
   Pen,
@@ -22,6 +23,7 @@ import {
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { isReducedMotionEnabled } from "@/lib/motion";
 const roboto = Roboto_Mono({
   subsets: ["latin"],
 });
@@ -34,11 +36,15 @@ export const Header = () => {
   const path = usePathname();
   const { user, logout } = useAuth();
   useGSAP(() => {
+    if (isReducedMotionEnabled()) {
+      return;
+    }
+
     gsap.from(".header", {
       y: -100,
       scale: 0.9,
       ease: "expo.in",
-      duration: 0.9,
+      duration: 0.6,
     });
   }, []);
   return (
@@ -56,22 +62,22 @@ export const Header = () => {
       {isMenuOpen && (
         <div className="w-2/10 h-screen fixed z-[1000] left-0 top-0 bg-black/40"></div>
       )}
-      <div className="fixed top-5 w-full z-50 header">
-        <header className="h-20 px-10 max-md:px-5 py-2 flex justify-between items-center bg-secondary/50 backdrop-blur-lg w-9/10 hover:bg-secondary transition ease-in-out shadow-sm shadow-accent/30 hover:shadow-lg rounded-2xl m-auto">
+      <div className="mt-5 w-full header">
+        <header className="h-20 max-md:px-5 py-2 flex justify-between items-center w-9/10 transition ease-in-out  rounded-2xl m-auto">
           <Link href="/">
             <div className="flex items-center select-none gap-3 text-2xl hover:text-accent hover:scale-90 transition ease-in-out">
               <Image src="/blueprint.png" alt="Logo" width={50} height={50} />
               <div className={roboto.className}>Blueprint</div>
             </div>
           </Link>
-          <div className="flex gap-5 items-center relative max-md:hidden justify-center text-xl *:hover:text-faded *:hover:scale-90 *:transition *:ease-in-out">
+          <div className="flex gap-5 items-center relative max-md:hidden -translate-x-15 justify-center text-xl *:hover:text-faded *:hover:scale-90 *:transition *:ease-in-out">
             <div
               className={cn(
                 "bg-accent h-[2px] absolute bottom-0 transition left-0 ease-in-out",
                 {
                   "w-[70px] translate-x-[0]": path === "/app",
-                  "w-[101px] translate-x-[87px]": path === "/app/events",
-                  "w-[90px] translate-x-[209px]": path === "/app/appointments",
+                  "w-[111px] translate-x-[87px]": path === "/app/events",
+                  "w-[105px] translate-x-[212px]": path === "/app/appointments",
                 },
               )}
             ></div>
@@ -123,6 +129,20 @@ export const Header = () => {
                     <h4 className="text-sm font-semibold">{user?.name}</h4>
                     <p className="text-xs text-faded">{user?.email}</p>
                   </div>
+                  <div className="">
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start"
+                      size="sm"
+                    >
+                      <Link
+                        href="/app/settings"
+                        className="flex w-full justify-start items-center gap-1"
+                      >
+                        <Settings className="mr-2 size-6" />
+                      </Link>
+                    </Button>
+                  </div>
                 </div>
                 <div className="grid gap-1 px-4">
                   <Button
@@ -131,11 +151,11 @@ export const Header = () => {
                     size="sm"
                   >
                     <Link
-                      href="/app/profile"
+                      href="/app/calendar"
                       className="flex w-full justify-start items-center gap-1"
                     >
-                      <User className="mr-2 h-4 w-4" />
-                      Profil
+                      <Calendar className="mr-2 h-4 w-4" />
+                      Naptár
                     </Link>
                   </Button>
                   <Button
@@ -143,17 +163,13 @@ export const Header = () => {
                     className="w-full justify-start"
                     size="sm"
                   >
-                    <Settings className="mr-2 h-4 w-4" />
-                    Beállítások
-                  </Button>
-                  <Separator className="my-1 bg-black/20" />
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start"
-                    size="sm"
-                  >
-                    <Calendar className="mr-2 h-4 w-4" />
-                    Naptár
+                    <Link
+                      href="/app/news"
+                      className="flex w-full justify-start items-center gap-1"
+                    >
+                      <Newspaper className="mr-2 h-4 w-4" />
+                      Hírek
+                    </Link>
                   </Button>
                   <Button
                     variant="ghost"
@@ -171,7 +187,7 @@ export const Header = () => {
                     <Bell className="mr-2 h-4 w-4" />
                     Értesítések
                   </Button>
-                  <Separator className="my-1 bg-black/20" />
+                  <Separator className="my-1 bg-faded/20" />
                   <Button
                     variant="destructive"
                     className="w-full justify-start cursor-pointer hover:bg-red-600/20 shadow-none text-red-600"

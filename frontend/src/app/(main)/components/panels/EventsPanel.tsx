@@ -1,6 +1,6 @@
 "use client";
 import { useModal } from "@/contexts/ModalContext";
-import { Event, RegistrationWithEvent } from "@/types";
+import { EventWithRegistrationInfo, RegistrationWithEvent } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import Image from "next/image";
@@ -20,7 +20,7 @@ export const EventsPanel = () => {
     },
   });
   return (
-    <div className="flex gap-2 grow w-full">
+    <div className="gap-2 grow w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
       {isLoading
         ? Array.from({ length: 4 }).map((_, index) => {
             return <div key={index} className="grow bg-faded/20 rounded-xl" />;
@@ -29,11 +29,30 @@ export const EventsPanel = () => {
           data.registrations
             .slice(0, 4)
             .map((registration: RegistrationWithEvent) => {
+              const eventForModal: EventWithRegistrationInfo = {
+                ...registration.event,
+                registrationCount: 0,
+                userRegistration: {
+                  id: registration.id,
+                  registeredAt: registration.registeredAt,
+                  status: registration.status,
+                },
+                isUserRegistered: registration.status === "registered",
+                isFull: false,
+              };
+
+              if (
+                registration.event.date &&
+                new Date(registration.event.date).getTime() < Date.now()
+              ) {
+                return null;
+              }
+
               return (
                 <div
-                  onClick={() => openModal(registration.event as Event)}
+                  onClick={() => openModal(eventForModal)}
                   key={registration.event.id}
-                  className="grow basis-[60px] border-faded border-[1px] rounded-xl flex flex-col group"
+                  className="h-45 border-faded/30 cursor-pointer border-[0.5px] rounded-xl flex flex-col group"
                 >
                   <div className="w-full h-28 relative">
                     <Image
@@ -43,7 +62,7 @@ export const EventsPanel = () => {
                       className="rounded-t-xl w-full object-center"
                     />
                   </div>
-                  <div className="flex justify-between p-2 items-end group-hover:bg-faded/20 transition ease-in-out group rounded-b-xl grow">
+                  <div className="flex flex-col justify-between p-2 items-start group-hover:bg-faded/20 transition ease-in-out group rounded-b-xl grow">
                     <div className="">{registration.event.name}</div>
                     <div className="">
                       {registration.event.date.slice(0, 10)}

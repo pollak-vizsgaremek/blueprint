@@ -110,18 +110,30 @@ backend/
    MINIO_BUCKET="blueprint"
    ```
 
+# AI Comment Verification (optional)
+
+AI_VERIFICATION_API_KEY=""
+AI_VERIFICATION_MODEL="gemini-2.0-flash"
+AI_MODERATION_LOG_LEVEL="verbose"
+
+# Optional override
+
+# AI_VERIFICATION_ENDPOINT="https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+
+````
+
 4. **Set up the database**
 
-   ```bash
-   # Generate Prisma client
-   npx prisma generate
+```bash
+# Generate Prisma client
+npx prisma generate
 
-   # Run database migrations
-   npx prisma migrate deploy
+# Run database migrations
+npx prisma migrate deploy
 
-   # (Optional) Seed the database
-   npx prisma db seed
-   ```
+# (Optional) Seed the database
+npx prisma db seed
+````
 
 5. **Set up MinIO Server**
 
@@ -263,7 +275,6 @@ Authorization: Bearer <your-jwt-token>
 #### Admin-Only Routes (Admin Authentication Required)
 
 - **POST** `/admin/events` - Create a new event with optional image upload (admin only)
-
   - Supports multipart/form-data for image upload
   - Automatically handles MinIO storage and URL generation
 
@@ -279,7 +290,6 @@ Authorization: Bearer <your-jwt-token>
   ```
 
 - **PUT** `/admin/events/:eventId` - Update an existing event with optional image upload (admin only)
-
   - Supports multipart/form-data for image replacement
   - Automatically removes old images from MinIO when replaced
 
@@ -336,17 +346,21 @@ The backend uses MinIO for secure file storage with the following features:
 
 ## Environment Variables
 
-| Variable           | Description                | Default   |
-| ------------------ | -------------------------- | --------- |
-| `DATABASE_URL`     | MySQL connection string    | Required  |
-| `JWT_SECRET`       | Secret key for JWT signing | Required  |
-| `PORT`             | Server port                | 8000      |
-| `MINIO_ENDPOINT`   | MinIO server endpoint      | localhost |
-| `MINIO_PORT`       | MinIO server port          | 9000      |
-| `MINIO_USE_SSL`    | Enable SSL for MinIO       | false     |
-| `MINIO_ACCESS_KEY` | MinIO access key           | blueprint |
-| `MINIO_SECRET_KEY` | MinIO secret key           | blueprint |
-| `MINIO_BUCKET`     | MinIO bucket name          | blueprint |
+| Variable                   | Description                        | Default            |
+| -------------------------- | ---------------------------------- | ------------------ |
+| `DATABASE_URL`             | MySQL connection string            | Required           |
+| `JWT_SECRET`               | Secret key for JWT signing         | Required           |
+| `PORT`                     | Server port                        | 8000               |
+| `MINIO_ENDPOINT`           | MinIO server endpoint              | localhost          |
+| `MINIO_PORT`               | MinIO server port                  | 9000               |
+| `MINIO_USE_SSL`            | Enable SSL for MinIO               | false              |
+| `MINIO_ACCESS_KEY`         | MinIO access key                   | blueprint          |
+| `MINIO_SECRET_KEY`         | MinIO secret key                   | blueprint          |
+| `MINIO_BUCKET`             | MinIO bucket name                  | blueprint          |
+| `AI_VERIFICATION_API_KEY`  | API key for comment verification   | Optional           |
+| `AI_VERIFICATION_MODEL`    | Gemini model used for verification | gemini-2.0-flash   |
+| `AI_VERIFICATION_ENDPOINT` | Optional custom Gemini endpoint    | Derived from model |
+| `AI_MODERATION_LOG_LEVEL`  | Moderation logging verbosity       | verbose            |
 
 ## Authorization & Security
 

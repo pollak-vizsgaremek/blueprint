@@ -15,7 +15,7 @@ export interface User {
   id: number;
   name: string;
   email: string;
-  role: "admin" | "user";
+  role: "admin" | "user" | "teacher";
   dateOfBirth: string | null; // ISO date string format (YYYY-MM-DD)
   createdAt?: string; // ISO datetime string
   updatedAt?: string; // ISO datetime string
@@ -33,10 +33,70 @@ export interface LoginResponse {
   user: {
     name: string;
     email: string;
-    role: "admin" | "user";
+    role: "admin" | "user" | "teacher";
     dateOfBirth: string | null;
   };
   token: string;
+}
+
+// Appointment-related types
+export interface TeacherOption {
+  id: number;
+  name: string;
+  email: string;
+  role: "teacher";
+}
+
+export interface Appointment {
+  id: number;
+  teacherId: number;
+  studentId: number;
+  title: string;
+  purpose: string | null;
+  status: "pending" | "confirmed" | "cancelled" | "completed";
+  startTime: string;
+  endTime: string;
+  createdAt: string;
+  updatedAt: string;
+  teacher: TeacherOption | null;
+}
+
+export interface GetAppointmentsResponse {
+  message: string;
+  appointments: Appointment[];
+}
+
+export interface GetTeachersResponse {
+  message: string;
+  teachers: TeacherOption[];
+}
+
+export interface CreateAppointmentRequest {
+  teacherId: number;
+  title: string;
+  startTime: string;
+  endTime: string;
+}
+
+export interface UpdateAppointmentRequest {
+  teacherId?: number;
+  title?: string;
+  startTime?: string;
+  endTime?: string;
+}
+
+export interface CreateAppointmentResponse {
+  message: string;
+  appointment: Appointment;
+}
+
+export interface UpdateAppointmentResponse {
+  message: string;
+  appointment: Appointment;
+}
+
+export interface DeleteAppointmentResponse {
+  message: string;
 }
 
 export interface CreateUserRequest {
@@ -126,6 +186,7 @@ export interface RegistrationWithEvent extends Omit<Registration, "userId"> {
     creator: string;
     location: string;
     date: string; // ISO datetime string
+    maxParticipants: number | null;
     createdAt: string; // ISO datetime string
   };
 }
@@ -164,6 +225,115 @@ export interface GetEventRegistrationsResponse {
     name: string;
   };
   registrations: RegistrationWithUser[];
+}
+
+// Event comments
+export interface EventComment {
+  id: number;
+  content: string;
+  isVerified: boolean;
+  deletedAt: string | null;
+  isDeleted: boolean;
+  canDelete: boolean;
+  createdAt: string;
+  updatedAt: string;
+  user: {
+    id: number;
+    name: string;
+  };
+}
+
+export interface EventCommentEventInfo {
+  id: number;
+  name: string;
+  date: string;
+  location: string;
+}
+
+export interface GetEventCommentsResponse {
+  message: string;
+  event: EventCommentEventInfo;
+  comments: EventComment[];
+}
+
+export interface CreateEventCommentResponse {
+  message: string;
+  comment: EventComment;
+  verification?: {
+    isVerified: boolean;
+    reason: string;
+    source: "ai" | "fallback" | "skipped" | string;
+  };
+}
+
+export interface DeleteEventCommentResponse {
+  message: string;
+}
+
+export interface NewsAuthor {
+  id: number;
+  name: string;
+}
+
+export interface NewsItem {
+  id: number;
+  title: string;
+  content: string;
+  imageUrl: string | null;
+  publishedAt: string | null;
+  createdAt: string;
+  author: NewsAuthor | null;
+}
+
+export interface GetLatestPublishedNewsResponse {
+  message: string;
+  news: NewsItem | null;
+}
+
+export interface GetPublishedNewsResponse {
+  message: string;
+  news: NewsItem[];
+}
+
+export interface EventNewsItem {
+  id: number;
+  eventId: number;
+  title: string;
+  content: string;
+  imageUrl: string | null;
+  isPublished: boolean;
+  publishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  author: {
+    id: number;
+    name: string;
+  } | null;
+}
+
+export interface GetEventNewsResponse {
+  message: string;
+  event: {
+    id: number;
+    name: string;
+    creator: string;
+  };
+  canManageNews: boolean;
+  news: EventNewsItem[];
+}
+
+export interface CreateEventNewsResponse {
+  message: string;
+  news: EventNewsItem;
+}
+
+export interface UpdateEventNewsResponse {
+  message: string;
+  news: EventNewsItem;
+}
+
+export interface DeleteEventNewsResponse {
+  message: string;
 }
 
 // API endpoint response types

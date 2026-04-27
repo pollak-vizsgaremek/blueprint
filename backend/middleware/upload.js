@@ -5,12 +5,14 @@ import path from "path";
 
 // Configuration variables
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB limit for event images
-const PUBLIC_URL = process.env.PUBLIC_URL || "http://localhost";
+const PUBLIC_URL =
+  process.env.MINIO_PUBLIC_URL || "https://blueprint-s3.gemes.eu";
 
-// Helper function to generate permanent public URLs via Nginx proxy
+// Helper function to generate permanent public URLs for uploaded images
 const generatePermanentUrl = (objectName) => {
-  // Return URL that will be proxied through Nginx /s3/ endpoint
-  return `${PUBLIC_URL}/s3/${BUCKET_NAME}/${objectName}`;
+  // Normalize trailing slash to avoid accidental double slashes in output URLs
+  const normalizedPublicUrl = PUBLIC_URL.replace(/\/+$/, "");
+  return `${normalizedPublicUrl}/${BUCKET_NAME}/${objectName}`;
 };
 
 // Configure multer for memory storage
@@ -52,7 +54,7 @@ export const uploadEventImageToMinio = async (req, res, next) => {
       req.file.size,
       {
         "Content-Type": req.file.mimetype,
-      }
+      },
     );
 
     // Generate a permanent direct URL

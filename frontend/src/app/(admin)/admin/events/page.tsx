@@ -1,437 +1,563 @@
 "use client";
 
+import { Spinner } from "@/components/Spinner";
+import { EventWithRegistrationInfo, GetAllEventsResponse } from "@/types";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
+import {
+  CalendarDays,
+  Eye,
+  MapPin,
+  Pencil,
+  Plus,
+  Trash2,
+  Users,
+} from "lucide-react";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import Link from "next/link";
+import { useMemo, useState } from "react";
+import { AdminFormModal } from "../../components/AdminFormModal";
+import { AdminPageHeader } from "../../components/AdminPageHeader";
+import { AdminStatusBadge } from "../../components/AdminStatusBadge";
+import {
+  formatDateTime,
+  toLocalInputValue,
+} from "../../components/adminFormat";
 
-interface Event {
-  id: number;
+type EventFormState = {
   name: string;
   description: string;
   location: string;
   date: string;
-  maxParticipants: number | null;
-  imageUrl: string | null;
-  creator: string;
-  registrationCount: number;
-}
+  maxParticipants: string;
+};
 
-const EventPage = () => {
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    location: "",
-    date: "",
-    maxParticipants: "",
-  });
+const initialFormState: EventFormState = {
+  name: "",
+  description: "",
+  location: "",
+  date: "",
+  maxParticipants: "",
+};
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (axios.isAxiosError(error)) {
+    return (
+      error.response?.data?.message ?? error.response?.data?.error ?? fallback
+    );
+  }
+
+  return fallback;
+};
+
+const EventsAdminPage = () => {
+  const queryClient = useQueryClient();
+  const [form, setForm] = useState<EventFormState>(initialFormState);
   const [image, setImage] = useState<File | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingEvent, setEditingEvent] =
+    useState<EventWithRegistrationInfo | null>(null);
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
   } | null>(null);
-  const [events, setEvents] = useState<Event[]>([]);
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isLoadingEvents, setIsLoadingEvents] = useState(true);
+  const [filter, setFilter] = useState("all");
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null;
-    setImage(file);
-  };
-
-  // Fetch all events
-  const fetchEvents = async () => {
-    try {
-      setIsLoadingEvents(true);
-      const response = await axios.get(
+  const {
+    data: events = [],
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["admin-events"],
+    queryFn: async () => {
+      const { data } = await axios.get<GetAllEventsResponse>(
         `${process.env.NEXT_PUBLIC_API_URL}/events`,
         {
-          withCredentials: true, // Include cookies in request
-        }
+          withCredentials: true,
+        },
       );
 
-      if (response.status !== 200) {
-        throw new Error("Failed to fetch events");
-      }
+      return data;
+    },
+  });
 
-      const eventsData = response.data;
-      setEvents(eventsData);
-    } catch (error) {
-      console.error("Error fetching events:", error);
-      setMessage({
-        type: "error",
-        text: "Nem sikerült betölteni az eseményeket. Kérjük, próbáld újra.",
-      });
-    } finally {
-      setIsLoadingEvents(false);
-    }
+  const resetForm = () => {
+    setForm(initialFormState);
+    setImage(null);
+    setEditingEvent(null);
+    setIsFormModalOpen(false);
   };
 
-  // Load events on component mount
-  useEffect(() => {
-    fetchEvents();
-  }, []);
+  const openCreateModal = () => {
+    setMessage(null);
+    setForm(initialFormState);
+    setImage(null);
+    setEditingEvent(null);
+    setIsFormModalOpen(true);
+  };
 
-  // Select an event for editing
-  const selectEventForEditing = (event: Event) => {
-    setSelectedEvent(event);
-    setIsEditing(true);
+  const filteredEvents = useMemo(() => {
+    const now = Date.now();
+    return events.filter((event) => {
+      const eventTime = new Date(event.date).getTime();
+      if (filter === "future") {
+        return eventTime >= now;
+      }
+      if (filter === "past") {
+        return eventTime < now;
+      }
+      return true;
+    });
+  }, [events, filter]);
 
-    // Populate form with selected event data
-    setFormData({
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const payload = new FormData();
+      payload.append("name", form.name.trim());
+      payload.append("description", form.description.trim());
+      payload.append("location", form.location.trim());
+      payload.append("date", new Date(form.date).toISOString());
+
+      if (form.maxParticipants.trim()) {
+        payload.append("maxParticipants", form.maxParticipants.trim());
+      }
+
+      if (image) {
+        payload.append("image", image);
+      }
+
+      const url = editingEvent
+        ? `${process.env.NEXT_PUBLIC_API_URL}/admin/events/${editingEvent.id}`
+        : `${process.env.NEXT_PUBLIC_API_URL}/admin/events`;
+
+      const { data } = await axios.request({
+        url,
+        method: editingEvent ? "PUT" : "POST",
+        data: payload,
+        withCredentials: true,
+      });
+
+      return data;
+    },
+    onSuccess: () => {
+      const wasEditing = Boolean(editingEvent);
+      resetForm();
+      setMessage({
+        type: "success",
+        text: wasEditing ? "Esemény frissítve." : "Esemény létrehozva.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["admin-events"] });
+    },
+    onError: (error) => {
+      setMessage({
+        type: "error",
+        text: getErrorMessage(error, "Az esemény mentése sikertelen."),
+      });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (eventId: number) => {
+      const { data } = await axios.delete(
+        `${process.env.NEXT_PUBLIC_API_URL}/admin/events/${eventId}`,
+        {
+          withCredentials: true,
+        },
+      );
+      return data;
+    },
+    onSuccess: () => {
+      resetForm();
+      setMessage({ type: "success", text: "Esemény törölve." });
+      queryClient.invalidateQueries({ queryKey: ["admin-events"] });
+    },
+    onError: (error) => {
+      setMessage({
+        type: "error",
+        text: getErrorMessage(error, "Az esemény törlése sikertelen."),
+      });
+    },
+  });
+
+  const startEditing = (event: EventWithRegistrationInfo) => {
+    setEditingEvent(event);
+    setImage(null);
+    setForm({
       name: event.name,
       description: event.description,
       location: event.location,
-      date: new Date(event.date).toISOString().split("T")[0],
-      maxParticipants: event.maxParticipants?.toString() || "",
+      date: toLocalInputValue(event.date),
+      maxParticipants: event.maxParticipants?.toString() ?? "",
     });
-
-    // Clear any existing image selection since we're loading an existing event
-    setImage(null);
-  };
-
-  // Clear selection and reset form for creating new event
-  const createNewEvent = () => {
-    setSelectedEvent(null);
-    setIsEditing(false);
-    setFormData({
-      name: "",
-      description: "",
-      location: "",
-      date: "",
-      maxParticipants: "",
-    });
-    setImage(null);
     setMessage(null);
+    setIsFormModalOpen(true);
   };
-  const deleteEvent = async () => {
-    if (!selectedEvent) {
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (
+      !form.name.trim() ||
+      !form.description.trim() ||
+      !form.location.trim() ||
+      !form.date
+    ) {
       setMessage({
         type: "error",
-        text: "Be kell jelentkezned az események kezeléséhez",
+        text: "A kötelező mezők kitöltése szükséges.",
       });
       return;
     }
 
-    try {
-      const response = await axios.delete(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/events/${selectedEvent.id}`,
-        {
-          withCredentials: true, // Include cookies in request
-        }
-      );
+    if (Number.isNaN(new Date(form.date).getTime())) {
+      setMessage({ type: "error", text: "Érvénytelen esemény időpont." });
+      return;
+    }
 
-      setMessage({
-        type: "success",
-        text: "Esemény sikeresen törölve!",
-      });
-      if (response.status !== 200) {
-        throw new Error("Failed to delete event");
-      }
-
-      setMessage({
-        type: "success",
-        text: "Esemény sikeresen törölve!",
-      });
-
-      // Refresh events list
-      fetchEvents();
-    } catch (error) {
-      console.error("Error deleting event:", error);
+    if (form.maxParticipants.trim() && Number(form.maxParticipants) <= 0) {
       setMessage({
         type: "error",
-        text: "Nem sikerült törölni az eseményt. Kérjük, próbáld újra.",
+        text: "A maximális létszám pozitív szám legyen.",
       });
+      return;
     }
+
+    saveMutation.mutate();
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    setIsSubmitting(true);
-    setMessage(null);
-
-    try {
-      const formDataToSend = new FormData();
-      formDataToSend.append("name", formData.name);
-      formDataToSend.append("description", formData.description);
-      formDataToSend.append("location", formData.location);
-      formDataToSend.append("date", formData.date);
-      if (formData.maxParticipants) {
-        formDataToSend.append("maxParticipants", formData.maxParticipants);
-      }
-      if (image) {
-        formDataToSend.append("image", image);
-      }
-
-      const url =
-        isEditing && selectedEvent
-          ? `${process.env.NEXT_PUBLIC_API_URL}/admin/events/${selectedEvent.id}`
-          : `${process.env.NEXT_PUBLIC_API_URL}/admin/events`;
-
-      const method = isEditing ? "PUT" : "POST";
-
-      const response = await axios(url, {
-        method: method,
-        withCredentials: true, // Include cookies in request
-        data: formDataToSend,
-      });
-
-      if (response.status !== 200 && response.status !== 201) {
-        throw new Error(
-          isEditing ? "Failed to update event" : "Failed to create event"
-        );
-      }
-
-      const result = await response.data;
-      setMessage({
-        type: "success",
-        text: isEditing
-          ? "Esemény sikeresen frissítve!"
-          : "Esemény sikeresen létrehozva!",
-      });
-
-      // Reset form and refresh events list
-      setFormData({
-        name: "",
-        description: "",
-        location: "",
-        date: "",
-        maxParticipants: "",
-      });
-      setImage(null);
-      setSelectedEvent(null);
-      setIsEditing(false);
-
-      // Refresh events list
-      fetchEvents();
-    } catch (error) {
-      console.error(
-        isEditing ? "Error updating event:" : "Error creating event:",
-        error
-      );
-      setMessage({
-        type: "error",
-        text: isEditing
-          ? "Nem sikerült frissíteni az eseményt. Kérjük, próbáld újra."
-          : "Nem sikerült létrehozni az eseményt. Kérjük, próbáld újra.",
-      });
-    } finally {
-      setIsSubmitting(false);
+  const handleDelete = () => {
+    if (!editingEvent) {
+      return;
     }
+
+    if (!window.confirm("Biztosan törölni szeretnéd ezt az eseményt?")) {
+      return;
+    }
+
+    deleteMutation.mutate(editingEvent.id);
   };
 
   return (
-    <div className="min-h-screen py-8 px-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Events List */}
-          <div className="lg:w-1/2">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold">Meglévő események</h2>
-              <button
-                onClick={createNewEvent}
-                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-              >
-                Új esemény létrehozása
-              </button>
-            </div>
+    <>
+      <AdminPageHeader
+        title="Események kezelése"
+        description="Hozz létre, szerkessz és törölj eseményeket, majd kezeld a hozzájuk tartozó jelentkezéseket, híreket és kommenteket."
+        actions={
+          <button
+            type="button"
+            onClick={openCreateModal}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/80 transition ease-in-out cursor-pointer"
+          >
+            <Plus size={16} />
+            Új esemény
+          </button>
+        }
+      />
 
-            {isLoadingEvents ? (
-              <div className="text-center py-8">
-                <div className="text-gray-500">Események betöltése...</div>
-              </div>
-            ) : events.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="text-gray-500">Nincsenek események.</div>
-              </div>
-            ) : (
-              <div className="space-y-4 max-h-96 overflow-y-auto">
-                {events.map((event) => (
-                  <div
-                    key={event.id}
-                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                      selectedEvent?.id === event.id
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-300 hover:border-gray-400"
-                    }`}
-                    onClick={() => selectEventForEditing(event)}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-lg">{event.name}</h3>
-                        <p className="text-gray-600 text-sm mt-1">
-                          {event.description.length > 100
-                            ? event.description.substring(0, 100) + "..."
-                            : event.description}
-                        </p>
-                        <div className="mt-2 text-sm text-gray-500">
-                          <div>📍 {event.location}</div>
-                          <div>
-                            📅 {new Date(event.date).toLocaleDateString()}
-                          </div>
-                          <div>
-                            👥 {event.registrationCount} jelentkező
-                            {event.maxParticipants &&
-                              ` / ${event.maxParticipants} max`}
-                          </div>
-                        </div>
-                      </div>
-                      {event.imageUrl && (
+      {message ? (
+        <div
+          className={`mb-5 rounded-xl border px-4 py-3 text-sm ${
+            message.type === "success"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+              : "border-red-200 bg-red-50 text-red-700"
+          }`}
+        >
+          {message.text}
+        </div>
+      ) : null}
+
+      <section className="card-box h-auto! p-5 min-w-0">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+          <div>
+            <h2 className="text-xl font-semibold">Eseménylista</h2>
+            <p className="text-sm text-faded">
+              {filteredEvents.length} megjelenített esemény
+            </p>
+          </div>
+          <div className="inline-flex rounded-xl border border-faded/20 bg-secondary/50 p-1 self-start">
+            {[
+              { value: "all", label: "Összes" },
+              { value: "future", label: "Jövőbeli" },
+              { value: "past", label: "Befejezett" },
+            ].map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setFilter(option.value)}
+                className={`rounded-lg px-3 py-1.5 text-sm transition ease-in-out cursor-pointer ${
+                  filter === option.value
+                    ? "bg-accent text-white"
+                    : "hover:bg-faded/20"
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="flex h-80 items-center justify-center">
+            <Spinner />
+          </div>
+        ) : isError ? (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
+            Nem sikerült betölteni az eseményeket.
+          </div>
+        ) : filteredEvents.length === 0 ? (
+          <div className="h-80 rounded-xl border border-dashed border-faded/30 flex items-center justify-center text-faded text-center px-4">
+            Nincs megjeleníthető esemény.
+          </div>
+        ) : (
+          <div className="space-y-3 max-h-[820px] overflow-y-auto pr-1">
+            {filteredEvents.map((event) => {
+              const isSelected = editingEvent?.id === event.id && isFormModalOpen;
+              const isPast = new Date(event.date).getTime() < Date.now();
+
+              return (
+                <article
+                  key={event.id}
+                  className={`rounded-xl border p-4 transition ease-in-out ${
+                    isSelected
+                      ? "border-accent bg-accent/5"
+                      : "border-faded/20 bg-secondary/40 hover:bg-faded/10"
+                  }`}
+                >
+                  <div className="flex flex-col md:flex-row gap-4">
+                    {event.imageUrl ? (
+                      <div className="relative h-36 md:h-28 md:w-40 rounded-xl overflow-hidden shrink-0 bg-faded/20">
                         <Image
                           src={event.imageUrl}
                           alt={event.name}
-                          className="w-16 h-16 object-cover rounded ml-4"
-                          width={64}
-                          height={64}
+                          fill
+                          className="object-cover"
                         />
-                      )}
+                      </div>
+                    ) : (
+                      <div className="h-36 md:h-28 md:w-40 rounded-xl bg-accent/10 text-accent flex items-center justify-center shrink-0">
+                        <CalendarDays size={34} />
+                      </div>
+                    )}
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                        <div className="min-w-0">
+                          <h3 className="text-lg font-semibold leading-tight">
+                            {event.name}
+                          </h3>
+                          <p className="text-sm text-faded line-clamp-2 mt-1">
+                            {event.description}
+                          </p>
+                        </div>
+                        <AdminStatusBadge tone={isPast ? "neutral" : "green"}>
+                          {isPast ? "Befejezett" : "Aktív"}
+                        </AdminStatusBadge>
+                      </div>
+
+                      <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-faded">
+                        <div className="inline-flex items-center gap-2">
+                          <MapPin size={15} />
+                          <span className="truncate">{event.location}</span>
+                        </div>
+                        <div className="inline-flex items-center gap-2">
+                          <CalendarDays size={15} />
+                          <span>{formatDateTime(event.date)}</span>
+                        </div>
+                        <div className="inline-flex items-center gap-2">
+                          <Users size={15} />
+                          <span>
+                            {event.registrationCount}
+                            {event.maxParticipants
+                              ? ` / ${event.maxParticipants}`
+                              : ""}{" "}
+                            fő
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => startEditing(event)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-faded/30 px-3 py-1.5 text-sm hover:bg-faded/10 transition ease-in-out cursor-pointer"
+                        >
+                          <Pencil size={14} />
+                          Szerkesztés
+                        </button>
+                        <Link
+                          href={`/admin/events/${event.id}`}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-faded/30 px-3 py-1.5 text-sm hover:bg-faded/10 transition ease-in-out"
+                        >
+                          <Eye size={14} />
+                          Részletek
+                        </Link>
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      <AdminFormModal
+        isOpen={isFormModalOpen}
+        onClose={resetForm}
+        title={editingEvent ? "Esemény szerkesztése" : "Új esemény"}
+        description={
+          editingEvent ? editingEvent.name : "Publikus esemény létrehozása"
+        }
+        maxWidthClassName="max-w-4xl"
+      >
+        {message ? (
+          <div
+            className={`mb-4 rounded-xl border px-4 py-3 text-sm ${
+              message.type === "success"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                : "border-red-200 bg-red-50 text-red-700"
+            }`}
+          >
+            {message.text}
+          </div>
+        ) : null}
+
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <div className="space-y-1">
+            <label className="text-sm text-faded">Cím</label>
+            <input
+              value={form.name}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  name: event.target.value,
+                }))
+              }
+              className="w-full rounded-xl border border-faded/25 bg-secondary/70 px-3 py-2 focus:outline-none focus:border-accent"
+              placeholder="Esemény címe"
+              required
+            />
           </div>
 
-          {/* Event Form */}
-          <div className="lg:w-1/2">
-            <h2 className="text-2xl font-bold mb-6">
-              {isEditing
-                ? `Szerkesztés: ${selectedEvent?.name}`
-                : "Új esemény létrehozása"}
-            </h2>
+          <div className="space-y-1">
+            <label className="text-sm text-faded">Leírás</label>
+            <textarea
+              value={form.description}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  description: event.target.value,
+                }))
+              }
+              className="min-h-32 w-full rounded-xl border border-faded/25 bg-secondary/70 px-3 py-2 focus:outline-none focus:border-accent"
+              placeholder="Esemény leírása"
+              required
+            />
+          </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {message && (
-                <div
-                  className={`p-3 rounded ${
-                    message.type === "success"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-red-100 text-red-700"
-                  }`}
-                >
-                  {message.text}
-                </div>
-              )}
-
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-sm text-faded">Helyszín</label>
               <input
-                type="text"
-                name="name"
-                placeholder="Esemény címe"
+                value={form.location}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    location: event.target.value,
+                  }))
+                }
+                className="w-full rounded-xl border border-faded/25 bg-secondary/70 px-3 py-2 focus:outline-none focus:border-accent"
+                placeholder="Helyszín"
                 required
-                value={formData.name}
-                onChange={handleInputChange}
-                className="w-full p-2 border border-gray-300 rounded"
               />
-
-              <textarea
-                name="description"
-                placeholder="Esemény leírása"
-                required
-                value={formData.description}
-                onChange={handleInputChange}
-                rows={4}
-                className="w-full p-2 border border-gray-300 rounded"
-              />
-
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm text-faded">Időpont</label>
               <input
-                type="text"
-                name="location"
-                placeholder="Esemény helyszíne"
+                type="datetime-local"
+                value={form.date}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    date: event.target.value,
+                  }))
+                }
+                className="w-full rounded-xl border border-faded/25 bg-secondary/70 px-3 py-2 focus:outline-none focus:border-accent"
                 required
-                value={formData.location}
-                onChange={handleInputChange}
-                className="w-full p-2 border border-gray-300 rounded"
               />
+            </div>
+          </div>
 
-              <input
-                type="date"
-                name="date"
-                required
-                value={formData.date}
-                onChange={handleInputChange}
-                className="w-full p-2 border border-gray-300 rounded"
-              />
-
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-sm text-faded">Maximális létszám</label>
               <input
                 type="number"
-                name="maxParticipants"
-                placeholder="Maximális létszám (opcionális)"
-                value={formData.maxParticipants}
-                onChange={handleInputChange}
-                className="w-full p-2 border border-gray-300 rounded"
+                min={1}
+                value={form.maxParticipants}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    maxParticipants: event.target.value,
+                  }))
+                }
+                className="w-full rounded-xl border border-faded/25 bg-secondary/70 px-3 py-2 focus:outline-none focus:border-accent"
+                placeholder="Opcionális"
               />
-
-              <div className="space-y-2">
-                <input
-                  type="file"
-                  name="image"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="w-full p-2 border border-gray-300 rounded"
-                />
-                {isEditing && selectedEvent?.imageUrl && (
-                  <div className="text-sm text-gray-600">
-                    Jelenlegi kép:
-                    <Image
-                      src={selectedEvent.imageUrl}
-                      alt="Jelenlegi esemény"
-                      width={80}
-                      height={80}
-                      className="w-20 h-20 object-cover rounded mt-1"
-                    />
-                  </div>
-                )}
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex-1 p-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-                >
-                  {isSubmitting
-                    ? isEditing
-                      ? "Frissítés..."
-                      : "Létrehozás..."
-                    : isEditing
-                    ? "Esemény frissítése"
-                    : "Esemény létrehozása"}
-                </button>
-
-                {isEditing && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={deleteEvent}
-                      className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-                    >
-                      Törlés
-                    </button>
-                    <button
-                      type="button"
-                      onClick={createNewEvent}
-                      className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-                    >
-                      Mégse
-                    </button>
-                  </>
-                )}
-              </div>
-            </form>
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm text-faded">Kép</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(event) => setImage(event.target.files?.[0] ?? null)}
+                className="w-full rounded-xl border border-faded/25 bg-secondary/70 px-3 py-2 text-sm focus:outline-none focus:border-accent"
+              />
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
+
+          {editingEvent?.imageUrl ? (
+            <div className="rounded-xl border border-faded/20 bg-secondary/40 p-3 text-sm text-faded">
+              Jelenlegi kép:
+              <div className="relative mt-2 h-28 w-40 overflow-hidden rounded-xl">
+                <Image
+                  src={editingEvent.imageUrl}
+                  alt={editingEvent.name}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            </div>
+          ) : null}
+
+          <div className="flex flex-col sm:flex-row gap-2">
+            <button
+              type="submit"
+              disabled={saveMutation.isPending}
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 font-medium text-white hover:bg-accent/80 transition ease-in-out disabled:bg-faded disabled:cursor-not-allowed cursor-pointer"
+            >
+              {saveMutation.isPending
+                ? "Mentés..."
+                : editingEvent
+                  ? "Frissítés"
+                  : "Létrehozás"}
+            </button>
+            {editingEvent ? (
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleteMutation.isPending}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-300/50 bg-red-50 px-4 py-2.5 font-medium text-red-700 hover:bg-red-100 transition ease-in-out disabled:text-faded disabled:bg-transparent disabled:cursor-not-allowed cursor-pointer"
+              >
+                <Trash2 size={16} />
+                Törlés
+              </button>
+            ) : null}
+          </div>
+        </form>
+      </AdminFormModal>
+    </>
   );
 };
 
-export default EventPage;
+export default EventsAdminPage;

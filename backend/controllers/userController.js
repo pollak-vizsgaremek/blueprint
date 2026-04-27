@@ -20,9 +20,11 @@ const normalizeSettingJson = (value) => {
   };
 };
 
-const JWT_SECRET =
-  process.env.JWT_SECRET ||
-  "your-super-secret-jwt-key-change-this-in-production";
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET environment variable is required");
+}
 
 // Generate JWT token
 export const generateToken = (user) => {
@@ -100,6 +102,21 @@ export const userLogin = async (req, res) => {
     if (!user) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
+
+    if (user.deletedAt) {
+      return res.status(403).json({
+        error: "Access denied",
+        message: "Account is not available",
+      });
+    }
+
+    if (user.status !== "active") {
+      return res.status(403).json({
+        error: "Access denied",
+        message: "Account is not active",
+      });
+    }
+
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ error: "Invalid credentials" });

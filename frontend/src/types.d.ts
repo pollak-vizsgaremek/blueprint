@@ -15,7 +15,9 @@ export interface User {
   id: number;
   name: string;
   email: string;
+  emailVerified?: boolean;
   role: "admin" | "user" | "teacher";
+  status?: "active" | "inactive" | "banned";
   dateOfBirth: string | null; // ISO date string format (YYYY-MM-DD)
   settingJson?: {
     emailReminders?: boolean;
@@ -25,6 +27,16 @@ export interface User {
   };
   createdAt?: string; // ISO datetime string
   updatedAt?: string; // ISO datetime string
+  deletedAt?: string | null;
+  _count?: {
+    registrations?: number;
+    notifications?: number;
+    teacherReservations?: number;
+    studentReservations?: number;
+    news?: number;
+    eventNews?: number;
+    eventComments?: number;
+  };
 }
 
 export interface UserWithoutPassword extends Omit<User, "password"> {}
@@ -65,6 +77,15 @@ export interface Appointment {
   createdAt: string;
   updatedAt: string;
   teacher: TeacherOption | null;
+}
+
+export interface AdminAppointment extends Appointment {
+  student: {
+    id: number;
+    name: string;
+    email: string;
+    role: "admin" | "user" | "teacher";
+  } | null;
 }
 
 export interface GetAppointmentsResponse {
@@ -242,6 +263,7 @@ export interface GetEventRegistrationsResponse {
   event: {
     id: number;
     name: string;
+    maxParticipants: number | null;
   };
   registrations: RegistrationWithUser[];
 }
@@ -302,6 +324,29 @@ export interface NewsItem {
   publishedAt: string | null;
   createdAt: string;
   author: NewsAuthor | null;
+}
+
+export interface AdminNewsItem extends NewsItem {
+  isPublished: boolean;
+  updatedAt: string;
+  deletedAt: string | null;
+  author: (NewsAuthor & { email?: string }) | null;
+}
+
+export interface AdminNotification {
+  id: number;
+  userId: number;
+  url: string | null;
+  title: string;
+  message: string;
+  type: "info" | "warning" | "success" | "error";
+  isRead: boolean;
+  createdAt: string;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+  } | null;
 }
 
 export interface GetLatestPublishedNewsResponse {
@@ -396,7 +441,63 @@ export interface DeleteNotificationResponse {
 // API endpoint response types
 export type GetAllEventsResponse = EventWithRegistrationInfo[];
 export type GetAllUsersResponse = User[];
-export type GetUserByIdResponse = User;
+
+export interface AdminNewsResponse {
+  message: string;
+  news: AdminNewsItem[];
+}
+
+export interface AdminNewsMutationResponse {
+  message: string;
+  news: AdminNewsItem;
+}
+
+export interface AdminAppointmentsResponse {
+  message: string;
+  appointments: AdminAppointment[];
+}
+
+export interface AdminAppointmentMutationResponse {
+  message: string;
+  appointment: AdminAppointment;
+}
+
+export interface AdminNotificationsResponse {
+  message: string;
+  notifications: AdminNotification[];
+}
+
+export interface AdminNotificationMutationResponse {
+  message: string;
+  notification: AdminNotification;
+}
+
+export interface AdminRegistration extends RegistrationWithUser {
+  eventId: number;
+  user: RegistrationWithUser["user"] & {
+    role?: "admin" | "user" | "teacher";
+  };
+}
+
+export interface AdminEventRegistrationsResponse {
+  message: string;
+  event: {
+    id: number;
+    name: string;
+    maxParticipants: number | null;
+  };
+  registrations: AdminRegistration[];
+}
+
+export interface AdminRegistrationMutationResponse {
+  message: string;
+  registration: AdminRegistration;
+}
+
+export interface AdminUserMutationResponse {
+  message: string;
+  user: User;
+}
 
 // Common error responses
 export interface ValidationErrorResponse extends ErrorResponse {

@@ -429,8 +429,7 @@ export const getEventNews = async (req, res) => {
       return res.status(404).json({ error: "Event not found" });
     }
 
-    const canManageNews =
-      req.user.role === "admin" || event.creator === req.user.name;
+    const canManageNews = req.user.role === "admin";
 
     const news = await prisma.eventNews.findMany({
       where: {
@@ -504,7 +503,6 @@ export const createEventNews = async (req, res) => {
       where: { id: parsedEventId },
       select: {
         id: true,
-        creator: true,
       },
     });
 
@@ -512,13 +510,12 @@ export const createEventNews = async (req, res) => {
       return res.status(404).json({ error: "Event not found" });
     }
 
-    const canManageNews =
-      req.user.role === "admin" || event.creator === req.user.name;
+    const canManageNews = req.user.role === "admin";
 
     if (!canManageNews) {
       return res.status(403).json({
         error: "Access denied",
-        message: "Only the event owner can manage event news",
+        message: "Admin privileges required",
       });
     }
 
@@ -647,7 +644,6 @@ export const updateEventNews = async (req, res) => {
       where: { id: parsedEventId },
       select: {
         id: true,
-        creator: true,
       },
     });
 
@@ -655,13 +651,12 @@ export const updateEventNews = async (req, res) => {
       return res.status(404).json({ error: "Event not found" });
     }
 
-    const canManageNews =
-      req.user.role === "admin" || event.creator === req.user.name;
+    const canManageNews = req.user.role === "admin";
 
     if (!canManageNews) {
       return res.status(403).json({
         error: "Access denied",
-        message: "Only the event owner can manage event news",
+        message: "Admin privileges required",
       });
     }
 
@@ -795,7 +790,6 @@ export const deleteEventNews = async (req, res) => {
       where: { id: parsedEventId },
       select: {
         id: true,
-        creator: true,
       },
     });
 
@@ -803,13 +797,12 @@ export const deleteEventNews = async (req, res) => {
       return res.status(404).json({ error: "Event not found" });
     }
 
-    const canManageNews =
-      req.user.role === "admin" || event.creator === req.user.name;
+    const canManageNews = req.user.role === "admin";
 
     if (!canManageNews) {
       return res.status(403).json({
         error: "Access denied",
-        message: "Only the event owner can manage event news",
+        message: "Admin privileges required",
       });
     }
 
@@ -1076,20 +1069,41 @@ export const getUserEventRegistrations = async (req, res) => {
 
 // Get event registrations (for event organizers/admin)
 export const getEventRegistrations = async (req, res) => {
-  const { eventId } = req.params;
+  const parsedEventId = parseInt(req.params.eventId, 10);
+
+  if (Number.isNaN(parsedEventId)) {
+    return res.status(400).json({
+      error: "Invalid event ID",
+      message: "Event ID must be a number",
+    });
+  }
 
   try {
     // Check if event exists
     const event = await prisma.event.findUnique({
-      where: { id: parseInt(eventId) },
+      where: { id: parsedEventId },
+      select: {
+        id: true,
+        name: true,
+        maxParticipants: true,
+      },
     });
 
     if (!event) {
       return res.status(404).json({ error: "Event not found" });
     }
 
+    const canManageRegistrations = req.user.role === "admin";
+
+    if (!canManageRegistrations) {
+      return res.status(403).json({
+        error: "Access denied",
+        message: "Admin privileges required",
+      });
+    }
+
     const registrations = await prisma.registration.findMany({
-      where: { eventId: parseInt(eventId) },
+      where: { eventId: parsedEventId },
       include: {
         user: {
           select: {
@@ -1116,6 +1130,7 @@ export const getEventRegistrations = async (req, res) => {
       event: {
         id: event.id,
         name: event.name,
+        maxParticipants: event.maxParticipants,
       },
       registrations: formattedRegistrations,
     });

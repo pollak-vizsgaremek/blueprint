@@ -5,6 +5,9 @@ import eventRoutes from "./routes/events.js";
 import userRoutes from "./routes/users.js";
 import adminEventsRoutes from "./routes/admin/adminEvents.js";
 import adminUserRoutes from "./routes/admin/adminUsers.js";
+import adminAppointmentsRoutes from "./routes/admin/adminAppointments.js";
+import adminNewsRoutes from "./routes/admin/adminNews.js";
+import adminNotificationsRoutes from "./routes/admin/adminNotifications.js";
 import appointmentRoutes from "./routes/appointments.js";
 import notificationRoutes from "./routes/notifications.js";
 
@@ -88,6 +91,9 @@ app.use("/appointments", appointmentRoutes);
 app.use("/notifications", notificationRoutes);
 app.use("/admin/events", adminEventsRoutes);
 app.use("/admin/users", adminUserRoutes);
+app.use("/admin/appointments", adminAppointmentsRoutes);
+app.use("/admin/news", adminNewsRoutes);
+app.use("/admin/notifications", adminNotificationsRoutes);
 
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {

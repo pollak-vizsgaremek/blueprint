@@ -3,6 +3,10 @@ import {
   createEvent,
   deleteEvent,
   updateEvent,
+  createAdminRegistration,
+  updateAdminRegistration,
+  deleteAdminRegistration,
+  updateAdminComment,
 } from "../../controllers/adminController.js";
 import { authenticateAdminToken } from "../../middleware/auth.js";
 import { uploadEventImage } from "../../middleware/upload.js";
@@ -15,7 +19,19 @@ router.post("/", authenticateAdminToken, uploadEventImage, createEvent);
 // PUT /events/:eventId - Update an event (requires admin authentication and supports image upload)
 router.put("/:eventId", authenticateAdminToken, uploadEventImage, updateEvent);
 
-// DELETE /events/:eventId - Delete an event (requires admin authentication)
+// DELETE /admin/events/:eventId - Delete an event (requires admin authentication)
 router.delete("/:eventId", authenticateAdminToken, deleteEvent);
+
+// POST /admin/events/:eventId/registrations - Create a registration for a user
+router.post("/:eventId/registrations", authenticateAdminToken, createAdminRegistration);
+
+// PUT /admin/events/:eventId/registrations/:registrationId - Update registration status
+router.put("/:eventId/registrations/:registrationId", authenticateAdminToken, updateAdminRegistration);
+
+// DELETE /admin/events/:eventId/registrations/:registrationId - Delete a registration
+router.delete("/:eventId/registrations/:registrationId", authenticateAdminToken, deleteAdminRegistration);
+
+// PUT /admin/events/:eventId/comments/:commentId - Update/moderate a comment
+router.put("/:eventId/comments/:commentId", authenticateAdminToken, updateAdminComment);
 
 export default router;

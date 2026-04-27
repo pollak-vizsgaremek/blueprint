@@ -1,9 +1,11 @@
 import jwt from "jsonwebtoken";
 import prisma from "../config/database.js";
 
-const JWT_SECRET =
-  process.env.JWT_SECRET ||
-  "your-super-secret-jwt-key-change-this-in-production";
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET environment variable is required");
+}
 
 // Middleware to verify JWT token
 export const authenticateToken = async (req, res, next) => {
@@ -30,6 +32,8 @@ export const authenticateToken = async (req, res, next) => {
       select: {
         id: true,
         role: true,
+        status: true,
+        deletedAt: true,
         settingJson: true,
       },
     });
@@ -38,6 +42,13 @@ export const authenticateToken = async (req, res, next) => {
       return res.status(401).json({
         error: "Access denied",
         message: "User not found",
+      });
+    }
+
+    if (dbUser.deletedAt || dbUser.status !== "active") {
+      return res.status(403).json({
+        error: "Access denied",
+        message: "Account is not active",
       });
     }
 
@@ -104,6 +115,8 @@ export const authenticateAdminToken = async (req, res, next) => {
       select: {
         id: true,
         role: true,
+        status: true,
+        deletedAt: true,
       },
     });
 
@@ -111,6 +124,13 @@ export const authenticateAdminToken = async (req, res, next) => {
       return res.status(401).json({
         error: "Access denied",
         message: "User not found",
+      });
+    }
+
+    if (dbUser.deletedAt || dbUser.status !== "active") {
+      return res.status(403).json({
+        error: "Access denied",
+        message: "Account is not active",
       });
     }
 

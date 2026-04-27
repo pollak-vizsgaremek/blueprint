@@ -17,6 +17,7 @@ import {
   Menu,
   Pen,
   Settings,
+  Shield,
   User,
   X,
 } from "lucide-react";
@@ -163,6 +164,21 @@ export const Header = () => {
                   </div>
                 </div>
                 <div className="grid gap-1 px-4">
+                  {user?.role === "admin" && (
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start"
+                      size="sm"
+                    >
+                      <Link
+                        href="/admin"
+                        className="flex w-full justify-start items-center gap-1"
+                      >
+                        <Shield className="mr-2 h-4 w-4" />
+                        Admin felület
+                      </Link>
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     className="w-full justify-start"

@@ -37,7 +37,7 @@ const EventsContent = () => {
       return;
     }
 
-    gsap.from(".filter", {
+    gsap.from(".page-content", {
       scale: 0.9,
       opacity: 0,
       delay: 0.1,
@@ -46,14 +46,14 @@ const EventsContent = () => {
     });
   }, []);
   return (
-    <main className="w-7/8 m-auto min-h-screen pt-24 mb-50">
+    <main className="w-7/8 m-auto page-content min-h-screen pt-24 mb-50">
       <div className="mb-6">
         <h1 className="text-3xl font-semibold">Események</h1>
         <p className="text-faded mt-1">
           Foglalj időpontot tanárral, és kezeld a meglévő bejegyzéseidet.
         </p>
       </div>
-      <div className="flex filter justify-between border-b-[1px] border-faded/40 pb-1">
+      <div className="flex justify-between border-b-[1px] border-faded/40 pb-1">
         <div className="flex gap-1 text-xl">
           <Link
             href={`/app/events?v=${view}&f=all`}

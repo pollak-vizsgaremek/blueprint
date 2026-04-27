@@ -1,6 +1,8 @@
 "use client";
 
 import { Spinner } from "@/components/Spinner";
+import { usePopupModal } from "@/contexts/PopupModalContext";
+import { isReducedMotionEnabled } from "@/lib/motion";
 import {
   Appointment,
   CreateAppointmentRequest,
@@ -12,8 +14,10 @@ import {
   UpdateAppointmentRequest,
   UpdateAppointmentResponse,
 } from "@/types";
+import { useGSAP } from "@gsap/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
+import gsap from "gsap";
 import {
   CalendarDays,
   Clock3,
@@ -107,6 +111,7 @@ const initialFormState: FormState = {
 
 const AppointmentsPage = () => {
   const queryClient = useQueryClient();
+  const { showAlert, showConfirm } = usePopupModal();
 
   const [form, setForm] = useState<FormState>(initialFormState);
   const [editingAppointmentId, setEditingAppointmentId] = useState<
@@ -180,11 +185,11 @@ const AppointmentsPage = () => {
           error.response?.data?.message ??
           error.response?.data?.error ??
           "Időpont létrehozása sikertelen.";
-        window.alert(errorMessage);
+        showAlert({ message: errorMessage, tone: "error" });
         return;
       }
 
-      window.alert("Időpont létrehozása sikertelen.");
+      showAlert({ message: "Időpont létrehozása sikertelen.", tone: "error" });
     },
   });
 
@@ -215,11 +220,11 @@ const AppointmentsPage = () => {
           error.response?.data?.message ??
           error.response?.data?.error ??
           "Időpont módosítása sikertelen.";
-        window.alert(errorMessage);
+        showAlert({ message: errorMessage, tone: "error" });
         return;
       }
 
-      window.alert("Időpont módosítása sikertelen.");
+      showAlert({ message: "Időpont módosítása sikertelen.", tone: "error" });
     },
   });
 
@@ -245,36 +250,53 @@ const AppointmentsPage = () => {
           error.response?.data?.message ??
           error.response?.data?.error ??
           "Időpont törlése sikertelen.";
-        window.alert(errorMessage);
+        showAlert({ message: errorMessage, tone: "error" });
         return;
       }
 
-      window.alert("Időpont törlése sikertelen.");
+      showAlert({ message: "Időpont törlése sikertelen.", tone: "error" });
     },
   });
+
+  useGSAP(() => {
+    if (isReducedMotionEnabled()) {
+      return;
+    }
+
+    gsap.from(".page-content", {
+      scale: 0.9,
+      opacity: 0,
+      delay: 0.1,
+      ease: "expo.in",
+      duration: 0.5,
+    });
+  }, []);
 
   const submitLabel = editingAppointmentId
     ? "Időpont frissítése"
     : "Időpont létrehozása";
   const isMutating = isCreating || isUpdating;
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const teacherId = parseInt(form.teacherId, 10);
     if (Number.isNaN(teacherId)) {
-      window.alert("Kérlek válassz tanárt.");
+      await showAlert({ message: "Kérlek válassz tanárt.", tone: "warning" });
       return;
     }
 
     const title = form.title.trim();
     if (!title) {
-      window.alert("Kérlek adj meg címet.");
+      await showAlert({ message: "Kérlek adj meg címet.", tone: "warning" });
       return;
     }
 
     if (!form.startTime) {
-      window.alert("Kérlek add meg a kezdő időpontot.");
+      await showAlert({
+        message: "Kérlek add meg a kezdő időpontot.",
+        tone: "warning",
+      });
       return;
     }
 
@@ -282,19 +304,26 @@ const AppointmentsPage = () => {
     const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
 
     if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
-      window.alert("Érvénytelen dátum formátum.");
+      await showAlert({
+        message: "Érvénytelen dátum formátum.",
+        tone: "warning",
+      });
       return;
     }
 
     if (endDate <= startDate) {
-      window.alert(
-        "A befejezési időnek későbbinek kell lennie, mint a kezdés.",
-      );
+      await showAlert({
+        message: "A befejezési időnek későbbinek kell lennie, mint a kezdés.",
+        tone: "warning",
+      });
       return;
     }
 
     if (startDate.getTime() <= Date.now() || endDate.getTime() <= Date.now()) {
-      window.alert("Csak jövőbeli időpontot lehet foglalni.");
+      await showAlert({
+        message: "Csak jövőbeli időpontot lehet foglalni.",
+        tone: "warning",
+      });
       return;
     }
 
@@ -329,7 +358,10 @@ const AppointmentsPage = () => {
     });
 
     if (hasStudentOverlap) {
-      window.alert("Már van átfedő időpontod ebben az idősávban.");
+      await showAlert({
+        message: "Már van átfedő időpontod ebben az idősávban.",
+        tone: "warning",
+      });
       return;
     }
 
@@ -360,8 +392,15 @@ const AppointmentsPage = () => {
     });
   };
 
-  const handleDelete = (appointmentId: number) => {
-    if (!window.confirm("Biztosan törölni szeretnéd ezt az időpontot?")) {
+  const handleDelete = async (appointmentId: number) => {
+    const confirmed = await showConfirm({
+      message: "Biztosan törölni szeretnéd ezt az időpontot?",
+      tone: "warning",
+      confirmText: "Törlés",
+      cancelText: "Mégse",
+    });
+
+    if (!confirmed) {
       return;
     }
 
@@ -369,7 +408,7 @@ const AppointmentsPage = () => {
   };
 
   return (
-    <main className="w-7/8 m-auto min-h-screen pt-24 pb-20">
+    <main className="w-7/8 m-auto min-h-screen pt-24 pb-20 page-content">
       <div className="mb-6">
         <h1 className="text-3xl font-semibold">Időpontok</h1>
         <p className="text-faded mt-1">
@@ -415,7 +454,6 @@ const AppointmentsPage = () => {
                     }))
                   }
                   className="w-full border border-faded/25 rounded-xl px-3 py-2 bg-secondary/70 focus:outline-none focus:border-accent"
-                  required
                 >
                   <option value="">Válassz tanárt...</option>
                   {teachers.map((teacher: TeacherOption) => (

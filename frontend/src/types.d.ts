@@ -17,6 +17,12 @@ export interface User {
   email: string;
   role: "admin" | "user" | "teacher";
   dateOfBirth: string | null; // ISO date string format (YYYY-MM-DD)
+  settingJson?: {
+    emailReminders?: boolean;
+    eventUpdates?: boolean;
+    commentsReplies?: boolean;
+    marketingNews?: boolean;
+  };
   createdAt?: string; // ISO datetime string
   updatedAt?: string; // ISO datetime string
 }
@@ -117,6 +123,12 @@ export interface UpdateUserRequest {
   email?: string;
   password?: string;
   dateOfBirth?: string; // ISO date string format (YYYY-MM-DD)
+  settingJson?: {
+    emailReminders?: boolean;
+    eventUpdates?: boolean;
+    commentsReplies?: boolean;
+    marketingNews?: boolean;
+  };
 }
 
 export interface GetCurrentUserResponse {
@@ -124,7 +136,14 @@ export interface GetCurrentUserResponse {
   user: {
     name: string;
     email: string;
+    role: "admin" | "user" | "teacher";
     dateOfBirth: string | null;
+    settingJson?: {
+      emailReminders?: boolean;
+      eventUpdates?: boolean;
+      commentsReplies?: boolean;
+      marketingNews?: boolean;
+    };
   };
 }
 
@@ -333,6 +352,44 @@ export interface UpdateEventNewsResponse {
 }
 
 export interface DeleteEventNewsResponse {
+  message: string;
+}
+
+export interface NotificationItem {
+  id: number;
+  userId: number;
+  url: string | null;
+  title: string;
+  message: string;
+  type: "info" | "warning" | "success" | "error";
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface GetNotificationsResponse {
+  message: string;
+  notifications: NotificationItem[];
+  unreadCount: number;
+  totalCount: number;
+  hasMore: boolean;
+}
+
+export interface GetUnreadNotificationCountResponse {
+  message: string;
+  unreadCount: number;
+}
+
+export interface MarkNotificationAsReadResponse {
+  message: string;
+  notification: NotificationItem;
+}
+
+export interface MarkAllNotificationsAsReadResponse {
+  message: string;
+  updatedCount: number;
+}
+
+export interface DeleteNotificationResponse {
   message: string;
 }
 

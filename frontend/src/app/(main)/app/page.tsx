@@ -71,11 +71,6 @@ const DashboardPage = () => {
         </div>
       </div>
       <div className="w-full gap-3 flex justify-end mt-5" id="icons">
-        <Link href="/app/profile">
-          <button className="bg-secondary/40 backdrop-blur-xl py-2 px-3 rounded-xl border-[0.5px] border-faded/10 transition ease-in-out hover:bg-faded/40 cursor-pointer">
-            <User />
-          </button>
-        </Link>
         <button className="bg-secondary/40 backdrop-blur-xl py-2 px-3 rounded-xl border-[0.5px] border-faded/10 transition ease-in-out hover:bg-faded/40 cursor-pointer">
           <Link href="/app/settings">
             <Settings />

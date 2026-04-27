@@ -1,4 +1,8 @@
 import prisma from "../config/database.js";
+import {
+  createBulkNotifications,
+  createNotification,
+} from "../services/notificationService.js";
 
 const AI_VERIFICATION_API_KEY = process.env.AI_VERIFICATION_API_KEY;
 const AI_VERIFICATION_MODEL =
@@ -547,6 +551,33 @@ export const createEventNews = async (req, res) => {
       },
     });
 
+    if (shouldPublishNow) {
+      const registrations = await prisma.registration.findMany({
+        where: {
+          eventId: parsedEventId,
+          status: "registered",
+        },
+        select: {
+          userId: true,
+        },
+      });
+
+      const recipientIds = registrations
+        .map((registration) => registration.userId)
+        .filter((recipientId) => recipientId !== req.user.id);
+
+      await createBulkNotifications(
+        recipientIds.map((recipientId) => ({
+          userId: recipientId,
+          title: "Új eseményhír",
+          message: createdNews.title,
+          url: `/app/events/${parsedEventId}/news`,
+          type: "info",
+          category: "event_updates",
+        })),
+      );
+    }
+
     res.status(201).json({
       message: shouldPublishNow
         ? "Event news published successfully"
@@ -703,6 +734,33 @@ export const updateEventNews = async (req, res) => {
         },
       },
     });
+
+    if (hasIsPublished && shouldPublish) {
+      const registrations = await prisma.registration.findMany({
+        where: {
+          eventId: parsedEventId,
+          status: "registered",
+        },
+        select: {
+          userId: true,
+        },
+      });
+
+      const recipientIds = registrations
+        .map((registration) => registration.userId)
+        .filter((recipientId) => recipientId !== req.user.id);
+
+      await createBulkNotifications(
+        recipientIds.map((recipientId) => ({
+          userId: recipientId,
+          title: "Új eseményhír",
+          message: updatedNews.title,
+          url: `/app/events/${parsedEventId}/news`,
+          type: "info",
+          category: "event_updates",
+        })),
+      );
+    }
 
     const wasPublicationOnlyUpdate =
       !hasTitle && !hasContent && !hasImageUrl && hasIsPublished;
@@ -885,6 +943,15 @@ export const registerForEvent = async (req, res) => {
       },
     });
 
+    await createNotification({
+      userId,
+      title: "Sikeres esemény jelentkezés",
+      message: `Sikeresen jelentkeztél: ${event.name}`,
+      url: `/app/events/${event.id}/details`,
+      type: "success",
+      category: "event_updates",
+    });
+
     res.status(201).json({
       message: "Successfully registered for event",
       registration: {
@@ -941,6 +1008,15 @@ export const unregisterFromEvent = async (req, res) => {
       data: {
         status: "cancelled",
       },
+    });
+
+    await createNotification({
+      userId,
+      title: "Jelentkezés lemondva",
+      message: `Lemondtad a jelentkezésedet: ${eventId} azonosítójú esemény`,
+      url: `/app/events/${eventId}/details`,
+      type: "warning",
+      category: "event_updates",
     });
 
     res.json({

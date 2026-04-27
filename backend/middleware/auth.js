@@ -30,6 +30,7 @@ export const authenticateToken = async (req, res, next) => {
       select: {
         id: true,
         role: true,
+        settingJson: true,
       },
     });
 
@@ -48,6 +49,7 @@ export const authenticateToken = async (req, res, next) => {
       role: dbUser.role,
       isAdmin: dbUser.role === "admin",
       dateOfBirth: decoded.dateOfBirth,
+      settingJson: dbUser.settingJson,
     };
 
     // Add user info to request object

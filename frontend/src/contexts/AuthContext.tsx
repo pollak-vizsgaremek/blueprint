@@ -18,7 +18,7 @@ interface AuthContextType {
     name: string,
     email: string,
     password: string,
-    dateOfBirth: string
+    dateOfBirth: string,
   ) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
@@ -73,7 +73,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         { email, password },
         {
           withCredentials: true, // Include cookies in request
-        }
+        },
       );
 
       setUser(response.data.user);
@@ -92,7 +92,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     name: string,
     email: string,
     password: string,
-    dateOfBirth: string
+    dateOfBirth: string,
   ) => {
     setIsLoading(true);
     try {
@@ -101,7 +101,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         { name, email, password, dateOfBirth },
         {
           withCredentials: true, // Include cookies in request
-        }
+        },
       );
 
       setUser(response.data.user);
@@ -123,7 +123,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         {},
         {
           withCredentials: true, // Include cookies in request
-        }
+        },
       );
       router.push("/");
     } catch (error) {

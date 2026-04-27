@@ -24,6 +24,9 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { isReducedMotionEnabled } from "@/lib/motion";
+import { useQuery } from "@tanstack/react-query";
+import axios from "axios";
+import { GetUnreadNotificationCountResponse } from "@/types";
 const roboto = Roboto_Mono({
   subsets: ["latin"],
 });
@@ -35,6 +38,21 @@ export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const path = usePathname();
   const { user, logout } = useAuth();
+  const { data: unreadData } = useQuery({
+    queryKey: ["notifications", "unread-count"],
+    queryFn: async () => {
+      const { data } = await axios.get<GetUnreadNotificationCountResponse>(
+        `${process.env.NEXT_PUBLIC_API_URL}/notifications/unread-count`,
+        {
+          withCredentials: true,
+        },
+      );
+
+      return data;
+    },
+  });
+
+  const unreadCount = unreadData?.unreadCount ?? 0;
   useGSAP(() => {
     if (isReducedMotionEnabled()) {
       return;
@@ -75,9 +93,9 @@ export const Header = () => {
               className={cn(
                 "bg-accent h-[2px] absolute bottom-0 transition left-0 ease-in-out",
                 {
-                  "w-[70px] translate-x-[0]": path === "/app",
-                  "w-[111px] translate-x-[87px]": path === "/app/events",
-                  "w-[105px] translate-x-[212px]": path === "/app/appointments",
+                  "w-17 translate-x-0": path === "/app",
+                  "w-27 translate-x-22": path === "/app/events",
+                  "w-26 translate-x-53": path === "/app/appointments",
                 },
               )}
             ></div>
@@ -139,7 +157,7 @@ export const Header = () => {
                         href="/app/settings"
                         className="flex w-full justify-start items-center gap-1"
                       >
-                        <Settings className="mr-2 size-6" />
+                        <Settings className="size-6" />
                       </Link>
                     </Button>
                   </div>
@@ -184,8 +202,18 @@ export const Header = () => {
                     className="w-full justify-start"
                     size="sm"
                   >
-                    <Bell className="mr-2 h-4 w-4" />
-                    Értesítések
+                    <Link
+                      href="/app/notifications"
+                      className="flex w-full justify-start items-center gap-1"
+                    >
+                      <Bell className="mr-2 h-4 w-4" />
+                      Értesítések
+                      {unreadCount > 0 && (
+                        <span className="ml-1 rounded-full bg-red-500 text-white text-[10px] px-1.5 py-0.5 leading-none">
+                          {unreadCount > 9 ? "9+" : unreadCount}
+                        </span>
+                      )}
+                    </Link>
                   </Button>
                   <Separator className="my-1 bg-faded/20" />
                   <Button

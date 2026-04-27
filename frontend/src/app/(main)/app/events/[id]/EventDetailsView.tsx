@@ -271,7 +271,11 @@ export const EventDetailsView = ({
   );
 
   if (isEventLoading) {
-    return <Spinner />;
+    return (
+      <div className="h-screen w-screen flex justify-center items-center">
+        <Spinner />
+      </div>
+    );
   }
 
   if (isEventError || !event) {

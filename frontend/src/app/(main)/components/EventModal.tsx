@@ -1,6 +1,7 @@
 "use client";
 
 import { useModal } from "@/contexts/ModalContext";
+import { usePopupModal } from "@/contexts/PopupModalContext";
 import {
   CreateEventNewsResponse,
   CreateEventCommentResponse,
@@ -21,6 +22,7 @@ import { useEffect, useState } from "react";
 
 export const EventModal = () => {
   const { isOpen, closeModal, selectedEvent, setEvent } = useModal();
+  const { showAlert, showConfirm } = usePopupModal();
   const queryClient = useQueryClient();
   const [commentContent, setCommentContent] = useState("");
   const [newsTitle, setNewsTitle] = useState("");
@@ -101,11 +103,11 @@ export const EventModal = () => {
           error.response?.data?.message ??
           error.response?.data?.error ??
           "Jelentkezés sikertelen.";
-        window.alert(errorMessage);
+        showAlert({ message: errorMessage, tone: "error" });
         return;
       }
 
-      window.alert("Jelentkezés sikertelen.");
+      showAlert({ message: "Jelentkezés sikertelen.", tone: "error" });
     },
   });
 
@@ -167,9 +169,11 @@ export const EventModal = () => {
       }
 
       if (response?.data?.comment?.isDeleted) {
-        window.alert(
-          "A hozzászólás moderálás miatt el lett rejtve. Ezt csak adminok láthatják.",
-        );
+        showAlert({
+          message:
+            "A hozzászólás moderálás miatt el lett rejtve. Ezt csak adminok láthatják.",
+          tone: "warning",
+        });
       }
 
       queryClient.invalidateQueries({
@@ -182,11 +186,11 @@ export const EventModal = () => {
           error.response?.data?.message ??
           error.response?.data?.error ??
           "Hozzászólás mentése sikertelen.";
-        window.alert(errorMessage);
+        showAlert({ message: errorMessage, tone: "error" });
         return;
       }
 
-      window.alert("Hozzászólás mentése sikertelen.");
+      showAlert({ message: "Hozzászólás mentése sikertelen.", tone: "error" });
     },
   });
 
@@ -219,11 +223,14 @@ export const EventModal = () => {
             error.response?.data?.message ??
             error.response?.data?.error ??
             "Hozzászólás törlése sikertelen.";
-          window.alert(errorMessage);
+          showAlert({ message: errorMessage, tone: "error" });
           return;
         }
 
-        window.alert("Hozzászólás törlése sikertelen.");
+        showAlert({
+          message: "Hozzászólás törlése sikertelen.",
+          tone: "error",
+        });
       },
     });
 
@@ -265,11 +272,11 @@ export const EventModal = () => {
             error.response?.data?.message ??
             error.response?.data?.error ??
             "Hír mentése sikertelen.";
-          window.alert(errorMessage);
+          showAlert({ message: errorMessage, tone: "error" });
           return;
         }
 
-        window.alert("Hír mentése sikertelen.");
+        showAlert({ message: "Hír mentése sikertelen.", tone: "error" });
       },
     });
 
@@ -322,11 +329,11 @@ export const EventModal = () => {
             error.response?.data?.message ??
             error.response?.data?.error ??
             "Hír frissítése sikertelen.";
-          window.alert(errorMessage);
+          showAlert({ message: errorMessage, tone: "error" });
           return;
         }
 
-        window.alert("Hír frissítése sikertelen.");
+        showAlert({ message: "Hír frissítése sikertelen.", tone: "error" });
       },
     });
 
@@ -359,11 +366,11 @@ export const EventModal = () => {
             error.response?.data?.message ??
             error.response?.data?.error ??
             "Hír törlése sikertelen.";
-          window.alert(errorMessage);
+          showAlert({ message: errorMessage, tone: "error" });
           return;
         }
 
-        window.alert("Hír törlése sikertelen.");
+        showAlert({ message: "Hír törlése sikertelen.", tone: "error" });
       },
     });
 
@@ -388,6 +395,36 @@ export const EventModal = () => {
     isCreateEventNewsPending ||
     isUpdateEventNewsPending ||
     isDeleteEventNewsPending;
+
+  const confirmDeleteNews = async (newsId: number) => {
+    const confirmed = await showConfirm({
+      message: "Biztosan törölni szeretnéd ezt a hírt?",
+      tone: "warning",
+      confirmText: "Törlés",
+      cancelText: "Mégse",
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    deleteEventNews(newsId);
+  };
+
+  const confirmDeleteComment = async (commentId: number) => {
+    const confirmed = await showConfirm({
+      message: "Biztosan törölni szeretnéd ezt a hozzászólást?",
+      tone: "warning",
+      confirmText: "Törlés",
+      cancelText: "Mégse",
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    deleteComment(commentId);
+  };
 
   const renderNewsTab = () => {
     if (isEventNewsLoading) {
@@ -543,15 +580,7 @@ export const EventModal = () => {
                       Publikálás
                     </button>
                     <button
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            "Biztosan törölni szeretnéd ezt a hírt?",
-                          )
-                        ) {
-                          deleteEventNews(news.id);
-                        }
-                      }}
+                      onClick={() => confirmDeleteNews(news.id)}
                       disabled={isNewsManagementPending}
                       className="text-xs px-2 py-1 rounded-lg bg-red-100 text-red-700 disabled:bg-faded/40 disabled:text-faded disabled:cursor-not-allowed"
                     >
@@ -603,15 +632,7 @@ export const EventModal = () => {
                         Vázlatba
                       </button>
                       <button
-                        onClick={() => {
-                          if (
-                            window.confirm(
-                              "Biztosan törölni szeretnéd ezt a hírt?",
-                            )
-                          ) {
-                            deleteEventNews(news.id);
-                          }
-                        }}
+                        onClick={() => confirmDeleteNews(news.id)}
                         disabled={isNewsManagementPending}
                         className="text-xs px-2 py-1 rounded-lg bg-red-100 text-red-700 disabled:bg-faded/40 disabled:text-faded disabled:cursor-not-allowed"
                       >
@@ -688,15 +709,7 @@ export const EventModal = () => {
                   </div>
                   {comment.canDelete && !comment.isDeleted && (
                     <button
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            "Biztosan törölni szeretnéd ezt a hozzászólást?",
-                          )
-                        ) {
-                          deleteComment(comment.id);
-                        }
-                      }}
+                      onClick={() => confirmDeleteComment(comment.id)}
                       disabled={isDeleteCommentPending}
                       className="text-xs text-red-600 hover:underline disabled:text-slate-400 disabled:no-underline"
                     >

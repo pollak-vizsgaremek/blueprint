@@ -18,7 +18,8 @@ import {
   Shield,
   User,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import axios from "axios";
 
 type ToggleOption = {
   id: BooleanAppSettingKey;
@@ -59,29 +60,47 @@ const SettingsPage = () => {
   const { user, logout } = useAuth();
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_APP_SETTINGS);
   const [isHydrated, setIsHydrated] = useState(false);
+  const hasInitializedFromDb = useRef(false);
 
   useEffect(() => {
+    if (!user) {
+      return;
+    }
+
     try {
       const rawSettings = window.localStorage.getItem(APP_SETTINGS_STORAGE_KEY);
-      if (!rawSettings) {
-        setIsHydrated(true);
-        return;
-      }
+      const parsedSettings = rawSettings
+        ? (JSON.parse(rawSettings) as Partial<AppSettings>)
+        : {};
 
-      const parsedSettings = JSON.parse(rawSettings) as Partial<AppSettings>;
-      setSettings((current) => ({
-        ...current,
+      const dbNotificationSettings = {
+        emailReminders:
+          user.settingJson?.emailReminders ??
+          DEFAULT_APP_SETTINGS.emailReminders,
+        eventUpdates:
+          user.settingJson?.eventUpdates ?? DEFAULT_APP_SETTINGS.eventUpdates,
+        commentsReplies:
+          user.settingJson?.commentsReplies ??
+          DEFAULT_APP_SETTINGS.commentsReplies,
+        marketingNews:
+          user.settingJson?.marketingNews ?? DEFAULT_APP_SETTINGS.marketingNews,
+      };
+
+      setSettings({
+        ...DEFAULT_APP_SETTINGS,
         ...parsedSettings,
-      }));
+        ...dbNotificationSettings,
+      });
     } catch {
       // Ignore invalid local storage payload and keep defaults.
     } finally {
+      hasInitializedFromDb.current = true;
       setIsHydrated(true);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
-    if (!isHydrated) {
+    if (!isHydrated || !hasInitializedFromDb.current) {
       return;
     }
 
@@ -90,6 +109,31 @@ const SettingsPage = () => {
       JSON.stringify(settings),
     );
     window.dispatchEvent(new Event(APP_SETTINGS_UPDATED_EVENT));
+
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        await axios.put(
+          `${process.env.NEXT_PUBLIC_API_URL}/users/profile`,
+          {
+            settingJson: {
+              emailReminders: settings.emailReminders,
+              eventUpdates: settings.eventUpdates,
+              commentsReplies: settings.commentsReplies,
+              marketingNews: settings.marketingNews,
+            },
+          },
+          {
+            withCredentials: true,
+          },
+        );
+      } catch {
+        // Ignore sync failures and keep local settings.
+      }
+    }, 350);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
   }, [isHydrated, settings]);
 
   const setToggle = (id: BooleanAppSettingKey) => {

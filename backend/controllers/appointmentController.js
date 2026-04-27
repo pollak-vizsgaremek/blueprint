@@ -1,4 +1,5 @@
 import prisma from "../config/database.js";
+import { createBulkNotifications } from "../services/notificationService.js";
 
 const parseDate = (value) => {
   const parsed = new Date(value);
@@ -216,6 +217,25 @@ export const createAppointment = async (req, res) => {
       },
     });
 
+    await createBulkNotifications([
+      {
+        userId: studentId,
+        title: "Időpont létrehozva",
+        message: `Sikeresen létrehoztad az időpontot: ${appointment.purpose || "Új időpont"}`,
+        url: "/app/appointments",
+        type: "success",
+        category: "appointments",
+      },
+      {
+        userId: parsedTeacherId,
+        title: "Új időpont kérés",
+        message: `Új időpont kérés érkezett tőled: ${appointment.purpose || "Új időpont"}`,
+        url: "/app/appointments",
+        type: "info",
+        category: "appointments",
+      },
+    ]);
+
     res.status(201).json({
       message: "Appointment created successfully",
       appointment: mapAppointment(appointment),
@@ -360,6 +380,25 @@ export const updateAppointment = async (req, res) => {
       },
     });
 
+    await createBulkNotifications([
+      {
+        userId: studentId,
+        title: "Időpont frissítve",
+        message: `Frissítetted az időpontot: ${updated.purpose || "Időpont"}`,
+        url: "/app/appointments",
+        type: "info",
+        category: "appointments",
+      },
+      {
+        userId: updated.teacherId,
+        title: "Időpont módosítva",
+        message: `Egy hozzád kapcsolódó időpont módosult: ${updated.purpose || "Időpont"}`,
+        url: "/app/appointments",
+        type: "warning",
+        category: "appointments",
+      },
+    ]);
+
     res.json({
       message: "Appointment updated successfully",
       appointment: mapAppointment(updated),
@@ -396,6 +435,8 @@ export const deleteAppointment = async (req, res) => {
       },
       select: {
         id: true,
+        teacherId: true,
+        purpose: true,
       },
     });
 
@@ -406,6 +447,25 @@ export const deleteAppointment = async (req, res) => {
     await prisma.teacherReservation.delete({
       where: { id: appointmentId },
     });
+
+    await createBulkNotifications([
+      {
+        userId: studentId,
+        title: "Időpont törölve",
+        message: `Törölted az időpontot: ${existing.purpose || "Időpont"}`,
+        url: "/app/appointments",
+        type: "warning",
+        category: "appointments",
+      },
+      {
+        userId: existing.teacherId,
+        title: "Időpont lemondva",
+        message: `Egy hozzád kapcsolódó időpont törölve lett: ${existing.purpose || "Időpont"}`,
+        url: "/app/appointments",
+        type: "warning",
+        category: "appointments",
+      },
+    ]);
 
     res.json({
       message: "Appointment deleted successfully",

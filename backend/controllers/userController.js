@@ -2,6 +2,24 @@ import prisma from "../config/database.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
+const DEFAULT_SETTING_JSON = {
+  emailReminders: true,
+  eventUpdates: true,
+  commentsReplies: false,
+  marketingNews: false,
+};
+
+const normalizeSettingJson = (value) => {
+  if (!value || typeof value !== "object") {
+    return { ...DEFAULT_SETTING_JSON };
+  }
+
+  return {
+    ...DEFAULT_SETTING_JSON,
+    ...value,
+  };
+};
+
 const JWT_SECRET =
   process.env.JWT_SECRET ||
   "your-super-secret-jwt-key-change-this-in-production";
@@ -129,6 +147,7 @@ export const getCurrentUser = async (req, res) => {
         role: user.role,
         isAdmin: user.isAdmin,
         dateOfBirth: user.dateOfBirth,
+        settingJson: normalizeSettingJson(user.settingJson),
       },
     });
   } catch (error) {
@@ -179,7 +198,7 @@ export const userLogout = async (req, res) => {
 };
 
 export const updateCurrentUser = async (req, res) => {
-  const { name, email, password, dateOfBirth } = req.body;
+  const { name, email, password, dateOfBirth, settingJson } = req.body;
   try {
     // req.user is populated by the authenticateToken middleware
     const user = req.user;
@@ -204,19 +223,53 @@ export const updateCurrentUser = async (req, res) => {
       });
     }
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        name: name ?? undefined,
-        email: email ?? undefined,
-        dateOfBirth: dateOfBirth
-          ? (new Date(dateOfBirth) ?? undefined)
+    const updateData = {
+      name: name ?? undefined,
+      email: email ?? undefined,
+      dateOfBirth: dateOfBirth
+        ? (new Date(dateOfBirth) ?? undefined)
+        : undefined,
+      settingJson:
+        settingJson !== undefined
+          ? normalizeSettingJson(settingJson)
           : undefined,
-        password: (await bcrypt.hash(password, 10)) ?? undefined,
+    };
+
+    if (typeof password === "string" && password.trim().length > 0) {
+      updateData.password = await bcrypt.hash(password, 10);
+    }
+
+    if (Object.keys(updateData).every((key) => updateData[key] === undefined)) {
+      return res.status(400).json({
+        error: "No valid fields to update",
+        message: "Please provide at least one field to update",
+      });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: updateData,
+      select: {
+        name: true,
+        email: true,
+        role: true,
+        dateOfBirth: true,
+        settingJson: true,
       },
     });
 
-    res.status(200).json({ message: "User updated successfully" });
+    res.status(200).json({
+      message: "User updated successfully",
+      user: {
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        dateOfBirth: updatedUser.dateOfBirth
+          ? updatedUser.dateOfBirth.toISOString().slice(0, 10)
+          : null,
+        settingJson: normalizeSettingJson(updatedUser.settingJson),
+      },
+    });
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });
   }

@@ -1,7 +1,7 @@
 "use client";
 
-import { useAuth } from "@/contexts/AuthContext";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
+import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import {
   CalendarDays,
@@ -10,9 +10,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
-  Newspaper,
   Shield,
-  Users,
   X,
 } from "lucide-react";
 import Image from "next/image";
@@ -21,27 +19,25 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 const navItems = [
-  { href: "/admin", label: "Áttekintés", icon: LayoutDashboard },
-  { href: "/admin/events", label: "Események", icon: CalendarDays },
-  { href: "/admin/users", label: "Felhasználók", icon: Users },
-  { href: "/admin/news", label: "Hírek", icon: Newspaper },
-  { href: "/admin/appointments", label: "Időpontok", icon: Clock3 },
+  { href: "/teacher", label: "Áttekintés", icon: LayoutDashboard },
+  { href: "/teacher/events", label: "Események", icon: CalendarDays },
+  { href: "/teacher/appointments", label: "Időpontok", icon: Clock3 },
   {
-    href: "/admin/teacher-availability",
-    label: "Tanári sávok",
+    href: "/teacher/availability",
+    label: "Elérhetőségek",
     icon: CalendarRange,
   },
 ];
 
 const isActivePath = (pathname: string, href: string) => {
-  if (href === "/admin") {
+  if (href === "/teacher") {
     return pathname === href;
   }
 
   return pathname === href || pathname.startsWith(`${href}/`);
 };
 
-export const AdminShell = ({ children }: { children: React.ReactNode }) => {
+export const TeacherShell = ({ children }: { children: React.ReactNode }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
   const { user, logout } = useAuth();
@@ -77,7 +73,7 @@ export const AdminShell = ({ children }: { children: React.ReactNode }) => {
       <header className="sticky top-0 z-40 pt-4 pb-3 backdrop-blur-md bg-primary/70 border-b border-faded/10">
         <div className="w-7/8 mx-auto flex items-center justify-between gap-4">
           <Link
-            href="/admin"
+            href="/teacher"
             className="flex items-center gap-3 hover:text-accent transition ease-in-out"
           >
             <Image
@@ -91,7 +87,7 @@ export const AdminShell = ({ children }: { children: React.ReactNode }) => {
                 Blueprint
               </div>
               <div className="text-xs text-faded uppercase tracking-[0.2em]">
-                Admin
+                Teacher
               </div>
             </div>
           </Link>
@@ -99,7 +95,7 @@ export const AdminShell = ({ children }: { children: React.ReactNode }) => {
           <div className="hidden md:flex items-center gap-3">
             <WorkspaceSwitcher />
             <div className="rounded-xl border border-faded/20 bg-secondary/50 px-3 py-2 text-sm">
-              <span className="text-faded">Admin:</span>{" "}
+              <span className="text-faded">Tanár:</span>{" "}
               <span className="font-medium">{user?.name ?? "-"}</span>
             </div>
             <button
@@ -115,7 +111,7 @@ export const AdminShell = ({ children }: { children: React.ReactNode }) => {
             type="button"
             onClick={() => setIsMenuOpen(true)}
             className="md:hidden rounded-xl border border-faded/20 bg-secondary/50 p-2"
-            aria-label="Admin menü megnyitása"
+            aria-label="Tanári menü megnyitása"
           >
             <Menu size={24} />
           </button>
@@ -126,7 +122,7 @@ export const AdminShell = ({ children }: { children: React.ReactNode }) => {
         <div className="fixed inset-0 z-50 md:hidden">
           <button
             type="button"
-            aria-label="Admin menü bezárása"
+            aria-label="Tanári menü bezárása"
             onClick={() => setIsMenuOpen(false)}
             className="absolute inset-0 bg-black/40"
           />
@@ -134,13 +130,13 @@ export const AdminShell = ({ children }: { children: React.ReactNode }) => {
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2 font-semibold">
                 <Shield size={18} className="text-accent" />
-                Admin menü
+                Tanári menü
               </div>
               <button
                 type="button"
                 onClick={() => setIsMenuOpen(false)}
                 className="rounded-lg border border-faded/20 p-2"
-                aria-label="Admin menü bezárása"
+                aria-label="Tanári menü bezárása"
               >
                 <X size={18} />
               </button>

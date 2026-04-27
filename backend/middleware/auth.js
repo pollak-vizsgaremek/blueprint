@@ -176,3 +176,88 @@ export const authenticateAdminToken = async (req, res, next) => {
     });
   }
 };
+
+// Middleware to verify teacher JWT token
+export const authenticateTeacherToken = async (req, res, next) => {
+  // Try to get token from cookie first, then fallback to Authorization header
+  let token = req.cookies?.token;
+
+  if (!token) {
+    const authHeader = req.headers["authorization"];
+    token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+  }
+
+  if (!token) {
+    return res.status(401).json({
+      error: "Access denied",
+      message: "No teacher token provided",
+    });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    const dbUser = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: {
+        id: true,
+        role: true,
+        status: true,
+        deletedAt: true,
+      },
+    });
+
+    if (!dbUser) {
+      return res.status(401).json({
+        error: "Access denied",
+        message: "User not found",
+      });
+    }
+
+    if (dbUser.deletedAt || dbUser.status !== "active") {
+      return res.status(403).json({
+        error: "Access denied",
+        message: "Account is not active",
+      });
+    }
+
+    // Check if user is teacher
+    if (dbUser.role !== "teacher") {
+      return res.status(403).json({
+        error: "Access denied",
+        message: "Teacher privileges required",
+      });
+    }
+
+    const user = {
+      id: decoded.userId,
+      email: decoded.email,
+      name: decoded.name,
+      role: dbUser.role,
+      isAdmin: false,
+      dateOfBirth: decoded.dateOfBirth,
+    };
+
+    req.user = user;
+    next();
+  } catch (error) {
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({
+        error: "Access denied",
+        message: "Teacher token has expired",
+      });
+    }
+
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({
+        error: "Access denied",
+        message: "Invalid teacher token",
+      });
+    }
+
+    return res.status(500).json({
+      error: "Internal server error",
+      message: "Error verifying teacher token",
+    });
+  }
+};

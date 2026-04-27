@@ -32,9 +32,26 @@ model user {
   notifications notification[]
   teacherReservations teacherReservation[] @relation("TeacherReservations")
   studentReservations teacherReservation[] @relation("StudentReservations")
+  teacherAvailabilities teacherAvailability[] @relation("TeacherAvailabilities")
   news          news[]         @relation("NewsAuthor")
   eventNews     eventNews[]    @relation("EventNewsAuthor")
   eventComments eventComment[]
+}
+
+model teacherAvailability {
+  id           Int      @id @default(autoincrement())
+  teacherId    Int
+  dayOfWeek    Int
+  startMinutes Int
+  endMinutes   Int
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  teacher      user     @relation("TeacherAvailabilities", fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherId, dayOfWeek, startMinutes, endMinutes])
+  @@index([teacherId, dayOfWeek, isActive])
 }
 
 model event {

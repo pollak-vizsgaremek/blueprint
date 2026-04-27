@@ -18,7 +18,6 @@ import {
   Pen,
   Settings,
   Shield,
-  User,
   X,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
@@ -28,6 +27,7 @@ import { isReducedMotionEnabled } from "@/lib/motion";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { GetUnreadNotificationCountResponse } from "@/types";
+import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
 const roboto = Roboto_Mono({
   subsets: ["latin"],
 });
@@ -39,6 +39,21 @@ export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const path = usePathname();
   const { user, logout } = useAuth();
+
+  const appNavLinks = [
+    { href: "/app", label: "Főoldal" },
+    { href: "/app/events", label: "Események" },
+    { href: "/app/appointments", label: "Időpontok" },
+  ] as const;
+
+  const isAppNavActive = (href: string) => {
+    if (href === "/app") {
+      return path === "/app";
+    }
+
+    return path === href || path.startsWith(`${href}/`);
+  };
+
   const { data: unreadData } = useQuery({
     queryKey: ["notifications", "unread-count"],
     queryFn: async () => {
@@ -89,41 +104,27 @@ export const Header = () => {
               <div className={roboto.className}>Blueprint</div>
             </div>
           </Link>
-          <div className="flex gap-5 items-center relative max-md:hidden -translate-x-15 justify-center text-xl *:hover:text-faded *:hover:scale-90 *:transition *:ease-in-out">
-            <div
-              className={cn(
-                "bg-accent h-[2px] absolute bottom-0 transition left-0 ease-in-out",
-                {
-                  "w-17 translate-x-0": path === "/app",
-                  "w-27 translate-x-22": path === "/app/events",
-                  "w-26 translate-x-53": path === "/app/appointments",
-                },
-              )}
-            ></div>
-            <Link
-              href="/app"
-              className={cn("select-none", {
-                "pointer-events-none": path === "/app",
-              })}
-            >
-              Főoldal
-            </Link>
-            <Link
-              href="/app/events"
-              className={cn("select-none", {
-                "pointer-events-none": path === "/app/events",
-              })}
-            >
-              Események
-            </Link>
-            <Link
-              href="/app/appointments"
-              className={cn("select-none", {
-                "pointer-events-none": path === "/app/appointments",
-              })}
-            >
-              Időpontok
-            </Link>
+          <div className="flex gap-5 items-center max-md:hidden -translate-x-15 justify-center text-xl *:hover:text-faded *:hover:scale-90 *:transition *:ease-in-out">
+            {appNavLinks.map((item) => {
+              const isActive = isAppNavActive(item.href);
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "relative select-none pb-1 after:pointer-events-none after:absolute after:-bottom-0 after:left-1/2 after:block after:h-[2px] after:-translate-x-1/2 after:rounded-full after:bg-accent after:content-[''] after:transition-all after:duration-200",
+                    {
+                      "pointer-events-none after:w-[100%] after:opacity-100":
+                        isActive,
+                      "after:w-0 after:opacity-0": !isActive,
+                    },
+                  )}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
           </div>
           <div className="flex items-center flex-row-reverse gap-3">
             <Menu
@@ -176,6 +177,21 @@ export const Header = () => {
                       >
                         <Shield className="mr-2 h-4 w-4" />
                         Admin felület
+                      </Link>
+                    </Button>
+                  )}
+                  {user?.role === "teacher" && (
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start"
+                      size="sm"
+                    >
+                      <Link
+                        href="/teacher"
+                        className="flex w-full justify-start items-center gap-1"
+                      >
+                        <Shield className="mr-2 h-4 w-4" />
+                        Tanári felület
                       </Link>
                     </Button>
                   )}

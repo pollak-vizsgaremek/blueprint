@@ -1,12 +1,11 @@
 import prisma from "../config/database.js";
 import { createBulkNotifications } from "../services/notificationService.js";
+import { findMatchingAvailabilitySlot } from "../services/teacherAvailabilityService.js";
 
 const parseDate = (value) => {
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
-
-const addOneHour = (date) => new Date(date.getTime() + 60 * 60 * 1000);
 
 const isInFuture = (date) => date.getTime() > Date.now();
 
@@ -137,7 +136,7 @@ export const createAppointment = async (req, res) => {
   const parsedTeacherId = parseInt(req.body?.teacherId, 10);
   const title = normalizeTitle(req.body?.title);
   const startTime = parseDate(req.body?.startTime);
-  const endTime = startTime ? addOneHour(startTime) : null;
+  const endTime = parseDate(req.body?.endTime);
 
   if (Number.isNaN(parsedTeacherId)) {
     return res.status(400).json({
@@ -153,10 +152,17 @@ export const createAppointment = async (req, res) => {
     });
   }
 
-  if (!startTime) {
+  if (!startTime || !endTime) {
     return res.status(400).json({
       error: "Invalid date",
-      message: "startTime must be a valid date",
+      message: "startTime and endTime must be valid dates",
+    });
+  }
+
+  if (endTime <= startTime) {
+    return res.status(400).json({
+      error: "Invalid date range",
+      message: "endTime must be later than startTime",
     });
   }
 
@@ -174,6 +180,20 @@ export const createAppointment = async (req, res) => {
       return res.status(400).json({
         error: "Invalid teacher",
         message: "Selected user is not a teacher",
+      });
+    }
+
+    const availability = await findMatchingAvailabilitySlot({
+      teacherId: parsedTeacherId,
+      startTime,
+      endTime,
+    });
+
+    if (!availability) {
+      return res.status(400).json({
+        error: "Invalid availability",
+        message:
+          "The selected time does not match an available weekly teacher slot",
       });
     }
 
@@ -319,7 +339,17 @@ export const updateAppointment = async (req, res) => {
         });
       }
       updateData.startTime = parsed;
-      updateData.endTime = addOneHour(parsed);
+    }
+
+    if (req.body?.endTime !== undefined) {
+      const parsed = parseDate(req.body.endTime);
+      if (!parsed) {
+        return res.status(400).json({
+          error: "Invalid endTime",
+          message: "endTime must be a valid date",
+        });
+      }
+      updateData.endTime = parsed;
     }
 
     if (req.body?.description !== undefined) {
@@ -337,10 +367,31 @@ export const updateAppointment = async (req, res) => {
     const nextEndTime = updateData.endTime || existing.endTime;
     const nextTeacherId = updateData.teacherId || existing.teacherId;
 
+    if (nextEndTime <= nextStartTime) {
+      return res.status(400).json({
+        error: "Invalid date range",
+        message: "endTime must be later than startTime",
+      });
+    }
+
     if (!isInFuture(nextStartTime) || !isInFuture(nextEndTime)) {
       return res.status(400).json({
         error: "Invalid date range",
         message: "Appointments can only be scheduled for future times",
+      });
+    }
+
+    const availability = await findMatchingAvailabilitySlot({
+      teacherId: nextTeacherId,
+      startTime: nextStartTime,
+      endTime: nextEndTime,
+    });
+
+    if (!availability) {
+      return res.status(400).json({
+        error: "Invalid availability",
+        message:
+          "The selected time does not match an available weekly teacher slot",
       });
     }
 

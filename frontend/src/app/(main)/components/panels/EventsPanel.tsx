@@ -59,6 +59,7 @@ export const EventsPanel = () => {
                       src={registration.event.imageUrl!}
                       alt={registration.event.name}
                       fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                       className="rounded-t-xl w-full object-center"
                     />
                   </div>

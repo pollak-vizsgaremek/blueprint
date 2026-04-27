@@ -17,6 +17,7 @@ export const EventTile = ({ event }: { event: Event }) => {
           src={event.imageUrl!}
           alt="Event"
           fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           priority
           className="rounded-t-2xl block object-center"
         />

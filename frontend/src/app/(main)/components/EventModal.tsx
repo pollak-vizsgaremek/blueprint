@@ -743,15 +743,15 @@ export const EventModal = () => {
     isOpen && (
       <div
         onClick={closeModal}
-        className="w-screen h-screen fixed z-[1000] flex justify-center items-center left-0 top-0 bg-black/40"
+        className="fixed left-0 top-0 z-[1000] flex h-screen w-screen items-center justify-center bg-black/40 p-2 sm:p-4"
       >
         <div
           onClick={(e) => {
             e.stopPropagation();
           }}
         >
-          <div className="rounded-xl w-[1000px] h-[750px] flex flex-col bg-secondary/70 backdrop-blur-xl">
-            <div className="relative shrink-0 w-auto h-[300px]">
+          <div className="flex h-[min(750px,calc(100vh-1rem))] w-[min(1000px,calc(100vw-1rem))] flex-col rounded-xl bg-secondary/70 backdrop-blur-xl sm:h-[min(750px,calc(100vh-2rem))] sm:w-[min(1000px,calc(100vw-2rem))]">
+            <div className="relative h-[180px] shrink-0 w-full sm:h-[220px] md:h-[260px] lg:h-[300px]">
               <div className="absolute top-5 right-5 z-100 flex items-center gap-2">
                 <Link
                   href={`/app/events/${selectedEvent?.id}/details`}
@@ -773,8 +773,9 @@ export const EventModal = () => {
                 src={selectedEvent!.imageUrl!}
                 alt="Event"
                 fill
-                priority
-                className="rounded-t-xl"
+                sizes="(max-width: 640px) calc(100vw - 1rem), (max-width: 1024px) calc(100vw - 2rem), 1000px"
+                quality={75}
+                className="rounded-t-xl object-cover"
               />
             </div>
             <div className="flex items-center p-5 pb-5 border-b-[1px] bg-secondary/30 border-b-faded/20 text-2xl">

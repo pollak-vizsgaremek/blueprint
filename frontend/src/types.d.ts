@@ -88,6 +88,15 @@ export interface AdminAppointment extends Appointment {
   } | null;
 }
 
+export interface TeacherAppointment extends Appointment {
+  student: {
+    id: number;
+    name: string;
+    email: string;
+    role: "admin" | "user" | "teacher";
+  } | null;
+}
+
 export interface GetAppointmentsResponse {
   message: string;
   appointments: Appointment[];
@@ -124,6 +133,47 @@ export interface UpdateAppointmentResponse {
 
 export interface DeleteAppointmentResponse {
   message: string;
+}
+
+export interface TeacherAvailability {
+  id: number;
+  teacherId: number;
+  dayOfWeek: number;
+  startMinutes: number;
+  endMinutes: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GetTeacherAvailabilityResponse {
+  message: string;
+  availability: TeacherAvailability[];
+}
+
+export interface TeacherAvailabilityMutationResponse {
+  message: string;
+  availability: TeacherAvailability;
+}
+
+export interface TeacherAppointmentsResponse {
+  message: string;
+  appointments: TeacherAppointment[];
+}
+
+export interface TeacherAppointmentMutationResponse {
+  message: string;
+  appointment: TeacherAppointment;
+}
+
+export interface TeacherEventsResponse {
+  message: string;
+  events: EventWithRegistrationInfo[];
+}
+
+export interface AdminTeacherAvailabilityListResponse {
+  message: string;
+  availability: TeacherAvailability[];
 }
 
 export interface CreateUserRequest {

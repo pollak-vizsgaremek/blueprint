@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import prisma from "../config/database.js";
 import { deleteEventImageFromMinio } from "../middleware/upload.js";
+import { findMatchingAvailabilitySlot } from "../services/teacherAvailabilityService.js";
 
 export const getAllUsers = async (req, res) => {
   try {
@@ -46,7 +47,8 @@ export const getUserById = async (req, res) => {
 
 export const updateUser = async (req, res) => {
   const { id } = req.params;
-  const { name, email, password, dateOfBirth, role, status, emailVerified } = req.body;
+  const { name, email, password, dateOfBirth, role, status, emailVerified } =
+    req.body;
   try {
     const targetUserId = parseInt(id);
 
@@ -84,7 +86,8 @@ export const updateUser = async (req, res) => {
       dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
       role: role ?? undefined,
       status: status ?? undefined,
-      emailVerified: emailVerified !== undefined ? Boolean(emailVerified) : undefined,
+      emailVerified:
+        emailVerified !== undefined ? Boolean(emailVerified) : undefined,
     };
 
     // Only hash and update password when a new password is explicitly provided
@@ -118,7 +121,8 @@ export const updateUser = async (req, res) => {
 };
 
 export const createAdminUser = async (req, res) => {
-  const { name, email, password, dateOfBirth, role, status, emailVerified } = req.body;
+  const { name, email, password, dateOfBirth, role, status, emailVerified } =
+    req.body;
   try {
     if (!name || !email || !password) {
       return res.status(400).json({
@@ -144,7 +148,8 @@ export const createAdminUser = async (req, res) => {
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
         role: role ?? "user",
         status: status ?? "active",
-        emailVerified: emailVerified !== undefined ? Boolean(emailVerified) : false,
+        emailVerified:
+          emailVerified !== undefined ? Boolean(emailVerified) : false,
       },
     });
 
@@ -193,7 +198,10 @@ export const getAllAppointments = async (req, res) => {
       student: a.student,
     }));
 
-    res.json({ message: "Appointments retrieved successfully", appointments: mapped });
+    res.json({
+      message: "Appointments retrieved successfully",
+      appointments: mapped,
+    });
   } catch (error) {
     console.error("Error fetching all appointments:", error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -206,7 +214,8 @@ export const createAdminAppointment = async (req, res) => {
     if (!teacherId || !studentId || !title || !startTime || !endTime) {
       return res.status(400).json({
         error: "Missing required fields",
-        message: "teacherId, studentId, title, startTime and endTime are required",
+        message:
+          "teacherId, studentId, title, startTime and endTime are required",
       });
     }
 
@@ -217,6 +226,20 @@ export const createAdminAppointment = async (req, res) => {
       return res.status(400).json({
         error: "Invalid date range",
         message: "endTime must be after startTime and both must be valid dates",
+      });
+    }
+
+    const availability = await findMatchingAvailabilitySlot({
+      teacherId: Number(teacherId),
+      startTime: start,
+      endTime: end,
+    });
+
+    if (!availability) {
+      return res.status(400).json({
+        error: "Invalid availability",
+        message:
+          "The selected time does not match an available weekly teacher slot",
       });
     }
 
@@ -267,7 +290,9 @@ export const updateAdminAppointment = async (req, res) => {
       return res.status(400).json({ error: "Invalid appointment ID" });
     }
 
-    const existing = await prisma.teacherReservation.findUnique({ where: { id } });
+    const existing = await prisma.teacherReservation.findUnique({
+      where: { id },
+    });
     if (!existing) {
       return res.status(404).json({ error: "Appointment not found" });
     }
@@ -279,6 +304,38 @@ export const updateAdminAppointment = async (req, res) => {
     if (startTime !== undefined) updateData.startTime = new Date(startTime);
     if (endTime !== undefined) updateData.endTime = new Date(endTime);
     if (status !== undefined) updateData.status = status;
+
+    const nextTeacherId =
+      updateData.teacherId !== undefined
+        ? updateData.teacherId
+        : existing.teacherId;
+    const nextStartTime =
+      updateData.startTime !== undefined
+        ? updateData.startTime
+        : existing.startTime;
+    const nextEndTime =
+      updateData.endTime !== undefined ? updateData.endTime : existing.endTime;
+
+    if (nextEndTime <= nextStartTime) {
+      return res.status(400).json({
+        error: "Invalid date range",
+        message: "endTime must be after startTime and both must be valid dates",
+      });
+    }
+
+    const availability = await findMatchingAvailabilitySlot({
+      teacherId: nextTeacherId,
+      startTime: nextStartTime,
+      endTime: nextEndTime,
+    });
+
+    if (!availability) {
+      return res.status(400).json({
+        error: "Invalid availability",
+        message:
+          "The selected time does not match an available weekly teacher slot",
+      });
+    }
 
     const updated = await prisma.teacherReservation.update({
       where: { id },
@@ -320,7 +377,9 @@ export const deleteAdminAppointment = async (req, res) => {
       return res.status(400).json({ error: "Invalid appointment ID" });
     }
 
-    const existing = await prisma.teacherReservation.findUnique({ where: { id } });
+    const existing = await prisma.teacherReservation.findUnique({
+      where: { id },
+    });
     if (!existing) {
       return res.status(404).json({ error: "Appointment not found" });
     }
@@ -409,7 +468,9 @@ export const updateNews = async (req, res) => {
       return res.status(400).json({ error: "Invalid news ID" });
     }
 
-    const existing = await prisma.news.findFirst({ where: { id, deletedAt: null } });
+    const existing = await prisma.news.findFirst({
+      where: { id, deletedAt: null },
+    });
     if (!existing) {
       return res.status(404).json({ error: "News not found" });
     }
@@ -422,7 +483,9 @@ export const updateNews = async (req, res) => {
       const shouldPublish = isPublished === true || isPublished === "true";
       updateData.isPublished = shouldPublish;
       updateData.publishedAt = shouldPublish
-        ? (existing.isPublished ? existing.publishedAt : new Date())
+        ? existing.isPublished
+          ? existing.publishedAt
+          : new Date()
         : null;
     }
 
@@ -458,12 +521,17 @@ export const deleteNews = async (req, res) => {
       return res.status(400).json({ error: "Invalid news ID" });
     }
 
-    const existing = await prisma.news.findFirst({ where: { id, deletedAt: null } });
+    const existing = await prisma.news.findFirst({
+      where: { id, deletedAt: null },
+    });
     if (!existing) {
       return res.status(404).json({ error: "News not found" });
     }
 
-    await prisma.news.update({ where: { id }, data: { deletedAt: new Date() } });
+    await prisma.news.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
     res.json({ message: "News deleted successfully" });
   } catch (error) {
     console.error("Error deleting news:", error);
@@ -487,7 +555,9 @@ export const createAdminRegistration = async (req, res) => {
     });
 
     if (existingRegistration) {
-      return res.status(409).json({ error: "User is already registered for this event" });
+      return res
+        .status(409)
+        .json({ error: "User is already registered for this event" });
     }
 
     const registration = await prisma.registration.create({
@@ -501,7 +571,9 @@ export const createAdminRegistration = async (req, res) => {
       },
     });
 
-    res.status(201).json({ message: "Registration created successfully", registration });
+    res
+      .status(201)
+      .json({ message: "Registration created successfully", registration });
   } catch (error) {
     console.error("Error creating registration:", error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -765,7 +837,10 @@ export const getAllNotifications = async (req, res) => {
       },
       orderBy: { createdAt: "desc" },
     });
-    res.json({ message: "Notifications retrieved successfully", notifications });
+    res.json({
+      message: "Notifications retrieved successfully",
+      notifications,
+    });
   } catch (error) {
     console.error("Error fetching notifications:", error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -794,7 +869,9 @@ export const createNotification = async (req, res) => {
       },
     });
 
-    res.status(201).json({ message: "Notification created successfully", notification });
+    res
+      .status(201)
+      .json({ message: "Notification created successfully", notification });
   } catch (error) {
     console.error("Error creating notification:", error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -806,7 +883,8 @@ export const updateNotification = async (req, res) => {
   const { userId, title, message, type, url, isRead } = req.body;
   try {
     const id = parseInt(notificationId, 10);
-    if (isNaN(id)) return res.status(400).json({ error: "Invalid notification ID" });
+    if (isNaN(id))
+      return res.status(400).json({ error: "Invalid notification ID" });
 
     const updateData = {};
     if (userId !== undefined) updateData.userId = parseInt(userId, 10);
@@ -835,7 +913,8 @@ export const deleteNotification = async (req, res) => {
   const { notificationId } = req.params;
   try {
     const id = parseInt(notificationId, 10);
-    if (isNaN(id)) return res.status(400).json({ error: "Invalid notification ID" });
+    if (isNaN(id))
+      return res.status(400).json({ error: "Invalid notification ID" });
 
     await prisma.notification.delete({ where: { id } });
     res.json({ message: "Notification deleted successfully" });

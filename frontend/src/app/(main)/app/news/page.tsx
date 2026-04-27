@@ -82,6 +82,7 @@ const NewsPage = () => {
                     src={news.imageUrl}
                     alt={news.title}
                     fill
+                    sizes="(max-width: 768px) 100vw, 220px"
                     className="object-cover"
                   />
                 </div>

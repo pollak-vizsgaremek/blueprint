@@ -8,8 +8,11 @@ import adminUserRoutes from "./routes/admin/adminUsers.js";
 import adminAppointmentsRoutes from "./routes/admin/adminAppointments.js";
 import adminNewsRoutes from "./routes/admin/adminNews.js";
 import adminNotificationsRoutes from "./routes/admin/adminNotifications.js";
+import adminTeacherAvailabilityRoutes from "./routes/admin/adminTeacherAvailability.js";
 import appointmentRoutes from "./routes/appointments.js";
 import notificationRoutes from "./routes/notifications.js";
+import teacherAvailabilityRoutes from "./routes/teacherAvailability.js";
+import teacherRoutes from "./routes/teacher.js";
 
 const app = express();
 
@@ -88,10 +91,13 @@ app.get("/health", (req, res) => {
 app.use("/events", eventRoutes);
 app.use("/users", userRoutes);
 app.use("/appointments", appointmentRoutes);
+app.use("/teacher-availability", teacherAvailabilityRoutes);
 app.use("/notifications", notificationRoutes);
+app.use("/teacher", teacherRoutes);
 app.use("/admin/events", adminEventsRoutes);
 app.use("/admin/users", adminUserRoutes);
 app.use("/admin/appointments", adminAppointmentsRoutes);
+app.use("/admin/teacher-availability", adminTeacherAvailabilityRoutes);
 app.use("/admin/news", adminNewsRoutes);
 app.use("/admin/notifications", adminNotificationsRoutes);
 

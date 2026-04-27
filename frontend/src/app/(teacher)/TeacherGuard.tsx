@@ -1,21 +1,20 @@
 "use client";
 
-import { Spinner } from "@/components/Spinner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-export const AdminGuard = ({ children }: { children: React.ReactNode }) => {
-  const { isLoading, isAdmin } = useAuth();
+export const TeacherGuard = ({ children }: { children: React.ReactNode }) => {
+  const { isLoading, user } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && !isAdmin) {
+    if (!isLoading && user?.role !== "teacher") {
       router.replace("/app");
     }
-  }, [isAdmin, isLoading, router]);
+  }, [isLoading, router, user?.role]);
 
-  if (isLoading || !isAdmin) {
+  if (isLoading || user?.role !== "teacher") {
     return <></>;
   }
 

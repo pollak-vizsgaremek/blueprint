@@ -76,7 +76,7 @@ export const CalendarPanel = () => {
             {monthNames[previewDate.getMonth()]}
           </div>
         </div>
-        <div className="text-center py-1 text-white text-sm w-full bg-green-400 rounded-b-sm px-2 truncate">
+        <div className="text-center py-1 text-white text-sm w-full bg-accent rounded-b-sm px-2 truncate">
           {isLoading
             ? "Betöltés..."
             : upcomingEvent

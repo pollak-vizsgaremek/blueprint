@@ -9,7 +9,9 @@ import {
   CreateAppointmentResponse,
   DeleteAppointmentResponse,
   GetAppointmentsResponse,
+  GetTeacherAvailabilityResponse,
   GetTeachersResponse,
+  TeacherAvailability,
   TeacherOption,
   UpdateAppointmentRequest,
   UpdateAppointmentResponse,
@@ -100,13 +102,44 @@ const statusBadgeClasses: Record<Appointment["status"], string> = {
 type FormState = {
   teacherId: string;
   title: string;
-  startTime: string;
+  date: string;
+  slotId: string;
 };
 
 const initialFormState: FormState = {
   teacherId: "",
   title: "",
-  startTime: "",
+  date: "",
+  slotId: "",
+};
+
+const isoDayToLabel: Record<number, string> = {
+  1: "Hétfő",
+  2: "Kedd",
+  3: "Szerda",
+  4: "Csütörtök",
+  5: "Péntek",
+  6: "Szombat",
+  7: "Vasárnap",
+};
+
+const toTimeLabel = (minutes: number) => {
+  const safe = Math.max(0, Math.min(1439, minutes));
+  const hours = String(Math.floor(safe / 60)).padStart(2, "0");
+  const mins = String(safe % 60).padStart(2, "0");
+  return `${hours}:${mins}`;
+};
+
+const toIsoDay = (date: Date) => {
+  const day = date.getDay();
+  return day === 0 ? 7 : day;
+};
+
+const toDateAndMinutesIso = (dateValue: string, minutes: number) => {
+  const [year, month, day] = dateValue.split("-").map(Number);
+  const date = new Date(year, month - 1, day, 0, 0, 0, 0);
+  date.setMinutes(minutes);
+  return date.toISOString();
 };
 
 const AppointmentsPage = () => {
@@ -152,12 +185,49 @@ const AppointmentsPage = () => {
     },
   });
 
+  const selectedTeacherId = parseInt(form.teacherId, 10);
+  const {
+    data: availabilityData,
+    isLoading: isAvailabilityLoading,
+    isError: isAvailabilityError,
+  } = useQuery({
+    queryKey: ["teacher-availability", selectedTeacherId],
+    enabled: !Number.isNaN(selectedTeacherId),
+    queryFn: async () => {
+      const { data } = await axios.get<GetTeacherAvailabilityResponse>(
+        `${process.env.NEXT_PUBLIC_API_URL}/teacher-availability/${selectedTeacherId}`,
+        {
+          withCredentials: true,
+        },
+      );
+      return data;
+    },
+  });
+
   const appointments = useMemo(
     () => appointmentsData?.appointments ?? [],
     [appointmentsData],
   );
 
   const teachers = useMemo(() => teachersData?.teachers ?? [], [teachersData]);
+
+  const teacherAvailability = useMemo(
+    () => availabilityData?.availability ?? [],
+    [availabilityData],
+  );
+
+  const selectedDate = form.date ? new Date(`${form.date}T00:00:00`) : null;
+  const selectedDaySlots = useMemo(() => {
+    if (!selectedDate) {
+      return [];
+    }
+
+    const day = toIsoDay(selectedDate);
+
+    return teacherAvailability
+      .filter((slot) => slot.dayOfWeek === day && slot.isActive)
+      .sort((a, b) => a.startMinutes - b.startMinutes);
+  }, [selectedDate, teacherAvailability]);
 
   const resetForm = () => {
     setForm(initialFormState);
@@ -292,16 +362,30 @@ const AppointmentsPage = () => {
       return;
     }
 
-    if (!form.startTime) {
+    if (!form.date) {
       await showAlert({
-        message: "Kérlek add meg a kezdő időpontot.",
+        message: "Kérlek add meg a dátumot.",
         tone: "warning",
       });
       return;
     }
 
-    const startDate = new Date(form.startTime);
-    const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+    const selectedSlot = selectedDaySlots.find(
+      (slot) => String(slot.id) === form.slotId,
+    );
+
+    if (!selectedSlot) {
+      await showAlert({
+        message: "Kérlek válassz elérhető idősávot.",
+        tone: "warning",
+      });
+      return;
+    }
+
+    const startIso = toDateAndMinutesIso(form.date, selectedSlot.startMinutes);
+    const endIso = toDateAndMinutesIso(form.date, selectedSlot.endMinutes);
+    const startDate = new Date(startIso);
+    const endDate = new Date(endIso);
 
     if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
       await showAlert({
@@ -368,8 +452,8 @@ const AppointmentsPage = () => {
     const payload: CreateAppointmentRequest = {
       teacherId,
       title,
-      startTime: startDate.toISOString(),
-      endTime: endDate.toISOString(),
+      startTime: startIso,
+      endTime: endIso,
     };
 
     if (editingAppointmentId) {
@@ -384,11 +468,26 @@ const AppointmentsPage = () => {
   };
 
   const handleEdit = (appointment: Appointment) => {
+    const startDate = new Date(appointment.startTime);
+    const endDate = new Date(appointment.endTime);
+    const day = toIsoDay(startDate);
+    const startMinutes = startDate.getHours() * 60 + startDate.getMinutes();
+    const endMinutes = endDate.getHours() * 60 + endDate.getMinutes();
+
+    const matchingSlot = teacherAvailability.find(
+      (slot) =>
+        slot.teacherId === appointment.teacherId &&
+        slot.dayOfWeek === day &&
+        slot.startMinutes === startMinutes &&
+        slot.endMinutes === endMinutes,
+    );
+
     setEditingAppointmentId(appointment.id);
     setForm({
       teacherId: String(appointment.teacherId),
       title: appointment.title || appointment.purpose || "",
-      startTime: toLocalInputValue(appointment.startTime),
+      date: toLocalInputValue(appointment.startTime).split("T")[0] || "",
+      slotId: matchingSlot ? String(matchingSlot.id) : "",
     });
   };
 
@@ -451,6 +550,7 @@ const AppointmentsPage = () => {
                     setForm((previous) => ({
                       ...previous,
                       teacherId: event.target.value,
+                      slotId: "",
                     }))
                   }
                   className="w-full border border-faded/25 rounded-xl px-3 py-2 bg-secondary/70 focus:outline-none focus:border-accent"
@@ -483,21 +583,68 @@ const AppointmentsPage = () => {
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm text-faded">Kezdés</label>
+                <label className="text-sm text-faded">Dátum</label>
                 <input
-                  type="datetime-local"
-                  value={form.startTime}
+                  type="date"
+                  value={form.date}
                   onChange={(event) =>
                     setForm((previous) => ({
                       ...previous,
-                      startTime: event.target.value,
+                      date: event.target.value,
+                      slotId: "",
                     }))
                   }
                   className="w-full border border-faded/25 rounded-xl px-3 py-2 bg-secondary/70 focus:outline-none focus:border-accent"
                   required
                 />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm text-faded">Elérhető idősáv</label>
+                {!form.teacherId ? (
+                  <div className="text-faded text-sm">
+                    Először válassz tanárt.
+                  </div>
+                ) : isAvailabilityLoading ? (
+                  <Spinner />
+                ) : isAvailabilityError ? (
+                  <div className="text-red-600 text-sm">
+                    Nem sikerült betölteni a tanár elérhetőségét.
+                  </div>
+                ) : !form.date ? (
+                  <div className="text-faded text-sm">
+                    Válassz dátumot az idősávokhoz.
+                  </div>
+                ) : selectedDaySlots.length === 0 ? (
+                  <div className="text-faded text-sm">
+                    Nincs elérhető idősáv erre a napra (
+                    {isoDayToLabel[toIsoDay(new Date(`${form.date}T00:00:00`))]}
+                    ).
+                  </div>
+                ) : (
+                  <select
+                    value={form.slotId}
+                    onChange={(event) =>
+                      setForm((previous) => ({
+                        ...previous,
+                        slotId: event.target.value,
+                      }))
+                    }
+                    className="w-full border border-faded/25 rounded-xl px-3 py-2 bg-secondary/70 focus:outline-none focus:border-accent"
+                    required
+                  >
+                    <option value="">Válassz idősávot...</option>
+                    {selectedDaySlots.map((slot: TeacherAvailability) => (
+                      <option key={slot.id} value={slot.id}>
+                        {toTimeLabel(slot.startMinutes)} -{" "}
+                        {toTimeLabel(slot.endMinutes)}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <p className="text-xs text-faded">
-                  A befejezés automatikusan 1 órával a kezdés után lesz.
+                  Csak a tanár heti elérhetősége alapján foglalható idősávok
+                  jelennek meg.
                 </p>
               </div>
 

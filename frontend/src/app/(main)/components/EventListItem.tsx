@@ -18,6 +18,7 @@ export const EventListItem = ({ event }: { event: Event }) => {
             src={event.imageUrl!}
             alt="Event"
             fill
+            sizes="120px"
             priority
             className="rounded-lg object-center"
           />

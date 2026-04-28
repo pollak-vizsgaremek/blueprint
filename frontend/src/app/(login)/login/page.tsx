@@ -4,14 +4,24 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import axios from "axios";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [resetEmail, setResetEmail] = useState("");
+  const [isResetOpen, setIsResetOpen] = useState(false);
+  const [isResetLoading, setIsResetLoading] = useState(false);
+  const [resetMessage, setResetMessage] = useState("");
+  const [resetError, setResetError] = useState("");
+  const [showResendVerification, setShowResendVerification] = useState(false);
+  const [isResendLoading, setIsResendLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
+  const [resendError, setResendError] = useState("");
 
-  const { login, user } = useAuth();
+  const { login } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -24,12 +34,91 @@ const LoginPage = () => {
       await login(email, password);
 
       router.push("/app");
-    } catch (err) {
+    } catch (err: unknown) {
+      const authError = err as Error & { code?: string };
+      if (authError.code === "email_not_verified") {
+        setShowResendVerification(true);
+      } else {
+        setShowResendVerification(false);
+      }
+
       setError(
-        err instanceof Error ? err.message : "A bejelentkezés sikertelen"
+        authError instanceof Error
+          ? authError.message
+          : "A bejelentkezés sikertelen"
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    const targetEmail = email.trim();
+
+    if (!targetEmail) {
+      setResendError("A kérés sikertelen.");
+      setResendMessage("");
+      return;
+    }
+
+    setIsResendLoading(true);
+    setResendError("");
+    setResendMessage("");
+
+    try {
+      const { data } = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/users/email-confirmation/request`,
+        {
+          email: targetEmail,
+        },
+        {
+          withCredentials: true,
+        },
+      );
+
+      setResendMessage(
+        data?.message ||
+          "Ha létezik a fiók, elküldtük a megerősítő emailt.",
+      );
+    } catch (err) {
+      setResendError("A kérés sikertelen.");
+    } finally {
+      setIsResendLoading(false);
+    }
+  };
+
+  const handlePasswordResetRequest = async () => {
+    const targetEmail = (resetEmail || email).trim();
+
+    if (!targetEmail) {
+      setResetError("A kérés sikertelen.");
+      setResetMessage("");
+      return;
+    }
+
+    setIsResetLoading(true);
+    setResetError("");
+    setResetMessage("");
+
+    try {
+      const { data } = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/users/password-reset/request`,
+        {
+          email: targetEmail,
+        },
+        {
+          withCredentials: true,
+        },
+      );
+
+      setResetMessage(
+        data?.message ||
+          "Ha létezik a fiók, elküldtük a jelszó-visszaállító emailt.",
+      );
+    } catch (err) {
+      setResetError("A kérés sikertelen.");
+    } finally {
+      setIsResetLoading(false);
     }
   };
 
@@ -94,8 +183,94 @@ const LoginPage = () => {
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent"
                 placeholder="Írja be a jelszavát"
               />
+              <div className="mt-2 text-right">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsResetOpen((prev) => !prev);
+                    setResetEmail(email);
+                    setResetError("");
+                    setResetMessage("");
+                  }}
+                  className="text-sm text-accent hover:text-accent/80 cursor-pointer"
+                >
+                  Elfelejtett jelszó?
+                </button>
+              </div>
             </div>
           </div>
+
+          {isResetOpen ? (
+            <div className="rounded-md border border-faded/30 bg-secondary/30 p-4 space-y-3">
+              <p className="text-sm text-gray-700">
+                Add meg az email címed, és küldünk jelszó-visszaállító linket.
+              </p>
+              <div className="space-y-3">
+                <input
+                  type="email"
+                  value={resetEmail}
+                  onChange={(event) => setResetEmail(event.target.value)}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent"
+                  placeholder="email@pelda.hu"
+                  required
+                />
+
+                {resetError ? (
+                  <div className="bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded text-sm">
+                    {resetError}
+                  </div>
+                ) : null}
+
+                {resetMessage ? (
+                  <div className="bg-emerald-100 border border-emerald-300 text-emerald-800 px-3 py-2 rounded text-sm">
+                    {resetMessage}
+                  </div>
+                ) : null}
+
+                <button
+                  type="button"
+                  onClick={handlePasswordResetRequest}
+                  disabled={isResetLoading}
+                  className="w-full py-2 px-4 text-sm rounded-md text-white bg-accent hover:bg-accent/80 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isResetLoading
+                    ? "Küldés..."
+                    : "Jelszó-visszaállító link küldése"}
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          {showResendVerification ? (
+            <div className="rounded-md border border-faded/30 bg-secondary/30 p-4 space-y-3">
+              <p className="text-sm text-gray-700">
+                Még nem erősítetted meg az email címed.
+              </p>
+
+              {resendError ? (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded text-sm">
+                  {resendError}
+                </div>
+              ) : null}
+
+              {resendMessage ? (
+                <div className="bg-emerald-100 border border-emerald-300 text-emerald-800 px-3 py-2 rounded text-sm">
+                  {resendMessage}
+                </div>
+              ) : null}
+
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={isResendLoading}
+                className="w-full py-2 px-4 text-sm rounded-md text-white bg-accent hover:bg-accent/80 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isResendLoading
+                  ? "Küldés..."
+                  : "Megerősítő email újraküldése"}
+              </button>
+            </div>
+          ) : null}
 
           <div>
             <button

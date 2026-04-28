@@ -581,8 +581,31 @@ export const EventDetailsView = ({
             </div>
           </div>
         ) : (
-          <div className="pt-2 px-10 pb-2 flex grow overflow-y-scroll flex-col text-faded">
-            Helyszín információ hamarosan.
+          <div className="pt-2 px-10 pb-6 flex grow overflow-y-scroll flex-col">
+            <div className="text-lg font-semibold">Helyszín</div>
+            <div className="text-faded mt-1 mb-4">{event.location}</div>
+
+            {event.mapImageUrl ? (
+              <div className="rounded-xl border border-faded/20 bg-secondary/40 p-3">
+                <div className="relative h-80 w-full overflow-hidden rounded-xl bg-faded/10">
+                  <Image
+                    src={event.mapImageUrl}
+                    alt={event.mapName ?? `${event.name} térkép`}
+                    fill
+                    className="object-contain"
+                  />
+                </div>
+                {event.mapName ? (
+                  <div className="mt-2 text-sm text-faded">
+                    Térkép preset: {event.mapName}
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-faded/30 bg-secondary/30 p-4 text-faded">
+                Ehhez az eseményhez még nincs hozzárendelt terem-/osztálytérkép.
+              </div>
+            )}
           </div>
         )}
       </div>

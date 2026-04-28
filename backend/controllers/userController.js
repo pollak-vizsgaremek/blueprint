@@ -1,6 +1,11 @@
 import prisma from "../config/database.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import {
+  isEmailServiceConfigured,
+  sendEmailConfirmationEmail,
+  sendPasswordResetEmail,
+} from "../services/emailService.js";
 
 const DEFAULT_SETTING_JSON = {
   emailReminders: true,
@@ -21,6 +26,8 @@ const normalizeSettingJson = (value) => {
 };
 
 const JWT_SECRET = process.env.JWT_SECRET;
+const EMAIL_CONFIRM_SECRET = `${JWT_SECRET}:email-confirm`;
+const PASSWORD_RESET_SECRET_PREFIX = `${JWT_SECRET}:password-reset`;
 
 if (!JWT_SECRET) {
   throw new Error("JWT_SECRET environment variable is required");
@@ -38,6 +45,42 @@ export const generateToken = (user) => {
       : null,
   };
   return jwt.sign(payload, JWT_SECRET, { expiresIn: "24h" });
+};
+
+const createEmailConfirmationToken = (user) => {
+  return jwt.sign(
+    {
+      purpose: "email-confirmation",
+      userId: user.id,
+      email: user.email,
+    },
+    EMAIL_CONFIRM_SECRET,
+    { expiresIn: "24h" },
+  );
+};
+
+const createPasswordResetToken = (user) => {
+  return jwt.sign(
+    {
+      purpose: "password-reset",
+      userId: user.id,
+    },
+    `${PASSWORD_RESET_SECRET_PREFIX}:${user.password}`,
+    { expiresIn: "1h" },
+  );
+};
+
+const parseTokenPayload = (token) => {
+  if (!token || typeof token !== "string") {
+    return null;
+  }
+
+  const decoded = jwt.decode(token);
+  if (!decoded || typeof decoded !== "object") {
+    return null;
+  }
+
+  return decoded;
 };
 
 export const createUser = async (req, res) => {
@@ -61,6 +104,20 @@ export const createUser = async (req, res) => {
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
       },
     });
+
+    if (isEmailServiceConfigured()) {
+      try {
+        const confirmationToken = createEmailConfirmationToken(newUser);
+        const emailResult = await sendEmailConfirmationEmail({
+          email: newUser.email,
+          name: newUser.name,
+          token: confirmationToken,
+        });
+        console.log("[REGISTER EMAIL RESULT]", emailResult);
+      } catch (emailError) {
+        console.error("Failed to send confirmation email:", emailError);
+      }
+    }
 
     // Generate JWT token for the new user
     const token = generateToken(newUser);
@@ -114,6 +171,14 @@ export const userLogin = async (req, res) => {
       return res.status(403).json({
         error: "Access denied",
         message: "Account is not active",
+      });
+    }
+
+    if (!user.emailVerified) {
+      return res.status(403).json({
+        error: "Az email nincs megerősítve",
+        code: "email_not_verified",
+        message: "Az email cím még nincs megerősítve",
       });
     }
 
@@ -289,5 +354,262 @@ export const updateCurrentUser = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+export const requestEmailConfirmation = async (req, res) => {
+  const email = req.body?.email?.trim();
+
+  if (!email) {
+    return res.status(400).json({
+      error: "Missing required fields",
+      message: "Email is required",
+    });
+  }
+
+  if (!isEmailServiceConfigured()) {
+    return res.status(503).json({
+      error: "Email szolgáltatás nem elérhető",
+      message: "Az email szolgáltatás nincs beállítva",
+    });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        emailVerified: true,
+        status: true,
+        deletedAt: true,
+      },
+    });
+
+    if (user && !user.emailVerified && !user.deletedAt && user.status === "active") {
+      const token = createEmailConfirmationToken(user);
+      const emailResult = await sendEmailConfirmationEmail({
+        email: user.email,
+        name: user.name,
+        token,
+      });
+      console.log("[EMAIL CONFIRMATION REQUEST RESULT]", emailResult);
+    } else {
+      console.log("[EMAIL CONFIRMATION REQUEST SKIPPED]", {
+        reason: "Account is missing or not eligible",
+      });
+    }
+
+    return res.json({
+      message:
+        "Ha létezik jogosult fiók, elküldtük a megerősítő emailt",
+    });
+  } catch (error) {
+    console.error("Error requesting email confirmation:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+export const confirmEmail = async (req, res) => {
+  const token = req.body?.token;
+
+  if (!token) {
+    return res.status(400).json({
+      error: "Missing required fields",
+      message: "Token is required",
+    });
+  }
+
+  try {
+    const payload = jwt.verify(token, EMAIL_CONFIRM_SECRET);
+
+    if (
+      !payload ||
+      typeof payload !== "object" ||
+      payload.purpose !== "email-confirmation"
+    ) {
+      return res.status(400).json({
+        error: "Invalid token",
+        message: "Email confirmation token is invalid",
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: {
+        id: true,
+        email: true,
+        emailVerified: true,
+      },
+    });
+
+    if (!user || user.email !== payload.email) {
+      return res.status(400).json({
+        error: "Invalid token",
+        message: "Email confirmation token is invalid",
+      });
+    }
+
+    if (user.emailVerified) {
+      return res.json({ message: "Email is already confirmed" });
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { emailVerified: true },
+    });
+
+    return res.json({ message: "Email confirmed successfully" });
+  } catch (error) {
+    if (error?.name === "TokenExpiredError") {
+      return res.status(400).json({
+        error: "Token expired",
+        message: "Email confirmation token has expired",
+      });
+    }
+
+    if (error?.name === "JsonWebTokenError") {
+      return res.status(400).json({
+        error: "Invalid token",
+        message: "Email confirmation token is invalid",
+      });
+    }
+
+    console.error("Error confirming email:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+export const requestPasswordReset = async (req, res) => {
+  const email = req.body?.email?.trim();
+
+  if (!email) {
+    return res.status(400).json({
+      error: "Missing required fields",
+      message: "Email is required",
+    });
+  }
+
+  if (!isEmailServiceConfigured()) {
+    return res.status(503).json({
+      error: "Email szolgáltatás nem elérhető",
+      message: "Az email szolgáltatás nincs beállítva",
+    });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        password: true,
+        status: true,
+        deletedAt: true,
+      },
+    });
+
+    if (user && !user.deletedAt && user.status === "active") {
+      const token = createPasswordResetToken(user);
+      const emailResult = await sendPasswordResetEmail({
+        email: user.email,
+        name: user.name,
+        token,
+      });
+      console.log("[PASSWORD RESET REQUEST RESULT]", emailResult);
+    } else {
+      console.log("[PASSWORD RESET REQUEST SKIPPED]", {
+        reason: "Account is missing or not eligible",
+      });
+    }
+
+    return res.json({
+      message:
+        "Ha létezik jogosult fiók, elküldtük a jelszó-visszaállító emailt",
+    });
+  } catch (error) {
+    console.error("Error requesting password reset:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  const token = req.body?.token;
+  const nextPassword = req.body?.password;
+
+  if (!token || !nextPassword || typeof nextPassword !== "string") {
+    return res.status(400).json({
+      error: "Missing required fields",
+      message: "Token and password are required",
+    });
+  }
+
+  if (nextPassword.trim().length < 8) {
+    return res.status(400).json({
+      error: "Invalid password",
+      message: "Password must be at least 8 characters long",
+    });
+  }
+
+  try {
+    const decodedPayload = parseTokenPayload(token);
+
+    if (
+      !decodedPayload ||
+      decodedPayload.purpose !== "password-reset" ||
+      typeof decodedPayload.userId !== "number"
+    ) {
+      return res.status(400).json({
+        error: "Invalid token",
+        message: "Password reset token is invalid",
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: decodedPayload.userId },
+      select: {
+        id: true,
+        password: true,
+        status: true,
+        deletedAt: true,
+      },
+    });
+
+    if (!user || user.deletedAt || user.status !== "active") {
+      return res.status(400).json({
+        error: "Invalid token",
+        message: "Password reset token is invalid",
+      });
+    }
+
+    jwt.verify(token, `${PASSWORD_RESET_SECRET_PREFIX}:${user.password}`);
+
+    const hashedPassword = await bcrypt.hash(nextPassword, 10);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashedPassword },
+    });
+
+    return res.json({ message: "Password reset successfully" });
+  } catch (error) {
+    if (error?.name === "TokenExpiredError") {
+      return res.status(400).json({
+        error: "Token expired",
+        message: "Password reset token has expired",
+      });
+    }
+
+    if (error?.name === "JsonWebTokenError") {
+      return res.status(400).json({
+        error: "Invalid token",
+        message: "Password reset token is invalid",
+      });
+    }
+
+    console.error("Error resetting password:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };

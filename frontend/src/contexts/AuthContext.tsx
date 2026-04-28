@@ -78,11 +78,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       setUser(response.data.user);
     } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        "Sikertelen bejelentkezés";
-      throw new Error(errorMessage);
+      const payload = error.response?.data;
+      const errorMessage = "A bejelentkezés sikertelen.";
+      const authError = new Error(errorMessage) as Error & { code?: string };
+      authError.code = payload?.code;
+      throw authError;
     } finally {
       setIsLoading(false);
     }

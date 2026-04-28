@@ -279,6 +279,12 @@ export const getAllEvents = async (req, res) => {
 
     const events = await prisma.event.findMany({
       include: {
+        eventMap: {
+          select: {
+            name: true,
+            imageUrl: true,
+          },
+        },
         registrations: userId
           ? {
               where: {
@@ -315,6 +321,9 @@ export const getAllEvents = async (req, res) => {
         imageUrl: event.imageUrl,
         creator: event.creator,
         location: event.location,
+        eventMapId: event.eventMapId,
+        mapImageUrl: event.eventMap?.imageUrl ?? null,
+        mapName: event.eventMap?.name ?? null,
         date: event.date,
         maxParticipants: event.maxParticipants,
         createdAt: event.createdAt,
@@ -1037,6 +1046,13 @@ export const getUserEventRegistrations = async (req, res) => {
             imageUrl: true,
             creator: true,
             location: true,
+            eventMapId: true,
+            eventMap: {
+              select: {
+                imageUrl: true,
+                name: true,
+              },
+            },
             date: true,
             maxParticipants: true,
             createdAt: true,
@@ -1053,7 +1069,20 @@ export const getUserEventRegistrations = async (req, res) => {
         id: reg.id,
         registeredAt: reg.registeredAt,
         status: reg.status,
-        event: reg.event,
+        event: {
+          id: reg.event.id,
+          name: reg.event.name,
+          description: reg.event.description,
+          imageUrl: reg.event.imageUrl,
+          creator: reg.event.creator,
+          location: reg.event.location,
+          eventMapId: reg.event.eventMapId,
+          mapImageUrl: reg.event.eventMap?.imageUrl ?? null,
+          mapName: reg.event.eventMap?.name ?? null,
+          date: reg.event.date,
+          maxParticipants: reg.event.maxParticipants,
+          createdAt: reg.event.createdAt,
+        },
       };
     });
 

@@ -358,6 +358,12 @@ export const getTeacherCreatedEvents = async (req, res) => {
         deletedAt: null,
       },
       include: {
+        eventMap: {
+          select: {
+            name: true,
+            imageUrl: true,
+          },
+        },
         _count: {
           select: {
             registrations: {
@@ -380,6 +386,9 @@ export const getTeacherCreatedEvents = async (req, res) => {
       imageUrl: event.imageUrl,
       creator: event.creator,
       location: event.location,
+      eventMapId: event.eventMapId,
+      mapImageUrl: event.eventMap?.imageUrl ?? null,
+      mapName: event.eventMap?.name ?? null,
       date: event.date,
       maxParticipants: event.maxParticipants,
       createdAt: event.createdAt,

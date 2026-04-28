@@ -35,53 +35,67 @@ const upload = multer({
   },
 });
 
-// Middleware to upload event image to MinIO
-export const uploadEventImageToMinio = async (req, res, next) => {
-  if (!req.file) {
-    return next();
-  }
+const createMinioImageUploadMiddleware = ({
+  objectFolder,
+  filePrefix,
+  label,
+}) => {
+  return async (req, res, next) => {
+    if (!req.file) {
+      return next();
+    }
 
-  try {
-    const fileExtension = path.extname(req.file.originalname);
-    const fileName = `event-${uuidv4()}${fileExtension}`;
-    const objectName = `events/${fileName}`;
+    try {
+      const fileExtension = path.extname(req.file.originalname);
+      const fileName = `${filePrefix}-${uuidv4()}${fileExtension}`;
+      const objectName = `${objectFolder}/${fileName}`;
 
-    // Upload to MinIO
-    await minioClient.putObject(
-      BUCKET_NAME,
-      objectName,
-      req.file.buffer,
-      req.file.size,
-      {
-        "Content-Type": req.file.mimetype,
-      },
-    );
+      await minioClient.putObject(
+        BUCKET_NAME,
+        objectName,
+        req.file.buffer,
+        req.file.size,
+        {
+          "Content-Type": req.file.mimetype,
+        },
+      );
 
-    // Generate a permanent direct URL
-    const permanentUrl = generatePermanentUrl(objectName);
+      const permanentUrl = generatePermanentUrl(objectName);
 
-    // Add image info to request
-    req.uploadedImage = {
-      fileName: fileName,
-      objectName: objectName,
-      url: permanentUrl,
-      size: req.file.size,
-      mimetype: req.file.mimetype,
-    };
+      req.uploadedImage = {
+        fileName,
+        objectName,
+        url: permanentUrl,
+        size: req.file.size,
+        mimetype: req.file.mimetype,
+      };
 
-    console.log(`Event image uploaded successfully: ${objectName}`);
-    next();
-  } catch (error) {
-    console.error("Error uploading event image to MinIO:", error);
-    return res.status(500).json({
-      error: "Upload failed",
-      message: "Failed to upload event image to storage",
-    });
-  }
+      console.log(`${label} uploaded successfully: ${objectName}`);
+      next();
+    } catch (error) {
+      console.error(`Error uploading ${label} to MinIO:`, error);
+      return res.status(500).json({
+        error: "Upload failed",
+        message: `Failed to upload ${label} to storage`,
+      });
+    }
+  };
 };
 
-// Helper function to delete event image from MinIO
-export const deleteEventImageFromMinio = async (imageUrl) => {
+export const uploadEventImageToMinio = createMinioImageUploadMiddleware({
+  objectFolder: "events",
+  filePrefix: "event",
+  label: "event image",
+});
+
+export const uploadEventMapImageToMinio = createMinioImageUploadMiddleware({
+  objectFolder: "event-maps",
+  filePrefix: "event-map",
+  label: "event map image",
+});
+
+// Helper function to delete an image from MinIO
+export const deleteImageFromMinio = async (imageUrl) => {
   try {
     if (!imageUrl) return true;
 
@@ -116,13 +130,16 @@ export const deleteEventImageFromMinio = async (imageUrl) => {
     }
 
     await minioClient.removeObject(BUCKET_NAME, objectName);
-    console.log(`Event image deleted successfully: ${objectName}`);
+    console.log(`Image deleted successfully: ${objectName}`);
     return true;
   } catch (error) {
-    console.error("Error deleting event image from MinIO:", error);
+    console.error("Error deleting image from MinIO:", error);
     return false;
   }
 };
+
+// Backward-compatible export
+export const deleteEventImageFromMinio = deleteImageFromMinio;
 
 // Export the permanent URL generator for external use
 export { generatePermanentUrl };
@@ -131,6 +148,12 @@ export { generatePermanentUrl };
 export const uploadEventImage = [
   upload.single("image"),
   uploadEventImageToMinio,
+];
+
+// Middleware for event map image uploads
+export const uploadEventMapImage = [
+  upload.single("image"),
+  uploadEventMapImageToMinio,
 ];
 
 export { upload };

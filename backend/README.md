@@ -245,6 +245,39 @@ Authorization: Bearer <your-jwt-token>
   }
   ```
 
+- **POST** `/users/email-confirmation/request` - Request email confirmation link
+
+  ```json
+  {
+    "email": "john@example.com"
+  }
+  ```
+
+- **POST** `/users/email-confirmation/confirm` - Confirm email with token
+
+  ```json
+  {
+    "token": "<email-confirmation-token>"
+  }
+  ```
+
+- **POST** `/users/password-reset/request` - Request password reset link
+
+  ```json
+  {
+    "email": "john@example.com"
+  }
+  ```
+
+- **POST** `/users/password-reset/confirm` - Set new password with token
+
+  ```json
+  {
+    "token": "<password-reset-token>",
+    "password": "new-password-123"
+  }
+  ```
+
 #### Protected Routes
 
 - **GET** `/users/profile` - Get current user profile
@@ -361,6 +394,16 @@ The backend uses MinIO for secure file storage with the following features:
 | `AI_VERIFICATION_MODEL`    | Gemini model used for verification | gemini-2.0-flash   |
 | `AI_VERIFICATION_ENDPOINT` | Optional custom Gemini endpoint    | Derived from model |
 | `AI_MODERATION_LOG_LEVEL`  | Moderation logging verbosity       | verbose            |
+| `EMAIL_FROM`               | Sender email address               | no-reply@blueprint.local |
+| `EMAIL_LOG_ONLY`           | Log emails instead of sending      | false              |
+| `MS_TENANT_ID`             | Azure AD tenant ID                 | Optional           |
+| `MS_CLIENT_ID`             | Azure app client ID                | Optional           |
+| `MS_CLIENT_SECRET`         | Azure app client secret            | Optional           |
+| `MS_SENDER_USER`           | Mailbox used by Graph sendMail     | EMAIL_FROM         |
+| `MS_GRAPH_SCOPE`           | OAuth scope for Graph token        | https://graph.microsoft.com/.default |
+| `PUBLIC_URL`               | Frontend base URL for email links  | http://localhost:3000 |
+| `EMAIL_CONFIRM_PATH`       | Email confirmation path            | /confirm-email     |
+| `PASSWORD_RESET_PATH`      | Password reset path                | /reset-password    |
 
 ## Authorization & Security
 

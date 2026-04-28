@@ -89,38 +89,51 @@ backend/
    ```
 
 3. **Set up environment variables**
-   Create a `.env` file in the backend root directory:
+   Copy the example and edit values:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Example `.env` contents:
 
    ```env
-   # Database Configuration
+   # Database
    DATABASE_URL="mysql://username:password@localhost:3306/database_name"
 
-   # Authentication
+   # Auth
    JWT_SECRET="your-super-secret-jwt-key"
-
-   # Server Configuration
    PORT=8000
 
-   # MinIO Configuration
+   # MinIO
    MINIO_ENDPOINT="localhost"
    MINIO_PORT=9000
    MINIO_USE_SSL=false
    MINIO_ACCESS_KEY="blueprint"
    MINIO_SECRET_KEY="blueprint"
    MINIO_BUCKET="blueprint"
+
+   # Public frontend URL used in email links
+   PUBLIC_URL="http://localhost:3000"
+   EMAIL_CONFIRM_PATH="/confirm-email"
+   PASSWORD_RESET_PATH="/reset-password"
+
+   # Microsoft Graph OAuth2 (email sending)
+   MS_TENANT_ID=""
+   MS_CLIENT_ID=""
+   MS_CLIENT_SECRET=""
+   MS_SENDER_USER=""
+   MS_GRAPH_SCOPE="https://graph.microsoft.com/.default"
+
+   # Optional email debug mode
+   EMAIL_LOG_ONLY=false
+
+   # AI comment verification (optional)
+   AI_VERIFICATION_API_KEY=""
+   AI_VERIFICATION_MODEL="gemini-2.0-flash"
+   AI_MODERATION_LOG_LEVEL="verbose"
+   # AI_VERIFICATION_ENDPOINT="https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
    ```
-
-# AI Comment Verification (optional)
-
-AI_VERIFICATION_API_KEY=""
-AI_VERIFICATION_MODEL="gemini-2.0-flash"
-AI_MODERATION_LOG_LEVEL="verbose"
-
-# Optional override
-
-# AI_VERIFICATION_ENDPOINT="https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
-
-````
 
 4. **Set up the database**
 
@@ -133,7 +146,7 @@ npx prisma migrate deploy
 
 # (Optional) Seed the database
 npx prisma db seed
-````
+```
 
 5. **Set up MinIO Server**
 
@@ -244,6 +257,8 @@ Authorization: Bearer <your-jwt-token>
     "password": "password123"
   }
   ```
+  - Login requires verified email.
+  - Unverified accounts return `403` with `code: "email_not_verified"`.
 
 - **POST** `/users/email-confirmation/request` - Request email confirmation link
 
@@ -404,6 +419,31 @@ The backend uses MinIO for secure file storage with the following features:
 | `PUBLIC_URL`               | Frontend base URL for email links  | http://localhost:3000 |
 | `EMAIL_CONFIRM_PATH`       | Email confirmation path            | /confirm-email     |
 | `PASSWORD_RESET_PATH`      | Password reset path                | /reset-password    |
+
+## Email Delivery (OAuth2)
+
+- Email sending uses Microsoft Graph with OAuth2 client credentials.
+- SMTP/basic auth is not used.
+- `PUBLIC_URL` is used as the base URL for email links.
+
+Common Graph setup checks for `403 ErrorAccessDenied`:
+
+1. Add `Mail.Send` as **Application** permission in Microsoft Graph.
+2. Grant **Admin consent**.
+3. Ensure `MS_SENDER_USER` is a real mailbox in the same tenant.
+4. Ensure `MS_CLIENT_SECRET` uses the secret value (not secret ID).
+
+## AI Comment Moderation
+
+- Comment moderation uses a strict JSON-only classifier prompt.
+- The model must return exactly:
+
+```json
+{"isVerified": true, "reason": "meaningful and respectful"}
+```
+
+- Safety-first policy: uncertain content is treated as not verified.
+- The moderator blocks harassment, hate, threats, spam/scams, personal-data exposure, and clearly off-topic or meaningless content.
 
 ## Authorization & Security
 

@@ -23,7 +23,13 @@ Frontend application for the Blueprint event management platform.
 npm install
 ```
 
-2. Create a local `.env` file:
+2. Copy the env example:
+
+```bash
+cp .env.example .env
+```
+
+Or create a local `.env` file manually:
 
 ```env
 # Frontend API base URL
@@ -59,8 +65,17 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 - `/` - Landing page
 - `/login` - Login
 - `/register` - Register
+- `/confirm-email` - Email confirmation by token
+- `/reset-password` - Password reset by token
 - `/app` - Main authenticated app area
 - `/admin` - Admin area
+
+## Auth UX Notes
+
+- Login requires verified email.
+- If a user tries to log in without verified email, the login page shows a resend-confirmation action.
+- The login page includes a forgot-password request flow.
+- Error messages shown to end users are intentionally generic.
 
 ## Project Structure
 

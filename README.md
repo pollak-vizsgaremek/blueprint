@@ -160,6 +160,17 @@ Key environment variables (see `.env.example` for complete list):
 | `MINIO_SECRET_KEY` | MinIO secret key              | `blueprint`        |
 | `MINIO_BUCKET`     | MinIO bucket name             | `blueprint`        |
 
+## 🔑 Auth & Email Updates
+
+- Login now requires verified email.
+- Frontend supports token-based email confirmation and password reset pages:
+  - `/confirm-email?token=...`
+  - `/reset-password?token=...`
+- Login page includes:
+  - forgot-password request flow
+  - resend-confirmation flow for unverified accounts
+- Backend email sending uses Microsoft Graph OAuth2 (SMTP/basic auth is not used).
+
 ### Port Configuration
 
 Default ports:

@@ -92,7 +92,7 @@ export const CalendarPanel = () => {
   return (
     <Link
       href={`/calendar?date=${focusDate}`}
-      className="grow flex p-2 justify-between cursor-pointer rounded-xl"
+      className="grow flex pb-2 justify-between cursor-pointer rounded-xl"
     >
       <div className="w-2/3 m-auto h-full hover:bg-faded/30 transition ease-in-out border-[2px] flex flex-col justify-between rounded-md border-faded/20 ">
         <div className="flex justify-center grow items-center flex-col gap-2">

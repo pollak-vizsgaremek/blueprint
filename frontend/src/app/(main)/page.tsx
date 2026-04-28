@@ -58,7 +58,7 @@ const DashboardPage = () => {
       </div>
       <div className="flex w-full gap-4 max-md:flex-wrap" id="box">
         <div className="card-box flex flex-col basis-1/5">
-          <div className="card-title">Naptár</div>
+          <div className="card-title mb-3">Naptár</div>
           <CalendarPanel />
         </div>
         <div className="card-box flex flex-col basis-3/5">

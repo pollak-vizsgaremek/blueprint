@@ -91,7 +91,7 @@ const EventDiscussionTabPage = () => {
   }
 
   return (
-    <div className="pt-2 px-10 pb-2 flex grow overflow-y-scroll flex-col page-content">
+    <div className="pt-5 px-10 pb-2 flex grow overflow-y-scroll flex-col page-content">
       <div className="flex gap-2 mb-4 mt-1">
         <input
           value={commentContent}

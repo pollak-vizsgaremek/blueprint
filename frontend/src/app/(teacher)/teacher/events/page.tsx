@@ -9,6 +9,7 @@ import {
   CalendarDays,
   CalendarX2,
   MapPin,
+  Pen,
   Plus,
   TriangleAlert,
   Users,
@@ -288,7 +289,8 @@ const TeacherEventsPage = () => {
                         href={`/teacher/events/${event.id}`}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-faded/30 px-3 py-1.5 text-sm hover:bg-faded/10 transition ease-in-out"
                       >
-                        Részletek
+                        <Pen size={14} />
+                        Szerkesztés
                       </Link>
                     </div>
                   </div>

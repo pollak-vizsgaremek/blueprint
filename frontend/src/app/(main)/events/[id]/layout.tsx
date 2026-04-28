@@ -43,7 +43,7 @@ const EventLayoutBody = ({ children }: { children: React.ReactNode }) => {
   }
 
   return (
-    <main className="w-7/8 m-auto min-h-screen pt-24 pb-20">
+    <main className="w-7/8 m-auto min-h-screen pt-14 pb-20">
       <div className="rounded-xl w-full min-h-[750px] flex flex-col">
         <div className="relative shrink-0 bg-gray-400/10 backdrop-blur-xl rounded-t-xl overflow-hidden">
           {event.imageUrl ? (

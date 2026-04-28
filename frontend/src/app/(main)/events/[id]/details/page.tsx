@@ -6,6 +6,37 @@ import { useEventDetail } from "../../../../../contexts/EventDetailContext";
 import { isReducedMotionEnabled } from "@/lib/motion";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
+import {
+  Building2,
+  CalendarDays,
+  MapPin,
+  UserRound,
+  Users,
+} from "lucide-react";
+
+const formatDateTime = (value?: string) => {
+  if (!value) return "Ismeretlen";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Ismeretlen";
+  return date.toLocaleString("hu-HU", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const formatDateOnly = (value?: string) => {
+  if (!value) return "Ismeretlen";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Ismeretlen";
+  return date.toLocaleDateString("hu-HU", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};
 
 const EventDetailsTabPage = () => {
   const queryClient = useQueryClient();
@@ -66,20 +97,35 @@ const EventDetailsTabPage = () => {
   const canRegister = event.isUserRegistered || !event.isFull;
 
   return (
-    <div className="px-10 pt-5 pb-10 flex justify-between flex-col grow page-content">
+    <div className="px-10 mt-5 pb-10 flex justify-between flex-col grow page-content">
       <div>
         <div className="text-4xl mb-3">{event.name}</div>
         <div className="text-gray-600 text-justify mb-5">
           {event.description}
         </div>
-        <div className="flex justify-between">
-          <div>Szervező: {event.creator}</div>
-          <div>Dátum: {event.date.slice(0, 10)}</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+          <div className="rounded-xl border border-faded/20 bg-secondary/35 px-3 py-2 inline-flex items-center gap-2">
+            <UserRound size={16} className="text-accent" />
+            <span>Szervező: {event.creator || "Ismeretlen"}</span>
+          </div>
+          <div className="rounded-xl border border-faded/20 bg-secondary/35 px-3 py-2 inline-flex items-center gap-2">
+            <CalendarDays size={16} className="text-accent" />
+            <span>{formatDateTime(event.date)}</span>
+          </div>
+          <div className="rounded-xl border border-faded/20 bg-secondary/35 px-3 py-2 inline-flex items-center gap-2">
+            <MapPin size={16} className="text-accent" />
+            <span>{event.location || "Nincs helyszín"}</span>
+          </div>
+          <div className="rounded-xl border border-faded/20 bg-secondary/35 px-3 py-2 inline-flex items-center gap-2">
+            <Building2 size={16} className="text-accent" />
+            <span>{event.classroom || "Nincs tanterem"}</span>
+          </div>
         </div>
       </div>
       <div className="w-full justify-between flex mt-10 items-center">
-        <div className="text-gray-600">
-          Létrehozva: {event.createdAt.slice(0, 10)}
+        <div className="text-sm text-faded px-3 py-2 inline-flex items-center gap-2">
+          <CalendarDays size={16} className="" />
+          <span>Létrehozva: {formatDateOnly(event.createdAt)}</span>
         </div>
         <div className="flex gap-4 items-center">
           <div className="text-sm text-gray-600">

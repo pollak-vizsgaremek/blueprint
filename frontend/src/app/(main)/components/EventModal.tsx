@@ -15,12 +15,44 @@ import {
 } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import { ExternalLink, X } from "lucide-react";
+import {
+  Building2,
+  CalendarDays,
+  ExternalLink,
+  MapPin,
+  UserRound,
+  Users,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { EventNavigationMap } from "@/components/navigation/EventNavigationMap";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+
+const formatDateTime = (value?: string) => {
+  if (!value) return "Ismeretlen";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Ismeretlen";
+  return date.toLocaleString("hu-HU", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const formatDateOnly = (value?: string) => {
+  if (!value) return "Ismeretlen";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Ismeretlen";
+  return date.toLocaleDateString("hu-HU", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};
 
 export const EventModal = () => {
   const { isOpen, closeModal, selectedEvent, setEvent } = useModal();
@@ -466,7 +498,7 @@ export const EventModal = () => {
     };
 
     return (
-      <div className="pt-2 px-10 pb-2 flex grow overflow-y-scroll flex-col">
+      <div className="pt-2 px-10 pb-2 mt-5 flex grow overflow-y-scroll flex-col">
         {canManageNews && (
           <div className="mb-5 rounded-xl border border-faded/40 bg-white/30 p-3">
             <div className="text-lg mb-2">
@@ -663,7 +695,7 @@ export const EventModal = () => {
 
   const renderDiscussionTab = () => {
     return (
-      <div className="pt-2 px-10 pb-2 flex grow overflow-y-scroll flex-col">
+      <div className="pt-2 px-10 mt-5 pb-2 flex grow overflow-y-scroll flex-col">
         <div className="flex gap-2 mb-4 mt-1">
           <input
             value={commentContent}
@@ -759,7 +791,7 @@ export const EventModal = () => {
             e.stopPropagation();
           }}
         >
-          <div className="flex h-[min(750px,calc(100vh-1rem))] w-[min(1000px,calc(100vw-1rem))] flex-col rounded-xl bg-secondary/70 backdrop-blur-xl sm:h-[min(750px,calc(100vh-2rem))] sm:w-[min(1000px,calc(100vw-2rem))]">
+          <div className="flex h-[min(820px,calc(100vh-1rem))] w-[min(1200px,calc(100vw-1rem))] flex-col rounded-xl bg-secondary/70 backdrop-blur-xl sm:h-[min(820px,calc(100vh-2rem))] sm:w-[min(1200px,calc(100vw-2rem))]">
             <div className="relative h-[180px] shrink-0 w-full sm:h-[220px] md:h-[260px] lg:h-[300px]">
               <div className="absolute top-5 right-5 z-100 flex items-center gap-2">
                 <Link
@@ -783,7 +815,7 @@ export const EventModal = () => {
                 src={selectedEvent!.imageUrl!}
                 alt="Event"
                 fill
-                sizes="(max-width: 640px) calc(100vw - 1rem), (max-width: 1024px) calc(100vw - 2rem), 1000px"
+                sizes="(max-width: 640px) calc(100vw - 1rem), (max-width: 1280px) calc(100vw - 2rem), 1200px"
                 quality={75}
                 className="rounded-t-xl object-cover"
               />
@@ -831,22 +863,41 @@ export const EventModal = () => {
               </button>
             </div>
             {activeTab === "details" ? (
-              <div className="px-10 pb-10 flex justify-between flex-col grow">
-                <div className="">
+              <div className="px-10 pb-10 mt-5 flex justify-between flex-col grow">
+                <div>
                   <div className="text-4xl mb-3">{selectedEvent?.name}</div>
                   <div className="text-gray-600 text-justify mb-5">
                     {selectedEvent?.description}
                   </div>
-                  <div className="flex justify-between">
-                    <div className="">Szervező: {selectedEvent?.creator}</div>
-                    <div className="">
-                      Dátum: {selectedEvent?.date.slice(0, 10)}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                    <div className="rounded-xl border border-faded/20 bg-secondary/35 px-3 py-2 inline-flex items-center gap-2">
+                      <UserRound size={16} className="text-accent" />
+                      <span>
+                        Szervező: {selectedEvent?.creator || "Ismeretlen"}
+                      </span>
+                    </div>
+                    <div className="rounded-xl border border-faded/20 bg-secondary/35 px-3 py-2 inline-flex items-center gap-2">
+                      <CalendarDays size={16} className="text-accent" />
+                      <span>{formatDateTime(selectedEvent?.date)}</span>
+                    </div>
+                    <div className="rounded-xl border border-faded/20 bg-secondary/35 px-3 py-2 inline-flex items-center gap-2">
+                      <MapPin size={16} className="text-accent" />
+                      <span>{selectedEvent?.location || "Nincs helyszín"}</span>
+                    </div>
+                    <div className="rounded-xl border border-faded/20 bg-secondary/35 px-3 py-2 inline-flex items-center gap-2">
+                      <Building2 size={16} className="text-accent" />
+                      <span>
+                        {selectedEvent?.classroom || "Nincs tanterem"}
+                      </span>
                     </div>
                   </div>
                 </div>
                 <div className="w-full justify-between flex mt-10 items-center">
-                  <div className="text-gray-600">
-                    Létrehozva: {selectedEvent?.createdAt.slice(0, 10)}
+                  <div className=" px-3 py-2 inline-flex text-faded text-sm items-center gap-2">
+                    <CalendarDays size={16} className="" />
+                    <span>
+                      Létrehozva: {formatDateOnly(selectedEvent?.createdAt)}
+                    </span>
                   </div>
                   <div className="flex gap-4 items-center">
                     <div className="text-sm text-gray-600">
@@ -875,7 +926,7 @@ export const EventModal = () => {
             ) : activeTab === "discussion" ? (
               renderDiscussionTab()
             ) : (
-              <div className="mt-2 px-10 pb-6 flex grow overflow-y-scroll flex-col">
+              <div className="px-10 mt-5 pb-6 flex grow overflow-y-scroll flex-col">
                 <div className="text-lg font-semibold">Helyszín</div>
                 <div className="text-faded mt-1 mb-4">
                   {selectedEvent?.location}

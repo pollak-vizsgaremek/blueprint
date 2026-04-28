@@ -28,7 +28,7 @@ const EventPlaceTabPage = () => {
   }, []);
 
   return (
-    <div className="pt-2 px-10 pb-6 flex grow overflow-y-scroll flex-col page-content">
+    <div className="pt-5 px-10 pb-6 flex grow overflow-y-scroll flex-col page-content">
       <div className="text-lg font-semibold">Helyszín</div>
       <div className="text-faded mt-1 mb-4">{event.location}</div>
 

@@ -1,19 +1,50 @@
 "use client";
 import { useModal } from "@/contexts/ModalContext";
 import { Event } from "@/types";
-import { ExternalLink, ImageOff } from "lucide-react";
+import {
+  Building2,
+  CalendarDays,
+  ExternalLink,
+  ImageOff,
+  MapPin,
+  Users,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
+const formatDateTime = (value: string) => {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Ismeretlen dátum";
+  }
+
+  return date.toLocaleString("hu-HU", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
 export const EventListItem = ({ event }: { event: Event }) => {
   const { openModal } = useModal();
+  const registrationCount =
+    "registrationCount" in event && typeof event.registrationCount === "number"
+      ? event.registrationCount
+      : 0;
+  const registrationText = event.maxParticipants
+    ? `${registrationCount}/${event.maxParticipants}`
+    : `${registrationCount}`;
+
   return (
     <div
       key={event.id}
-      className="h-20 rounded-2xl hover:bg-secondary transition ease-in-out border-black/20 border-[1px] px-2 bg-secondary/50 flex items-center justify-between"
+      className="rounded-2xl hover:bg-secondary transition ease-in-out border-black/20 border-[1px] p-3 bg-secondary/50 flex items-center justify-between gap-4"
     >
-      <div className="flex items-center gap-5">
-        <div className="w-30 h-16 relative">
+      <div className="flex items-center gap-4 min-w-0">
+        <div className="w-32 h-20 relative shrink-0">
           {event.imageUrl ? (
             <Image
               src={event.imageUrl}
@@ -29,13 +60,34 @@ export const EventListItem = ({ event }: { event: Event }) => {
             </div>
           )}
         </div>
-        <div className="">{event.name}</div>
-        <div className="text-slate-500 max-[800px]:hidden">
-          {event.description.slice(0, 80) + "..."}
+        <div className="min-w-0">
+          <div className="font-semibold text-lg leading-tight line-clamp-1">
+            {event.name}
+          </div>
+          <div className="text-slate-500 text-sm line-clamp-1 mb-2">
+            {event.description}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-sm text-faded">
+            <div className="inline-flex items-center gap-2">
+              <CalendarDays size={14} />
+              <span>{formatDateTime(event.date)}</span>
+            </div>
+            <div className="inline-flex items-center gap-2">
+              <MapPin size={14} />
+              <span className="line-clamp-1">{event.location}</span>
+            </div>
+            <div className="inline-flex items-center gap-2">
+              <Building2 size={14} />
+              <span>{event.classroom || "Nincs tanterem"}</span>
+            </div>
+            <div className="inline-flex items-center gap-2">
+              <Users size={14} />
+              <span>{registrationText} jelentkező</span>
+            </div>
+          </div>
         </div>
       </div>
-      <div className="flex gap-5 items-center">
-        <div className="">{event.date.slice(0, 10)}</div>
+      <div className="flex gap-3 items-center shrink-0">
         <Link
           href={`/events/${event.id}/details`}
           prefetch

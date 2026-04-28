@@ -152,7 +152,7 @@ const EventNewsTabPage = () => {
     isDeleteEventNewsPending;
 
   return (
-    <div className="pt-2 px-10 pb-2 flex grow overflow-y-scroll flex-col page-content">
+    <div className="pt-5 px-10 pb-2 flex grow overflow-y-scroll flex-col page-content">
       {isLoading ? (
         <div className="text-faded">Betöltés...</div>
       ) : isError ? (

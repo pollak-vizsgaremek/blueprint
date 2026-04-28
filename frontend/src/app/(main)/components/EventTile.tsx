@@ -1,19 +1,49 @@
 "Use client";
 import { useModal } from "@/contexts/ModalContext";
 import { Event } from "@/types";
-import { ImageOff } from "lucide-react";
-import { ExternalLink } from "lucide-react";
+import {
+  Building2,
+  CalendarDays,
+  ExternalLink,
+  ImageOff,
+  MapPin,
+  Users,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
+const formatDateTime = (value: string) => {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Ismeretlen dátum";
+  }
+
+  return date.toLocaleString("hu-HU", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
 export const EventTile = ({ event }: { event: Event }) => {
   const { openModal } = useModal();
+  const registrationCount =
+    "registrationCount" in event && typeof event.registrationCount === "number"
+      ? event.registrationCount
+      : 0;
+  const registrationText = event.maxParticipants
+    ? `${registrationCount}/${event.maxParticipants}`
+    : `${registrationCount}`;
+
   return (
     <div
       onClick={() => openModal(event)}
-      className="h-80 cursor-pointer flex flex-col hover:shadow-md hover:shadow-gray-500 transition rounded-2xl"
+      className="h-110 cursor-pointer flex flex-col hover:shadow-md hover:shadow-gray-500 transition rounded-2xl"
     >
-      <div className="h-[60%] w-full relative">
+      <div className="h-[42%] w-full relative">
         {event.imageUrl ? (
           <Image
             src={event.imageUrl}
@@ -29,17 +59,35 @@ export const EventTile = ({ event }: { event: Event }) => {
           </div>
         )}
       </div>
-      <div className="h-[40%] bg-secondary/40 backdrop-blur-xl border-[0.5px] border-faded/10 rounded-b-2xl flex flex-col justify-between p-2">
-        <div className="">
-          <div className="">{event.name}</div>
-          <div className="text-slate-500">
-            {event.description.slice(0, 50) + "..."}
+      <div className="h-[58%] bg-secondary/40 backdrop-blur-xl border-[0.5px] border-faded/10 rounded-b-2xl flex flex-col justify-between p-3">
+        <div>
+          <div className="font-semibold text-lg leading-tight line-clamp-2">
+            {event.name}
+          </div>
+          <div className="text-slate-500 text-sm line-clamp-2 mt-1">
+            {event.description}
           </div>
         </div>
-        <div className="flex justify-between">
-          <div className="">{event.location}</div>
+        <div className="space-y-1.5 text-sm text-faded">
           <div className="flex items-center gap-2">
-            <div className="">{event.date.slice(0, 10)}</div>
+            <CalendarDays size={14} />
+            <span>{formatDateTime(event.date)}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <MapPin size={14} />
+            <span className="line-clamp-1">{event.location}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Building2 size={14} />
+            <span>{event.classroom || "Nincs tanterem"}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Users size={14} />
+            <span>{registrationText} jelentkező</span>
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <div className="flex items-center gap-2">
             <Link
               href={`/events/${event.id}/details`}
               prefetch

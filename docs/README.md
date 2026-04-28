@@ -5,6 +5,13 @@
 - Backend API and environment: [Backend README](../backend/README.md)
 - Frontend routes and auth UX: [Frontend README](../frontend/README.md)
 
+## Event Navigation Notes
+
+- Event map presets were removed from the product flow.
+- Routing uses `FőBej` -> event `classroom` pathing in the frontend navigation component.
+- Ensure backend Prisma client is regenerated after schema changes:
+  - `npx prisma generate`
+
 ## Auth & Email Flow
 
 - Email confirmation route: `/confirm-email?token=...`

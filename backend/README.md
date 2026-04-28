@@ -8,6 +8,7 @@ A comprehensive REST API backend for an event management system built with Node.
 
 - **User Authentication**: JWT-based authentication with bcrypt password hashing
 - **Event Management**: Full CRUD operations for events with advanced features
+- **Classroom Routing Data**: Events store required classroom values for frontend navigation
 - **File Storage**: MinIO integration for secure event image uploads and management
 - **Admin Panel**: Role-based access control with admin privileges and dedicated routes
 - **Registration System**: Advanced event registration with status tracking and capacity management
@@ -148,21 +149,13 @@ npx prisma migrate deploy
 npx prisma db seed
 ```
 
+After any Prisma schema update, run `npx prisma generate` again and restart the backend process.
+
 5. **Set up MinIO Server**
 
-   You need a running MinIO server for file storage. You can:
-
-   **Option A: Docker (Recommended)**
-
-   ```bash
-   docker run -p 9000:9000 -p 9001:9001 \
-     -e "MINIO_ROOT_USER=blueprint" \
-     -e "MINIO_ROOT_PASSWORD=blueprint" \
-     quay.io/minio/minio server /data --console-address ":9001"
-   ```
-
-   **Option B: Local Installation**
-   Download and install MinIO from [https://min.io/download](https://min.io/download)
+   You need a running MinIO server for file storage.
+   Download and run MinIO locally from [https://min.io/download](https://min.io/download),
+   then set matching `MINIO_*` values in `backend/.env`.
 
 6. **Start the server**
 
@@ -175,7 +168,7 @@ npx prisma db seed
    ```
 
 The server will start on `http://localhost:8000` by default.
-MinIO console will be available at `http://localhost:9001` (if using Docker setup).
+MinIO console is typically available at `http://localhost:9001` (depending on your local MinIO setup).
 
 ## Server Configuration
 
@@ -185,6 +178,8 @@ The application uses the following route structure:
 - `/users` - User authentication and profile management
 - `/admin/events` - Admin-only event management
 - `/admin/users` - Admin-only user management
+
+Note: legacy event map preset endpoints were removed; event navigation now relies on event `classroom`.
 
 The server is configured with:
 
@@ -199,11 +194,16 @@ The server is configured with:
 - `id`: Auto-increment primary key
 - `name`: User's full name
 - `email`: Unique email address
+- `emailVerified`: Email confirmation state
 - `password`: Hashed password
 - `dateOfBirth`: User's date of birth
-- `isAdmin`: Boolean flag for admin privileges (default: false)
+- `classroom`: Optional classroom assignment (mainly for teachers)
+- `role`: Role string (`user`, `teacher`, `admin`)
+- `status`: Account status (`active`, `inactive`, `banned`)
+- `settingJson`: Optional JSON user settings
 - `createdAt`: Account creation timestamp
 - `updatedAt`: Last update timestamp
+- `deletedAt`: Soft-delete timestamp
 
 ### Events
 
@@ -213,6 +213,7 @@ The server is configured with:
 - `imageUrl`: Optional event image URL (stored in MinIO)
 - `creator`: Event creator name
 - `location`: Event location
+- `classroom`: Required classroom used by frontend navigation
 - `date`: Event date and time
 - `maxParticipants`: Optional maximum number of participants
 - `createdAt`: Event creation timestamp

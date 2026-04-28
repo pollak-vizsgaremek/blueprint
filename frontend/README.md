@@ -70,6 +70,13 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 - `/app` - Main authenticated app area
 - `/admin` - Admin area
 
+## Event Navigation
+
+- Event location navigation uses classroom-based routing.
+- Start point is fixed to `FőBej`.
+- Destination is the event's selected classroom.
+- Admin and teacher event forms require classroom selection.
+
 ## Auth UX Notes
 
 - Login requires verified email.
@@ -87,22 +94,6 @@ frontend/
     contexts/     # Auth and modal context state
     lib/          # Utilities and app-level helpers
   public/         # Static assets
-```
-
-## Docker
-
-This repo includes a `Dockerfile` for building and running the frontend in production mode.
-
-Build:
-
-```bash
-docker build --build-arg NEXT_PUBLIC_API_URL=http://localhost:8000 -t blueprint-frontend .
-```
-
-Run:
-
-```bash
-docker run --rm -p 3000:3000 blueprint-frontend
 ```
 
 ## Troubleshooting

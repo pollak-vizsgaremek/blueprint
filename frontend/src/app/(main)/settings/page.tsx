@@ -7,9 +7,12 @@ import {
   BooleanAppSettingKey,
   DEFAULT_APP_SETTINGS,
 } from "@/lib/appSettings";
+import { isReducedMotionEnabled } from "@/lib/motion";
 import { APP_SETTINGS_UPDATED_EVENT } from "@/lib/useAppSettings";
 import { UserSettingJson } from "@/types";
+import { useGSAP } from "@gsap/react";
 import axios from "axios";
+import gsap from "gsap";
 import { Bell, CalendarDays, Palette, User, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -96,6 +99,20 @@ const SettingsPage = () => {
     }),
     [settings],
   );
+
+  useGSAP(() => {
+    if (isReducedMotionEnabled()) {
+      return;
+    }
+
+    gsap.from(".page-content", {
+      scale: 0.9,
+      opacity: 0,
+      delay: 0.1,
+      ease: "expo.in",
+      duration: 0.5,
+    });
+  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -255,7 +272,7 @@ const SettingsPage = () => {
   ];
 
   return (
-    <main className="w-7/8 m-auto min-h-screen pt-24 pb-20">
+    <main className="w-7/8 m-auto min-h-screen pt-24 pb-20 page-content">
       <div className="mb-6 flex items-start justify-between gap-3">
         <div>
           <h1 className="text-3xl font-semibold">Beállítások</h1>

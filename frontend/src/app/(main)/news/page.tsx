@@ -2,9 +2,12 @@
 
 import { Spinner } from "@/components/Spinner";
 import { DataState } from "@/components/ui/DataState";
+import { isReducedMotionEnabled } from "@/lib/motion";
 import { GetPublishedNewsResponse, NewsItem } from "@/types";
+import { useGSAP } from "@gsap/react";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
+import gsap from "gsap";
 import { Newspaper, TriangleAlert } from "lucide-react";
 import Image from "next/image";
 
@@ -36,6 +39,20 @@ const NewsPage = () => {
     },
   });
 
+  useGSAP(() => {
+    if (isReducedMotionEnabled() || isLoading) {
+      return;
+    }
+
+    gsap.from(".page-content", {
+      scale: 0.9,
+      opacity: 0,
+      delay: 0.1,
+      ease: "expo.in",
+      duration: 0.5,
+    });
+  }, [isLoading]);
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen w-full">
@@ -59,7 +76,7 @@ const NewsPage = () => {
   const newsItems = data?.news ?? [];
 
   return (
-    <main className="w-7/8 m-auto min-h-screen pt-24 pb-20">
+    <main className="w-7/8 m-auto min-h-screen page-content pt-24 pb-20">
       <div className="mb-6">
         <h1 className="text-3xl font-semibold">Hírek</h1>
         <p className="text-faded mt-1">

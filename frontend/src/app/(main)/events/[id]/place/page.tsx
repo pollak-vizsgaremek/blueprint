@@ -1,13 +1,40 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { EventDetailsView } from "../EventDetailsView";
+import { EventNavigationMap } from "@/components/navigation/EventNavigationMap";
+import { useEventDetail } from "../../../../../contexts/EventDetailContext";
+import { isReducedMotionEnabled } from "@/lib/motion";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 
 const EventPlaceTabPage = () => {
-  const params = useParams<{ id: string }>();
-  const eventId = Number(params.id);
+  const { event } = useEventDetail();
 
-  return <EventDetailsView eventId={eventId} activeTab="place" />;
+  if (!event) {
+    return null;
+  }
+
+  useGSAP(() => {
+    if (isReducedMotionEnabled()) {
+      return;
+    }
+
+    gsap.from(".page-content", {
+      scale: 0.9,
+      opacity: 0,
+      delay: 0.1,
+      ease: "expo.in",
+      duration: 0.5,
+    });
+  }, []);
+
+  return (
+    <div className="pt-2 px-10 pb-6 flex grow overflow-y-scroll flex-col page-content">
+      <div className="text-lg font-semibold">Helyszín</div>
+      <div className="text-faded mt-1 mb-4">{event.location}</div>
+
+      <EventNavigationMap classroom={event.classroom} />
+    </div>
+  );
 };
 
 export default EventPlaceTabPage;

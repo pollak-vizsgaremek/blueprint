@@ -13,6 +13,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import Link from "next/link";
 import { BellRing, TriangleAlert } from "lucide-react";
+import gsap from "gsap";
+import { isReducedMotionEnabled } from "@/lib/motion";
+import { useGSAP } from "@gsap/react";
 
 const NotificationsPage = () => {
   const queryClient = useQueryClient();
@@ -30,6 +33,20 @@ const NotificationsPage = () => {
       return data;
     },
   });
+
+  useGSAP(() => {
+    if (isReducedMotionEnabled() || isLoading) {
+      return;
+    }
+
+    gsap.from(".page-content", {
+      scale: 0.9,
+      opacity: 0,
+      delay: 0.1,
+      ease: "expo.in",
+      duration: 0.5,
+    });
+  }, [isLoading]);
 
   const { mutate: markAsRead, isPending: isMarkingRead } = useMutation({
     mutationFn: async (notificationId: number) => {
@@ -116,7 +133,7 @@ const NotificationsPage = () => {
   const notifications = data?.notifications ?? [];
 
   return (
-    <main className="w-7/8 m-auto min-h-screen pt-24 pb-20">
+    <main className="w-7/8 m-auto min-h-screen pt-24 pb-20 page-content">
       <div className="mb-6 flex items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-semibold">Értesítések</h1>

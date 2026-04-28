@@ -24,6 +24,9 @@ import {
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { isReducedMotionEnabled } from "@/lib/motion";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 
 type CalendarEventItem = {
   id: number;
@@ -357,6 +360,19 @@ const CalendarContent = () => {
     day: "numeric",
     weekday: "long",
   });
+  useGSAP(() => {
+    if (isReducedMotionEnabled() || isLoading || isAppointmentsLoading) {
+      return;
+    }
+
+    gsap.from(".page-content", {
+      scale: 0.9,
+      opacity: 0,
+      delay: 0.1,
+      ease: "expo.in",
+      duration: 0.5,
+    });
+  }, [isLoading, isAppointmentsLoading]);
 
   useEffect(() => {
     const selectedDayKey = toDateKey(selectedDate);
@@ -395,7 +411,7 @@ const CalendarContent = () => {
   }
 
   return (
-    <main className="w-7/8 m-auto min-h-screen pt-24 pb-20">
+    <main className="w-7/8 m-auto min-h-screen pt-24 page-content pb-20">
       <div className="mb-6">
         <h1 className="text-3xl font-semibold">Naptár</h1>
         <p className="text-faded mt-1">

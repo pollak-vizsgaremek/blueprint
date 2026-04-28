@@ -1,11 +1,10 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { useParams, redirect } from "next/navigation";
-
-const EventPageRedirect = () => {
-  const params = useParams<{ id: string }>();
-
-  redirect(`/events/${params.id}/details`);
-};
-
-export default EventPageRedirect;
+export default async function EventPageRedirect({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  redirect(`/events/${id}/details`);
+}

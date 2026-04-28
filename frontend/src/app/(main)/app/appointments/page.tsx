@@ -1,6 +1,7 @@
 "use client";
 
 import { Spinner } from "@/components/Spinner";
+import { Calendar } from "@/components/ui/Calendar";
 import { usePopupModal } from "@/contexts/PopupModalContext";
 import { isReducedMotionEnabled } from "@/lib/motion";
 import {
@@ -142,6 +143,13 @@ const toDateAndMinutesIso = (dateValue: string, minutes: number) => {
   return date.toISOString();
 };
 
+const toDateInputValue = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 const AppointmentsPage = () => {
   const queryClient = useQueryClient();
   const { showAlert, showConfirm } = usePopupModal();
@@ -217,6 +225,35 @@ const AppointmentsPage = () => {
   );
 
   const selectedDate = form.date ? new Date(`${form.date}T00:00:00`) : null;
+  const todayStart = useMemo(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  }, []);
+
+  const teacherHasAvailabilityOnDate = (date: Date) => {
+    const isoDay = toIsoDay(date);
+    return teacherAvailability.some(
+      (slot) => slot.isActive && slot.dayOfWeek === isoDay,
+    );
+  };
+
+  const isDateDisabled = (date: Date) => {
+    if (!form.teacherId) {
+      return true;
+    }
+
+    const dateStart = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+    );
+
+    if (dateStart < todayStart) {
+      return true;
+    }
+
+    return !teacherHasAvailabilityOnDate(date);
+  };
   const selectedDaySlots = useMemo(() => {
     if (!selectedDate) {
       return [];
@@ -584,19 +621,35 @@ const AppointmentsPage = () => {
 
               <div className="space-y-1">
                 <label className="text-sm text-faded">Dátum</label>
-                <input
-                  type="date"
-                  value={form.date}
-                  onChange={(event) =>
-                    setForm((previous) => ({
-                      ...previous,
-                      date: event.target.value,
-                      slotId: "",
-                    }))
-                  }
-                  className="w-full border border-faded/25 rounded-xl px-3 py-2 bg-secondary/70 focus:outline-none focus:border-accent"
-                  required
-                />
+                <div className="rounded-xl border border-faded/25 bg-secondary/70 p-2">
+                  <Calendar
+                    selected={selectedDate ?? undefined}
+                    onSelect={(date) =>
+                      setForm((previous) => ({
+                        ...previous,
+                        date: date ? toDateInputValue(date) : "",
+                        slotId: "",
+                      }))
+                    }
+                    disabled={isDateDisabled}
+                    isAvailableDate={(date) =>
+                      Boolean(form.teacherId) &&
+                      date >= todayStart &&
+                      teacherHasAvailabilityOnDate(date)
+                    }
+                    fromYear={new Date().getFullYear()}
+                    toYear={new Date().getFullYear() + 2}
+                    className="w-full"
+                  />
+                </div>
+                {!form.teacherId ? (
+                  <p className="text-xs text-faded">Először válassz tanárt.</p>
+                ) : (
+                  <p className="text-xs text-faded">
+                    Csak azok a napok választhatók, amikor a tanárnak van aktív
+                    elérhetősége.
+                  </p>
+                )}
               </div>
 
               <div className="space-y-1">

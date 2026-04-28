@@ -12,6 +12,7 @@ export interface CalendarProps {
   selected?: Date;
   onSelect?: (date: Date | undefined) => void;
   disabled?: (date: Date) => boolean;
+  isAvailableDate?: (date: Date) => boolean;
   fromYear?: number;
   toYear?: number;
 }
@@ -24,11 +25,12 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
       selected,
       onSelect,
       disabled,
+      isAvailableDate,
       fromYear = 1900,
       toYear = new Date().getFullYear(),
       ...props
     },
-    ref
+    ref,
   ) => {
     const [currentMonth, setCurrentMonth] = React.useState(() => {
       if (selected) return selected;
@@ -211,7 +213,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
                           className={cn(
                             "text-xs p-2 h-8",
                             index === currentMonth.getMonth() &&
-                              "bg-accent text-white"
+                              "bg-accent text-white",
                           )}
                           onClick={() => selectMonth(index)}
                         >
@@ -244,7 +246,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
                           size="sm"
                           className={cn(
                             "w-full justify-start text-sm p-2 h-8",
-                            year === currentYear && "bg-accent text-white"
+                            year === currentYear && "bg-accent text-white",
                           )}
                           onClick={() => selectYear(year)}
                         >
@@ -295,6 +297,10 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
                               day.date.toDateString() ===
                                 selected.toDateString();
                             const isDisabled = disabled && disabled(day.date);
+                            const isAvailable =
+                              Boolean(isAvailableDate?.(day.date)) &&
+                              !isDisabled &&
+                              day.isCurrentMonth;
 
                             return (
                               <td key={dayIndex} className="p-1 text-center">
@@ -313,8 +319,11 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
                                     day.isToday &&
                                       !isSelected &&
                                       "bg-gray-100 text-accent font-semibold",
+                                    isAvailable &&
+                                      !isSelected &&
+                                      "ring-1 ring-accent/35",
                                     isDisabled &&
-                                      "text-gray-300 cursor-not-allowed hover:bg-transparent"
+                                      "text-gray-300 cursor-not-allowed hover:bg-transparent",
                                   )}
                                 >
                                   {day.date.getDate()}
@@ -323,7 +332,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
                             );
                           })}
                       </tr>
-                    )
+                    ),
                   )}
                 </tbody>
               </table>
@@ -332,7 +341,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
         </div>
       </div>
     );
-  }
+  },
 );
 
 Calendar.displayName = "Calendar";

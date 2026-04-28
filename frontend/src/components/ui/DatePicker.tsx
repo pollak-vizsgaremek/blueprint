@@ -17,6 +17,7 @@ interface DatePickerProps {
   onSelect?: (date: Date | undefined) => void;
   placeholder?: string;
   disabled?: (date: Date) => boolean;
+  isAvailableDate?: (date: Date) => boolean;
   fromYear?: number;
   toYear?: number;
   className?: string;
@@ -28,6 +29,7 @@ export function DatePicker({
   onSelect,
   placeholder = "Válasszon dátumot",
   disabled,
+  isAvailableDate,
   fromYear,
   toYear,
   className,
@@ -58,7 +60,7 @@ export function DatePicker({
             "border-gray-300 bg-white hover:bg-gray-50",
             "focus:outline-none focus:ring-accent focus:border-accent",
             !selected && "text-gray-500",
-            className
+            className,
           )}
           aria-required={required}
         >
@@ -74,6 +76,7 @@ export function DatePicker({
             setOpen(false);
           }}
           disabled={disabled}
+          isAvailableDate={isAvailableDate}
           fromYear={fromYear}
           toYear={toYear}
         />

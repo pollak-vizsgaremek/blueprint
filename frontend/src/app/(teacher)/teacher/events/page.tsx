@@ -13,6 +13,7 @@ import { TeacherPageHeader } from "../../components/TeacherPageHeader";
 
 type EventFormState = {
   name: string;
+  creator: string;
   description: string;
   location: string;
   date: string;
@@ -21,6 +22,7 @@ type EventFormState = {
 
 const initialFormState: EventFormState = {
   name: "",
+  creator: "",
   description: "",
   location: "",
   date: "",
@@ -103,6 +105,7 @@ const TeacherEventsPage = () => {
     mutationFn: async () => {
       const payload = new FormData();
       payload.append("name", form.name.trim());
+      payload.append("creator", form.creator.trim());
       payload.append("description", form.description.trim());
       payload.append("location", form.location.trim());
       payload.append("date", new Date(form.date).toISOString());
@@ -145,13 +148,14 @@ const TeacherEventsPage = () => {
 
     if (
       !form.name.trim() ||
+      !form.creator.trim() ||
       !form.description.trim() ||
       !form.location.trim() ||
       !form.date
     ) {
       setMessage({
         type: "error",
-        text: "A kötelező mezők kitöltése szükséges.",
+        text: "A kötelező mezők kitöltése szükséges (szervezővel együtt).",
       });
       return;
     }
@@ -302,6 +306,22 @@ const TeacherEventsPage = () => {
               }
               className="w-full rounded-xl border border-faded/25 bg-secondary/70 px-3 py-2 focus:outline-none focus:border-accent"
               placeholder="Esemény címe"
+              required
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm text-faded">Szervező</label>
+            <input
+              value={form.creator}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  creator: event.target.value,
+                }))
+              }
+              className="w-full rounded-xl border border-faded/25 bg-secondary/70 px-3 py-2 focus:outline-none focus:border-accent"
+              placeholder="Szervező neve"
               required
             />
           </div>

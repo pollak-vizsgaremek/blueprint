@@ -654,16 +654,17 @@ export const updateAdminComment = async (req, res) => {
 };
 
 export const createEvent = async (req, res) => {
-  let { name, description, location, date, maxParticipants } = req.body;
+  let { name, description, location, date, maxParticipants, creator } =
+    req.body;
 
   try {
-    const creator = req.user.name;
+    const normalizedCreator = typeof creator === "string" ? creator.trim() : "";
 
     // Validate required fields
-    if (!name || !description || !location || !date) {
+    if (!name || !description || !location || !date || !normalizedCreator) {
       return res.status(400).json({
         error: "Missing required fields",
-        message: "Name, description, location, and date are required",
+        message: "Name, description, location, date, and creator are required",
       });
     }
 
@@ -694,7 +695,7 @@ export const createEvent = async (req, res) => {
         name,
         description,
         imageUrl,
-        creator,
+        creator: normalizedCreator,
         location,
         date: new Date(date),
         maxParticipants: maxParticipants || null,

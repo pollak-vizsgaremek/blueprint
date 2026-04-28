@@ -3,6 +3,7 @@
 import { Spinner } from "@/components/Spinner";
 import { Calendar } from "@/components/ui/Calendar";
 import { usePopupModal } from "@/contexts/PopupModalContext";
+import { useAppSettings } from "@/lib/useAppSettings";
 import { isReducedMotionEnabled } from "@/lib/motion";
 import {
   Appointment,
@@ -153,6 +154,7 @@ const toDateInputValue = (date: Date) => {
 const AppointmentsPage = () => {
   const queryClient = useQueryClient();
   const { showAlert, showConfirm } = usePopupModal();
+  const { settings } = useAppSettings();
 
   const [form, setForm] = useState<FormState>(initialFormState);
   const [editingAppointmentId, setEditingAppointmentId] = useState<
@@ -215,6 +217,15 @@ const AppointmentsPage = () => {
   const appointments = useMemo(
     () => appointmentsData?.appointments ?? [],
     [appointmentsData],
+  );
+  const visibleAppointments = useMemo(
+    () =>
+      appointments.filter(
+        (appointment) =>
+          !settings.hideCancelledAppointments ||
+          appointment.status !== "cancelled",
+      ),
+    [appointments, settings.hideCancelledAppointments],
   );
 
   const teachers = useMemo(() => teachersData?.teachers ?? [], [teachersData]);
@@ -715,7 +726,9 @@ const AppointmentsPage = () => {
         <div className="card-box h-130! overflow-auto p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">Foglalt időpontjaid</h2>
-            <span className="text-xs text-faded">{appointments.length} db</span>
+            <span className="text-xs text-faded">
+              {visibleAppointments.length} db
+            </span>
           </div>
 
           {isAppointmentsLoading ? (
@@ -724,13 +737,13 @@ const AppointmentsPage = () => {
             <div className="text-red-600">
               Nem sikerült betölteni az időpontokat.
             </div>
-          ) : appointments.length === 0 ? (
+          ) : visibleAppointments.length === 0 ? (
             <div className="h-56 border border-dashed border-faded/30 rounded-xl flex items-center justify-center text-faded text-center px-4">
               Még nincs foglalt időpontod.
             </div>
           ) : (
             <div className="space-y-3 max-h-[640px] overflow-y-auto pr-1">
-              {appointments.map((appointment) => {
+              {visibleAppointments.map((appointment) => {
                 const statusLabel =
                   statusOptions.find(
                     (statusOption) => statusOption.value === appointment.status,
@@ -785,8 +798,9 @@ const AppointmentsPage = () => {
                       <div className="inline-flex items-center gap-2">
                         <MapPin size={14} />
                         <span>
-                          {appointment.teacher?.email ??
-                            "Tanár e-mail nincs megadva"}
+                          {appointment.classroom
+                            ? `Tanterem: ${appointment.classroom}`
+                            : "Tanterem nincs megadva"}
                         </span>
                       </div>
                     </div>

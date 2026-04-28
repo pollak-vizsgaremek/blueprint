@@ -12,6 +12,15 @@ const DEFAULT_SETTING_JSON = {
   eventUpdates: true,
   commentsReplies: false,
   marketingNews: false,
+  showPastEvents: true,
+  autoOpenEventModal: true,
+  compactCalendar: false,
+  reducedMotion: false,
+  highContrast: false,
+  weekStart: "monday",
+  showWeekNumbers: false,
+  defaultCalendarView: "month",
+  hideCancelledAppointments: true,
 };
 
 const normalizeSettingJson = (value) => {
@@ -139,6 +148,7 @@ export const createUser = async (req, res) => {
       dateOfBirth: userWithoutPassword.dateOfBirth
         ? userWithoutPassword.dateOfBirth.toISOString().slice(0, 10)
         : null,
+      classroom: userWithoutPassword.classroom ?? null,
     };
     res.status(201).json({
       message: "User created successfully",
@@ -208,6 +218,7 @@ export const userLogin = async (req, res) => {
         dateOfBirth: user.dateOfBirth
           ? user.dateOfBirth.toISOString().slice(0, 10)
           : null,
+        classroom: user.classroom ?? null,
       },
     });
   } catch (error) {
@@ -229,6 +240,7 @@ export const getCurrentUser = async (req, res) => {
         role: user.role,
         isAdmin: user.isAdmin,
         dateOfBirth: user.dateOfBirth,
+        classroom: user.classroom ?? null,
         settingJson: normalizeSettingJson(user.settingJson),
       },
     });
@@ -247,6 +259,7 @@ export const getTeachers = async (req, res) => {
         id: true,
         name: true,
         email: true,
+        classroom: true,
         role: true,
       },
       orderBy: {
@@ -280,7 +293,8 @@ export const userLogout = async (req, res) => {
 };
 
 export const updateCurrentUser = async (req, res) => {
-  const { name, email, password, dateOfBirth, settingJson } = req.body;
+  const { name, email, password, dateOfBirth, classroom, settingJson } =
+    req.body;
   try {
     // req.user is populated by the authenticateToken middleware
     const user = req.user;
@@ -305,9 +319,20 @@ export const updateCurrentUser = async (req, res) => {
       });
     }
 
+    const isEmailChanged =
+      typeof email === "string" &&
+      email.trim().length > 0 &&
+      email !== user.email;
+
     const updateData = {
       name: name ?? undefined,
       email: email ?? undefined,
+      classroom:
+        classroom !== undefined
+          ? typeof classroom === "string"
+            ? classroom.trim() || null
+            : null
+          : undefined,
       dateOfBirth: dateOfBirth
         ? (new Date(dateOfBirth) ?? undefined)
         : undefined,
@@ -315,6 +340,7 @@ export const updateCurrentUser = async (req, res) => {
         settingJson !== undefined
           ? normalizeSettingJson(settingJson)
           : undefined,
+      emailVerified: isEmailChanged ? false : undefined,
     };
 
     if (typeof password === "string" && password.trim().length > 0) {
@@ -335,17 +361,41 @@ export const updateCurrentUser = async (req, res) => {
         name: true,
         email: true,
         role: true,
+        classroom: true,
         dateOfBirth: true,
         settingJson: true,
       },
     });
 
+    if (isEmailChanged && isEmailServiceConfigured()) {
+      try {
+        const confirmationToken = createEmailConfirmationToken({
+          id: user.id,
+          email: updatedUser.email,
+        });
+        await sendEmailConfirmationEmail({
+          email: updatedUser.email,
+          name: updatedUser.name,
+          token: confirmationToken,
+        });
+      } catch (emailError) {
+        console.error(
+          "Failed to send confirmation email after update:",
+          emailError,
+        );
+      }
+    }
+
     res.status(200).json({
-      message: "User updated successfully",
+      message: isEmailChanged
+        ? "User updated successfully. Please verify your new email address."
+        : "User updated successfully",
+      requiresEmailVerification: isEmailChanged,
       user: {
         name: updatedUser.name,
         email: updatedUser.email,
         role: updatedUser.role,
+        classroom: updatedUser.classroom ?? null,
         dateOfBirth: updatedUser.dateOfBirth
           ? updatedUser.dateOfBirth.toISOString().slice(0, 10)
           : null,
@@ -387,7 +437,12 @@ export const requestEmailConfirmation = async (req, res) => {
       },
     });
 
-    if (user && !user.emailVerified && !user.deletedAt && user.status === "active") {
+    if (
+      user &&
+      !user.emailVerified &&
+      !user.deletedAt &&
+      user.status === "active"
+    ) {
       const token = createEmailConfirmationToken(user);
       const emailResult = await sendEmailConfirmationEmail({
         email: user.email,
@@ -402,8 +457,7 @@ export const requestEmailConfirmation = async (req, res) => {
     }
 
     return res.json({
-      message:
-        "Ha létezik jogosult fiók, elküldtük a megerősítő emailt",
+      message: "Ha létezik jogosult fiók, elküldtük a megerősítő emailt",
     });
   } catch (error) {
     console.error("Error requesting email confirmation:", error);
@@ -610,6 +664,34 @@ export const resetPassword = async (req, res) => {
     }
 
     console.error("Error resetting password:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+export const deleteCurrentUser = async (req, res) => {
+  const userId = req.user.id;
+
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        deletedAt: new Date(),
+        status: "inactive",
+      },
+    });
+
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      path: "/",
+    });
+
+    return res.json({
+      message: "Account deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting current user:", error);
     return res.status(500).json({ error: "Internal Server Error" });
   }
 };

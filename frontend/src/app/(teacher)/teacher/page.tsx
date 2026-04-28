@@ -5,14 +5,36 @@ import {
   TeacherAppointmentsResponse,
   TeacherEventsResponse,
   GetTeacherAvailabilityResponse,
+  TeacherProfileResponse,
 } from "@/types";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { CalendarDays, CalendarRange, Clock3, Plus } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { TeacherPageHeader } from "../components/TeacherPageHeader";
 
 const TeacherDashboardPage = () => {
+  const queryClient = useQueryClient();
+  const [classroom, setClassroom] = useState("");
+  const [classroomMessage, setClassroomMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+
+  const profileQuery = useQuery({
+    queryKey: ["teacher-profile"],
+    queryFn: async () => {
+      const { data } = await axios.get<TeacherProfileResponse>(
+        `${process.env.NEXT_PUBLIC_API_URL}/teacher/profile`,
+        {
+          withCredentials: true,
+        },
+      );
+      return data;
+    },
+  });
+
   const appointmentsQuery = useQuery({
     queryKey: ["teacher-appointments"],
     queryFn: async () => {
@@ -53,14 +75,49 @@ const TeacherDashboardPage = () => {
   });
 
   const isLoading =
+    profileQuery.isLoading ||
     appointmentsQuery.isLoading ||
     availabilityQuery.isLoading ||
     eventsQuery.isLoading;
 
   const isError =
+    profileQuery.isError ||
     appointmentsQuery.isError ||
     availabilityQuery.isError ||
     eventsQuery.isError;
+
+  const saveClassroomMutation = useMutation({
+    mutationFn: async (value: string) => {
+      const { data } = await axios.put<TeacherProfileResponse>(
+        `${process.env.NEXT_PUBLIC_API_URL}/teacher/profile`,
+        { classroom: value },
+        {
+          withCredentials: true,
+        },
+      );
+      return data;
+    },
+    onSuccess: (data) => {
+      setClassroom(data.teacher.classroom ?? "");
+      setClassroomMessage({ type: "success", text: "Tanterem mentve." });
+      queryClient.invalidateQueries({ queryKey: ["teacher-profile"] });
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["teacher-appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-appointments"] });
+    },
+    onError: () => {
+      setClassroomMessage({
+        type: "error",
+        text: "A tanterem mentése sikertelen.",
+      });
+    },
+  });
+
+  const teacherProfile = profileQuery.data?.teacher;
+
+  useEffect(() => {
+    setClassroom(teacherProfile?.classroom ?? "");
+  }, [teacherProfile?.classroom]);
 
   if (isLoading) {
     return (
@@ -155,6 +212,56 @@ const TeacherDashboardPage = () => {
             </Link>
           );
         })}
+      </section>
+
+      <section className="card-box h-auto! p-5 max-w-2xl">
+        <div className="mb-3">
+          <h2 className="text-xl font-semibold">Saját tanterem</h2>
+          <p className="text-sm text-faded mt-1">
+            Ezt a termet mentjük az új időpontokhoz, így a diákok látják, hová
+            kell menniük.
+          </p>
+        </div>
+
+        {classroomMessage ? (
+          <div
+            className={`mb-3 rounded-xl border px-3 py-2 text-sm ${
+              classroomMessage.type === "success"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                : "border-red-200 bg-red-50 text-red-700"
+            }`}
+          >
+            {classroomMessage.text}
+          </div>
+        ) : null}
+
+        <form
+          className="space-y-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            setClassroomMessage(null);
+            saveClassroomMutation.mutate(classroom.trim());
+          }}
+        >
+          <div className="space-y-1">
+            <label className="text-sm text-faded">Tanterem</label>
+            <input
+              type="text"
+              value={classroom}
+              onChange={(event) => setClassroom(event.target.value)}
+              placeholder="Pl. B épület 204"
+              className="w-full rounded-xl border border-faded/25 bg-secondary/70 px-3 py-2 focus:outline-none focus:border-accent"
+              maxLength={120}
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={saveClassroomMutation.isPending}
+            className="rounded-xl bg-accent px-4 py-2 text-white font-medium hover:bg-accent/85 transition disabled:bg-faded disabled:cursor-not-allowed"
+          >
+            {saveClassroomMutation.isPending ? "Mentés..." : "Mentés"}
+          </button>
+        </form>
       </section>
     </>
   );

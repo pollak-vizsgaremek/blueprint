@@ -2,6 +2,7 @@ import express from "express";
 import {
   confirmEmail,
   createUser,
+  deleteCurrentUser,
   getCurrentUser,
   getTeachers,
   requestEmailConfirmation,
@@ -45,5 +46,8 @@ router.get("/teachers", authenticateToken, getTeachers);
 
 // PUT /users/profile - Update current user profile
 router.put("/profile", authenticateToken, updateCurrentUser);
+
+// DELETE /users/profile - Delete current user account
+router.delete("/profile", authenticateToken, deleteCurrentUser);
 
 export default router;

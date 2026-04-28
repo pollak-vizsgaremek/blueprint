@@ -331,6 +331,9 @@ const AppointmentsAdminPage = () => {
                         <CalendarDays size={14} />
                         {formatDateTime(appointment.startTime)}
                       </div>
+                      <div className="inline-flex items-center gap-2">
+                        Tanterem: {appointment.classroom || "Nincs megadva"}
+                      </div>
                     </div>
                   </div>
                   <AdminStatusBadge tone={statusTone[appointment.status]}>
@@ -436,7 +439,9 @@ const AppointmentsAdminPage = () => {
                     const nextEnd = Number.isNaN(start.getTime())
                       ? form.endTime
                       : toLocalInputValue(
-                          new Date(start.getTime() + 60 * 60 * 1000).toISOString(),
+                          new Date(
+                            start.getTime() + 60 * 60 * 1000,
+                          ).toISOString(),
                         );
                     setForm((current) => ({
                       ...current,

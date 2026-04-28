@@ -39,6 +39,7 @@ const mapAppointment = (appointment) => ({
   status: appointment.status,
   startTime: appointment.startTime,
   endTime: appointment.endTime,
+  classroom: appointment.classroom ?? null,
   createdAt: appointment.createdAt,
   updatedAt: appointment.updatedAt,
   teacher: appointment.teacher
@@ -57,6 +58,7 @@ const validateTeacher = async (teacherId) => {
     select: {
       id: true,
       role: true,
+      classroom: true,
     },
   });
 
@@ -224,6 +226,7 @@ export const createAppointment = async (req, res) => {
         startTime,
         endTime,
         purpose: title,
+        classroom: teacher.classroom ?? null,
       },
       include: {
         teacher: {
@@ -316,6 +319,7 @@ export const updateAppointment = async (req, res) => {
       }
 
       updateData.teacherId = parsedTeacherId;
+      updateData.classroom = teacher.classroom ?? null;
     }
 
     if (req.body?.title !== undefined) {
@@ -366,6 +370,11 @@ export const updateAppointment = async (req, res) => {
     const nextStartTime = updateData.startTime || existing.startTime;
     const nextEndTime = updateData.endTime || existing.endTime;
     const nextTeacherId = updateData.teacherId || existing.teacherId;
+
+    if (updateData.teacherId === undefined) {
+      const currentTeacher = await validateTeacher(nextTeacherId);
+      updateData.classroom = currentTeacher?.classroom ?? null;
+    }
 
     if (nextEndTime <= nextStartTime) {
       return res.status(400).json({

@@ -8,23 +8,22 @@ import {
   DEFAULT_APP_SETTINGS,
 } from "@/lib/appSettings";
 import { APP_SETTINGS_UPDATED_EVENT } from "@/lib/useAppSettings";
-import {
-  Bell,
-  CalendarDays,
-  Eye,
-  Globe,
-  Lock,
-  Palette,
-  Shield,
-  User,
-} from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { UserSettingJson } from "@/types";
 import axios from "axios";
+import { Bell, CalendarDays, Palette, User, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type ToggleOption = {
   id: BooleanAppSettingKey;
   label: string;
   description: string;
+};
+
+type AccountFormState = {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
 };
 
 const ToggleRow = ({
@@ -43,6 +42,7 @@ const ToggleRow = ({
         <div className="text-faded text-sm">{option.description}</div>
       </div>
       <button
+        type="button"
         onClick={onToggle}
         className="shrink-0 self-start sm:self-auto w-14 h-8 rounded-full border border-faded/20 bg-secondary/80 p-1 cursor-pointer"
       >
@@ -57,10 +57,45 @@ const ToggleRow = ({
 };
 
 const SettingsPage = () => {
-  const { user, logout } = useAuth();
+  const { user, refreshUser, logout } = useAuth();
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_APP_SETTINGS);
   const [isHydrated, setIsHydrated] = useState(false);
   const hasInitializedFromDb = useRef(false);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">(
+    "idle",
+  );
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [accountForm, setAccountForm] = useState<AccountFormState>({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [accountMessage, setAccountMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+  const [isSavingAccount, setIsSavingAccount] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+
+  const allowedSettingJson = useMemo<UserSettingJson>(
+    () => ({
+      emailReminders: settings.emailReminders,
+      eventUpdates: settings.eventUpdates,
+      commentsReplies: settings.commentsReplies,
+      marketingNews: settings.marketingNews,
+      showPastEvents: settings.showPastEvents,
+      autoOpenEventModal: settings.autoOpenEventModal,
+      compactCalendar: settings.compactCalendar,
+      reducedMotion: settings.reducedMotion,
+      highContrast: settings.highContrast,
+      weekStart: settings.weekStart,
+      showWeekNumbers: settings.showWeekNumbers,
+      defaultCalendarView: settings.defaultCalendarView,
+      hideCancelledAppointments: settings.hideCancelledAppointments,
+    }),
+    [settings],
+  );
 
   useEffect(() => {
     if (!user) {
@@ -73,26 +108,16 @@ const SettingsPage = () => {
         ? (JSON.parse(rawSettings) as Partial<AppSettings>)
         : {};
 
-      const dbNotificationSettings = {
-        emailReminders:
-          user.settingJson?.emailReminders ??
-          DEFAULT_APP_SETTINGS.emailReminders,
-        eventUpdates:
-          user.settingJson?.eventUpdates ?? DEFAULT_APP_SETTINGS.eventUpdates,
-        commentsReplies:
-          user.settingJson?.commentsReplies ??
-          DEFAULT_APP_SETTINGS.commentsReplies,
-        marketingNews:
-          user.settingJson?.marketingNews ?? DEFAULT_APP_SETTINGS.marketingNews,
-      };
-
       setSettings({
         ...DEFAULT_APP_SETTINGS,
         ...parsedSettings,
-        ...dbNotificationSettings,
+        ...(user.settingJson ?? {}),
       });
     } catch {
-      // Ignore invalid local storage payload and keep defaults.
+      setSettings({
+        ...DEFAULT_APP_SETTINGS,
+        ...(user.settingJson ?? {}),
+      });
     } finally {
       hasInitializedFromDb.current = true;
       setIsHydrated(true);
@@ -109,32 +134,26 @@ const SettingsPage = () => {
       JSON.stringify(settings),
     );
     window.dispatchEvent(new Event(APP_SETTINGS_UPDATED_EVENT));
+    setSaveState("saving");
 
     const timeoutId = window.setTimeout(async () => {
       try {
         await axios.put(
           `${process.env.NEXT_PUBLIC_API_URL}/users/profile`,
-          {
-            settingJson: {
-              emailReminders: settings.emailReminders,
-              eventUpdates: settings.eventUpdates,
-              commentsReplies: settings.commentsReplies,
-              marketingNews: settings.marketingNews,
-            },
-          },
-          {
-            withCredentials: true,
-          },
+          { settingJson: allowedSettingJson },
+          { withCredentials: true },
         );
+        setSaveState("saved");
+        window.setTimeout(() => setSaveState("idle"), 1200);
       } catch {
-        // Ignore sync failures and keep local settings.
+        setSaveState("idle");
       }
     }, 350);
 
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [isHydrated, settings]);
+  }, [allowedSettingJson, isHydrated, settings]);
 
   const setToggle = (id: BooleanAppSettingKey) => {
     setSettings((current) => ({
@@ -151,6 +170,24 @@ const SettingsPage = () => {
       ...current,
       [id]: value,
     }));
+  };
+
+  const openAccountModal = () => {
+    setAccountMessage(null);
+    setAccountForm({
+      name: user?.name ?? "",
+      email: user?.email ?? "",
+      password: "",
+      confirmPassword: "",
+    });
+    setIsAccountModalOpen(true);
+  };
+
+  const closeAccountModal = () => {
+    if (isSavingAccount) {
+      return;
+    }
+    setIsAccountModalOpen(false);
   };
 
   const notificationOptions: ToggleOption[] = [
@@ -192,18 +229,15 @@ const SettingsPage = () => {
       label: "Kompakt naptár nézet",
       description: "Sűrített napkártyák kevesebb üres hellyel.",
     },
-  ];
-
-  const privacyOptions: ToggleOption[] = [
     {
-      id: "showEmailOnProfile",
-      label: "Email megjelenítése profilon",
-      description: "Más felhasználók láthatják az email címedet.",
+      id: "showWeekNumbers",
+      label: "Hétszámok mutatása",
+      description: "A havi nézetben lásd az ISO hétszámot soronként.",
     },
     {
-      id: "mentionByEmail",
-      label: "Megemlítés email alapján",
-      description: "Kereshető legyél beszélgetésekben email szerint.",
+      id: "hideCancelledAppointments",
+      label: "Lemondott időpontok elrejtése",
+      description: "A naptárból és időpontlistákból rejti a lemondottakat.",
     },
   ];
 
@@ -222,11 +256,20 @@ const SettingsPage = () => {
 
   return (
     <main className="w-7/8 m-auto min-h-screen pt-24 pb-20">
-      <div className="mb-6">
-        <h1 className="text-3xl font-semibold">Beállítások</h1>
-        <p className="text-faded mt-1">
-          Kezeld a fiók és alkalmazás beállításait.
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-semibold">Beállítások</h1>
+          <p className="text-faded mt-1">
+            Kezeld a fiók és alkalmazás beállításait.
+          </p>
+        </div>
+        <div className="text-xs text-faded pt-2">
+          {saveState === "saving"
+            ? "Beállítások mentése..."
+            : saveState === "saved"
+              ? "Mentve"
+              : ""}
+        </div>
       </div>
 
       <section className="grid grid-cols-1 xl:grid-cols-2 gap-5">
@@ -255,14 +298,12 @@ const SettingsPage = () => {
               </span>
             </div>
             <div className="flex flex-wrap gap-2 pt-1">
-              <button className="w-full sm:w-auto px-3 py-2 rounded-lg border border-faded/20 bg-secondary/60 hover:bg-secondary transition ease-in-out cursor-pointer text-sm">
-                Profil szerkesztése
-              </button>
               <button
-                onClick={logout}
-                className="w-full sm:w-auto px-3 py-2 rounded-lg border border-red-300/40 bg-red-50 text-red-700 hover:bg-red-100 transition ease-in-out cursor-pointer text-sm"
+                type="button"
+                onClick={openAccountModal}
+                className="w-full sm:w-auto px-3 py-2 rounded-lg border border-faded/20 bg-secondary/60 hover:bg-secondary transition ease-in-out cursor-pointer text-sm"
               >
-                Kijelentkezés minden eszközről
+                Fiók szerkesztése
               </button>
             </div>
           </div>
@@ -299,8 +340,13 @@ const SettingsPage = () => {
                 onToggle={() => setToggle(option.id)}
               />
             ))}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm pt-1">
-              <span className="text-faded">Hét kezdete</span>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm pt-1 border-b border-faded/20 pb-3">
+              <div className="flex flex-col">
+                <span className="font-medium">Hét kezdete</span>
+                <span className="text-faded">
+                  A naptár hete melyik nappal kezdődjön
+                </span>
+              </div>
               <select
                 value={settings.weekStart}
                 onChange={(event) =>
@@ -315,26 +361,27 @@ const SettingsPage = () => {
                 <option value="sunday">Vasárnap</option>
               </select>
             </div>
-          </div>
-        </div>
-
-        <div className="card-box h-auto! p-5 min-w-0">
-          <div className="flex items-center gap-2 mb-4">
-            <Eye size={18} className="text-accent" />
-            <h2 className="text-xl font-semibold">Adatvédelem</h2>
-          </div>
-          <div className="space-y-3 text-sm">
-            {privacyOptions.map((option) => (
-              <ToggleRow
-                key={option.id}
-                option={option}
-                value={settings[option.id]}
-                onToggle={() => setToggle(option.id)}
-              />
-            ))}
-            <button className="w-full mt-1 px-3 py-2 rounded-lg border border-faded/20 bg-secondary/60 hover:bg-secondary transition ease-in-out cursor-pointer text-sm text-left">
-              Adatok exportálása
-            </button>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm pt-1">
+              <div className="flex flex-col">
+                <span className="font-medium">Alap naptár nézet</span>
+                <span className="text-faded">
+                  A naptár megnyitásakor melyik nézet legyen alapértelmezett
+                </span>
+              </div>
+              <select
+                value={settings.defaultCalendarView}
+                onChange={(event) =>
+                  setSettingValue(
+                    "defaultCalendarView",
+                    event.target.value as AppSettings["defaultCalendarView"],
+                  )
+                }
+                className="w-full sm:w-auto border border-faded/20 bg-secondary/70 rounded-lg px-2 py-1 cursor-pointer"
+              >
+                <option value="month">Havi nézet</option>
+                <option value="agenda">Napi lista</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -352,120 +399,275 @@ const SettingsPage = () => {
                 onToggle={() => setToggle(option.id)}
               />
             ))}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-1">
-              <span className="text-faded">Nyelv</span>
-              <div className="inline-flex self-start rounded-lg overflow-hidden border border-faded/20">
-                <button
-                  onClick={() => setSettingValue("language", "hu")}
-                  className={`px-3 py-1 text-sm ${
-                    settings.language === "hu"
-                      ? "bg-accent text-white"
-                      : "bg-secondary/70"
-                  }`}
-                >
-                  HU
-                </button>
-                <button
-                  onClick={() => setSettingValue("language", "en")}
-                  className={`px-3 py-1 text-sm ${
-                    settings.language === "en"
-                      ? "bg-accent text-white"
-                      : "bg-secondary/70"
-                  }`}
-                >
-                  EN
-                </button>
-              </div>
-            </div>
           </div>
         </div>
 
-        <div className="card-box h-auto! p-5 min-w-0">
-          <div className="flex items-center gap-2 mb-4">
-            <Globe size={18} className="text-accent" />
-            <h2 className="text-xl font-semibold">Régió</h2>
-          </div>
-          <div className="space-y-3 text-sm">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-faded/20 pb-3">
-              <span className="text-faded">Időzóna</span>
-              <select
-                value={settings.timezone}
-                onChange={(event) =>
-                  setSettingValue(
-                    "timezone",
-                    event.target.value as AppSettings["timezone"],
-                  )
-                }
-                className="w-full sm:w-auto border border-faded/20 bg-secondary/70 rounded-lg px-2 py-1 cursor-pointer"
-              >
-                <option value="Europe/Budapest">Europe/Budapest</option>
-                <option value="UTC">UTC</option>
-              </select>
-            </div>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <span className="text-faded">Dátumformátum</span>
-              <select
-                value={settings.dateFormat}
-                onChange={(event) =>
-                  setSettingValue(
-                    "dateFormat",
-                    event.target.value as AppSettings["dateFormat"],
-                  )
-                }
-                className="w-full sm:w-auto border border-faded/20 bg-secondary/70 rounded-lg px-2 py-1 cursor-pointer"
-              >
-                <option value="YYYY.MM.DD">YYYY.MM.DD</option>
-                <option value="DD.MM.YYYY">DD.MM.YYYY</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div className="card-box h-auto! p-5 xl:col-span-2 min-w-0">
-          <div className="flex items-center gap-2 mb-4">
-            <Lock size={18} className="text-accent" />
-            <h2 className="text-xl font-semibold">Biztonság és hozzáférés</h2>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 min-w-0">
-            <div className="border border-faded/20 rounded-xl p-4 bg-secondary/40 min-w-0">
-              <div className="font-medium mb-2 flex items-center gap-2">
-                <Shield size={16} className="text-accent" />
-                Kétlépcsős azonosítás
-              </div>
-              <p className="text-sm text-faded mb-3">
-                Növeld a fiókod biztonságát SMS vagy authenticator
-                alkalmazással.
-              </p>
-              <button className="w-full sm:w-auto px-3 py-2 rounded-lg border border-faded/20 bg-secondary/70 hover:bg-secondary transition ease-in-out cursor-pointer text-sm">
-                Bekapcsolás
-              </button>
-            </div>
-
-            <div className="border border-faded/20 rounded-xl p-4 bg-secondary/40 min-w-0">
-              <div className="font-medium mb-2">Aktív munkamenetek</div>
-              <p className="text-sm text-faded mb-3">
-                Kezeld, hogy mely eszközök maradhatnak bejelentkezve.
-              </p>
-              <button className="w-full sm:w-auto px-3 py-2 rounded-lg border border-faded/20 bg-secondary/70 hover:bg-secondary transition ease-in-out cursor-pointer text-sm">
-                Munkamenetek megtekintése
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="card-box h-auto! p-5 xl:col-span-2 border-red-300/40 min-w-0">
+        <div className="card-box h-auto! p-5 min-w-0 border-red-300/40 xl:col-span-2">
           <h2 className="text-xl font-semibold text-red-700 mb-2">
             Veszélyzóna
           </h2>
           <p className="text-sm text-faded mb-4">
-            Fiók törlése minden adatot végleg eltávolít. Ez a művelet nem
-            visszavonható.
+            A fiók törlése minden személyes adatodat deaktiválja, és
+            kijelentkeztet. Ez a művelet nem visszavonható.
           </p>
-          <button className="px-4 py-2 rounded-lg border border-red-300/50 bg-red-50 text-red-700 cursor-not-allowed text-sm">
-            Fiók törlése (hamarosan)
+          <button
+            type="button"
+            disabled={isDeletingAccount}
+            onClick={async () => {
+              const confirmed = window.confirm(
+                "Biztosan törölni szeretnéd a fiókodat? Ez a művelet nem visszavonható.",
+              );
+
+              if (!confirmed) {
+                return;
+              }
+
+              setIsDeletingAccount(true);
+              try {
+                await axios.delete(
+                  `${process.env.NEXT_PUBLIC_API_URL}/users/profile`,
+                  {
+                    withCredentials: true,
+                  },
+                );
+                await logout();
+              } catch (error) {
+                if (axios.isAxiosError(error)) {
+                  setAccountMessage({
+                    type: "error",
+                    text:
+                      error.response?.data?.message ||
+                      error.response?.data?.error ||
+                      "A fiók törlése sikertelen.",
+                  });
+                } else {
+                  setAccountMessage({
+                    type: "error",
+                    text: "A fiók törlése sikertelen.",
+                  });
+                }
+              } finally {
+                setIsDeletingAccount(false);
+              }
+            }}
+            className="px-4 py-2 rounded-lg border border-red-300/50 bg-red-50 text-red-700 hover:bg-red-100 transition ease-in-out cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {isDeletingAccount ? "Fiók törlése..." : "Fiók törlése"}
           </button>
         </div>
       </section>
+
+      {isAccountModalOpen ? (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-xl rounded-2xl border border-faded/20 bg-primary p-5 shadow-2xl">
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div>
+                <h3 className="text-xl font-semibold">Fiók szerkesztése</h3>
+                <p className="text-sm text-faded mt-1">
+                  Frissítsd a neved, email címed és jelszavad.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeAccountModal}
+                className="rounded-lg border border-faded/20 p-2 hover:bg-secondary transition ease-in-out cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {accountMessage ? (
+              <div
+                className={`mb-4 rounded-xl border px-4 py-3 text-sm ${
+                  accountMessage.type === "success"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                    : "border-red-200 bg-red-50 text-red-700"
+                }`}
+              >
+                {accountMessage.text}
+              </div>
+            ) : null}
+
+            <form
+              className="space-y-3"
+              onSubmit={async (event) => {
+                event.preventDefault();
+                setAccountMessage(null);
+
+                const nextName = accountForm.name.trim();
+                const nextEmail = accountForm.email.trim();
+                const nextPassword = accountForm.password;
+
+                if (!nextName || !nextEmail) {
+                  setAccountMessage({
+                    type: "error",
+                    text: "A név és email mező kötelező.",
+                  });
+                  return;
+                }
+
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(nextEmail)) {
+                  setAccountMessage({
+                    type: "error",
+                    text: "Érvénytelen email formátum.",
+                  });
+                  return;
+                }
+
+                if (nextPassword && nextPassword.length < 8) {
+                  setAccountMessage({
+                    type: "error",
+                    text: "A jelszónak legalább 8 karakterből kell állnia.",
+                  });
+                  return;
+                }
+
+                if (nextPassword !== accountForm.confirmPassword) {
+                  setAccountMessage({
+                    type: "error",
+                    text: "A jelszavak nem egyeznek.",
+                  });
+                  return;
+                }
+
+                setIsSavingAccount(true);
+                try {
+                  const { data } = await axios.put(
+                    `${process.env.NEXT_PUBLIC_API_URL}/users/profile`,
+                    {
+                      name: nextName,
+                      email: nextEmail,
+                      ...(nextPassword ? { password: nextPassword } : {}),
+                    },
+                    {
+                      withCredentials: true,
+                    },
+                  );
+
+                  await refreshUser();
+
+                  setAccountForm((current) => ({
+                    ...current,
+                    password: "",
+                    confirmPassword: "",
+                  }));
+
+                  setAccountMessage({
+                    type: "success",
+                    text:
+                      data?.requiresEmailVerification === true
+                        ? "A fiók adatai frissültek. Kérlek erősítsd meg az új email címedet."
+                        : "A fiók adatai sikeresen frissültek.",
+                  });
+                } catch (error) {
+                  if (axios.isAxiosError(error)) {
+                    setAccountMessage({
+                      type: "error",
+                      text:
+                        error.response?.data?.message ||
+                        error.response?.data?.error ||
+                        "A fiók frissítése sikertelen.",
+                    });
+                  } else {
+                    setAccountMessage({
+                      type: "error",
+                      text: "A fiók frissítése sikertelen.",
+                    });
+                  }
+                } finally {
+                  setIsSavingAccount(false);
+                }
+              }}
+            >
+              <div className="space-y-1">
+                <label className="text-sm text-faded">Név</label>
+                <input
+                  type="text"
+                  value={accountForm.name}
+                  onChange={(event) =>
+                    setAccountForm((current) => ({
+                      ...current,
+                      name: event.target.value,
+                    }))
+                  }
+                  className="w-full rounded-xl border border-faded/25 bg-secondary/70 px-3 py-2 focus:outline-none focus:border-accent"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm text-faded">Email</label>
+                <input
+                  type="email"
+                  value={accountForm.email}
+                  onChange={(event) =>
+                    setAccountForm((current) => ({
+                      ...current,
+                      email: event.target.value,
+                    }))
+                  }
+                  className="w-full rounded-xl border border-faded/25 bg-secondary/70 px-3 py-2 focus:outline-none focus:border-accent"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm text-faded">
+                  Új jelszó (opcionális)
+                </label>
+                <input
+                  type="password"
+                  value={accountForm.password}
+                  onChange={(event) =>
+                    setAccountForm((current) => ({
+                      ...current,
+                      password: event.target.value,
+                    }))
+                  }
+                  className="w-full rounded-xl border border-faded/25 bg-secondary/70 px-3 py-2 focus:outline-none focus:border-accent"
+                  minLength={8}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm text-faded">
+                  Új jelszó megerősítése
+                </label>
+                <input
+                  type="password"
+                  value={accountForm.confirmPassword}
+                  onChange={(event) =>
+                    setAccountForm((current) => ({
+                      ...current,
+                      confirmPassword: event.target.value,
+                    }))
+                  }
+                  className="w-full rounded-xl border border-faded/25 bg-secondary/70 px-3 py-2 focus:outline-none focus:border-accent"
+                  minLength={8}
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={closeAccountModal}
+                  className="rounded-xl border border-faded/25 px-4 py-2 hover:bg-secondary transition ease-in-out"
+                >
+                  Bezárás
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingAccount}
+                  className="rounded-xl bg-accent px-4 py-2 text-white font-medium hover:bg-accent/85 transition disabled:bg-faded disabled:cursor-not-allowed"
+                >
+                  {isSavingAccount ? "Mentés..." : "Mentés"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 };

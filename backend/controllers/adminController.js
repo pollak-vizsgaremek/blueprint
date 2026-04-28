@@ -6,6 +6,19 @@ import {
 } from "../middleware/upload.js";
 import { findMatchingAvailabilitySlot } from "../services/teacherAvailabilityService.js";
 
+const getTeacherClassroom = async (teacherId) => {
+  const teacher = await prisma.user.findUnique({
+    where: { id: Number(teacherId) },
+    select: { id: true, role: true, classroom: true },
+  });
+
+  if (!teacher || teacher.role !== "teacher") {
+    return null;
+  }
+
+  return teacher.classroom ?? null;
+};
+
 export const getAllUsers = async (req, res) => {
   try {
     const users = await prisma.user.findMany();
@@ -195,6 +208,7 @@ export const getAllAppointments = async (req, res) => {
       status: a.status,
       startTime: a.startTime,
       endTime: a.endTime,
+      classroom: a.classroom ?? null,
       createdAt: a.createdAt,
       updatedAt: a.updatedAt,
       teacher: a.teacher,
@@ -246,6 +260,20 @@ export const createAdminAppointment = async (req, res) => {
       });
     }
 
+    const classroom = await getTeacherClassroom(teacherId);
+    if (classroom === null) {
+      const teacherExists = await prisma.user.findUnique({
+        where: { id: Number(teacherId) },
+        select: { id: true, role: true },
+      });
+      if (!teacherExists || teacherExists.role !== "teacher") {
+        return res.status(400).json({
+          error: "Invalid teacher",
+          message: "Selected user is not a teacher",
+        });
+      }
+    }
+
     const appointment = await prisma.teacherReservation.create({
       data: {
         teacherId: Number(teacherId),
@@ -254,6 +282,7 @@ export const createAdminAppointment = async (req, res) => {
         startTime: start,
         endTime: end,
         status: status ?? "pending",
+        classroom,
       },
       include: {
         teacher: { select: { id: true, name: true, email: true, role: true } },
@@ -272,6 +301,7 @@ export const createAdminAppointment = async (req, res) => {
         status: appointment.status,
         startTime: appointment.startTime,
         endTime: appointment.endTime,
+        classroom: appointment.classroom ?? null,
         createdAt: appointment.createdAt,
         updatedAt: appointment.updatedAt,
         teacher: appointment.teacher,
@@ -319,6 +349,21 @@ export const updateAdminAppointment = async (req, res) => {
     const nextEndTime =
       updateData.endTime !== undefined ? updateData.endTime : existing.endTime;
 
+    const nextTeacherClassroom = await getTeacherClassroom(nextTeacherId);
+    if (nextTeacherClassroom === null) {
+      const teacherExists = await prisma.user.findUnique({
+        where: { id: Number(nextTeacherId) },
+        select: { id: true, role: true },
+      });
+      if (!teacherExists || teacherExists.role !== "teacher") {
+        return res.status(400).json({
+          error: "Invalid teacher",
+          message: "Selected user is not a teacher",
+        });
+      }
+    }
+    updateData.classroom = nextTeacherClassroom;
+
     if (nextEndTime <= nextStartTime) {
       return res.status(400).json({
         error: "Invalid date range",
@@ -360,6 +405,7 @@ export const updateAdminAppointment = async (req, res) => {
         status: updated.status,
         startTime: updated.startTime,
         endTime: updated.endTime,
+        classroom: updated.classroom ?? null,
         createdAt: updated.createdAt,
         updatedAt: updated.updatedAt,
         teacher: updated.teacher,
@@ -722,8 +768,7 @@ export const getEventMaps = async (req, res) => {
 };
 
 export const createEventMap = async (req, res) => {
-  const name =
-    typeof req.body?.name === "string" ? req.body.name.trim() : "";
+  const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
 
   if (!name) {
     if (req.uploadedImage) {
@@ -914,9 +959,15 @@ export const deleteEventMap = async (req, res) => {
 };
 
 export const createEvent = async (req, res) => {
-  let { name, description, location, date, maxParticipants, eventMapId, creator } =
-   
-    req.body;
+  let {
+    name,
+    description,
+    location,
+    date,
+    maxParticipants,
+    eventMapId,
+    creator,
+  } = req.body;
 
   try {
     const normalizedCreator = typeof creator === "string" ? creator.trim() : "";

@@ -18,6 +18,7 @@ const mapTeacherAppointment = (appointment) => ({
   status: appointment.status,
   startTime: appointment.startTime,
   endTime: appointment.endTime,
+  classroom: appointment.classroom ?? null,
   createdAt: appointment.createdAt,
   updatedAt: appointment.updatedAt,
   teacher: appointment.teacher
@@ -37,6 +38,80 @@ const mapTeacherAppointment = (appointment) => ({
       }
     : null,
 });
+
+export const getTeacherProfile = async (req, res) => {
+  const teacherId = req.user.id;
+
+  try {
+    const teacher = await prisma.user.findUnique({
+      where: { id: teacherId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        classroom: true,
+      },
+    });
+
+    if (!teacher || teacher.role !== "teacher") {
+      return res.status(404).json({ error: "Teacher not found" });
+    }
+
+    res.json({
+      message: "Teacher profile retrieved successfully",
+      teacher: {
+        ...teacher,
+        classroom: teacher.classroom ?? null,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching teacher profile:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+export const updateTeacherProfile = async (req, res) => {
+  const teacherId = req.user.id;
+  const classroomInput = req.body?.classroom;
+
+  if (classroomInput === undefined) {
+    return res.status(400).json({
+      error: "Missing required fields",
+      message: "classroom is required",
+    });
+  }
+
+  const classroom =
+    typeof classroomInput === "string" ? classroomInput.trim() : "";
+
+  try {
+    const teacher = await prisma.user.update({
+      where: { id: teacherId },
+      data: {
+        classroom: classroom.length > 0 ? classroom : null,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        classroom: true,
+      },
+    });
+
+    res.json({
+      message: "Teacher profile updated successfully",
+      teacher: {
+        ...teacher,
+        classroom: teacher.classroom ?? null,
+      },
+    });
+  } catch (error) {
+    console.error("Error updating teacher profile:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
 
 export const getTeacherAppointments = async (req, res) => {
   const teacherId = req.user.id;

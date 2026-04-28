@@ -34,6 +34,7 @@ export const authenticateToken = async (req, res, next) => {
         role: true,
         status: true,
         deletedAt: true,
+        classroom: true,
         settingJson: true,
       },
     });
@@ -60,6 +61,7 @@ export const authenticateToken = async (req, res, next) => {
       role: dbUser.role,
       isAdmin: dbUser.role === "admin",
       dateOfBirth: decoded.dateOfBirth,
+      classroom: dbUser.classroom ?? null,
       settingJson: dbUser.settingJson,
     };
 

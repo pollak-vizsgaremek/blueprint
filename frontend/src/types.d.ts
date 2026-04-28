@@ -10,6 +10,22 @@ export interface ErrorResponse {
   message?: string;
 }
 
+export interface UserSettingJson {
+  emailReminders?: boolean;
+  eventUpdates?: boolean;
+  commentsReplies?: boolean;
+  marketingNews?: boolean;
+  showPastEvents?: boolean;
+  autoOpenEventModal?: boolean;
+  compactCalendar?: boolean;
+  reducedMotion?: boolean;
+  highContrast?: boolean;
+  weekStart?: "monday" | "sunday";
+  showWeekNumbers?: boolean;
+  defaultCalendarView?: "month" | "agenda";
+  hideCancelledAppointments?: boolean;
+}
+
 // User-related types
 export interface User {
   id: number;
@@ -17,14 +33,10 @@ export interface User {
   email: string;
   emailVerified?: boolean;
   role: "admin" | "user" | "teacher";
+  classroom?: string | null;
   status?: "active" | "inactive" | "banned";
   dateOfBirth: string | null; // ISO date string format (YYYY-MM-DD)
-  settingJson?: {
-    emailReminders?: boolean;
-    eventUpdates?: boolean;
-    commentsReplies?: boolean;
-    marketingNews?: boolean;
-  };
+  settingJson?: UserSettingJson;
   createdAt?: string; // ISO datetime string
   updatedAt?: string; // ISO datetime string
   deletedAt?: string | null;
@@ -53,6 +65,7 @@ export interface LoginResponse {
     email: string;
     role: "admin" | "user" | "teacher";
     dateOfBirth: string | null;
+    classroom?: string | null;
   };
   token: string;
 }
@@ -63,6 +76,7 @@ export interface TeacherOption {
   name: string;
   email: string;
   role: "teacher";
+  classroom?: string | null;
 }
 
 export interface Appointment {
@@ -74,6 +88,7 @@ export interface Appointment {
   status: "pending" | "confirmed" | "cancelled" | "completed";
   startTime: string;
   endTime: string;
+  classroom?: string | null;
   createdAt: string;
   updatedAt: string;
   teacher: TeacherOption | null;
@@ -194,12 +209,7 @@ export interface UpdateUserRequest {
   email?: string;
   password?: string;
   dateOfBirth?: string; // ISO date string format (YYYY-MM-DD)
-  settingJson?: {
-    emailReminders?: boolean;
-    eventUpdates?: boolean;
-    commentsReplies?: boolean;
-    marketingNews?: boolean;
-  };
+  settingJson?: UserSettingJson;
 }
 
 export interface GetCurrentUserResponse {
@@ -209,12 +219,19 @@ export interface GetCurrentUserResponse {
     email: string;
     role: "admin" | "user" | "teacher";
     dateOfBirth: string | null;
-    settingJson?: {
-      emailReminders?: boolean;
-      eventUpdates?: boolean;
-      commentsReplies?: boolean;
-      marketingNews?: boolean;
-    };
+    classroom?: string | null;
+    settingJson?: UserSettingJson;
+  };
+}
+
+export interface TeacherProfileResponse {
+  message: string;
+  teacher: {
+    id: number;
+    name: string;
+    email: string;
+    role: "teacher";
+    classroom: string | null;
   };
 }
 

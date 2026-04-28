@@ -1,9 +1,6 @@
 import bcrypt from "bcrypt";
 import prisma from "../config/database.js";
-import {
-  deleteEventImageFromMinio,
-  deleteImageFromMinio,
-} from "../middleware/upload.js";
+import { deleteEventImageFromMinio } from "../middleware/upload.js";
 import { findMatchingAvailabilitySlot } from "../services/teacherAvailabilityService.js";
 
 export const getAllUsers = async (req, res) => {
@@ -656,280 +653,33 @@ export const updateAdminComment = async (req, res) => {
   }
 };
 
-const parseEventMapValue = (rawValue, { allowMissing = true } = {}) => {
-  if (rawValue === undefined) {
-    return allowMissing
-      ? { hasValue: false, value: undefined }
-      : { hasValue: true, value: null };
-  }
-
-  if (rawValue === null || rawValue === "" || rawValue === "null") {
-    return { hasValue: true, value: null };
-  }
-
-  const parsed = parseInt(rawValue, 10);
-  if (Number.isNaN(parsed) || parsed <= 0) {
-    return {
-      error: "Invalid eventMapId",
-      message: "Event map ID must be a positive integer",
-    };
-  }
-
-  return { hasValue: true, value: parsed };
-};
-
-const ensureEventMapExists = async (eventMapId) => {
-  if (eventMapId === null || eventMapId === undefined) {
-    return true;
-  }
-
-  const eventMap = await prisma.eventMap.findUnique({
-    where: { id: eventMapId },
-    select: { id: true },
-  });
-
-  return Boolean(eventMap);
-};
-
-export const getEventMaps = async (req, res) => {
-  try {
-    const eventMaps = await prisma.eventMap.findMany({
-      include: {
-        _count: {
-          select: {
-            events: true,
-          },
-        },
-      },
-      orderBy: [{ name: "asc" }, { id: "asc" }],
-    });
-
-    res.json({
-      message: "Event map presets retrieved successfully",
-      eventMaps: eventMaps.map((eventMap) => ({
-        id: eventMap.id,
-        name: eventMap.name,
-        imageUrl: eventMap.imageUrl,
-        createdAt: eventMap.createdAt,
-        updatedAt: eventMap.updatedAt,
-        eventCount: eventMap._count.events,
-      })),
-    });
-  } catch (error) {
-    console.error("Error fetching event map presets:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-};
-
-export const createEventMap = async (req, res) => {
-  const name =
-    typeof req.body?.name === "string" ? req.body.name.trim() : "";
-
-  if (!name) {
-    if (req.uploadedImage) {
-      deleteImageFromMinio(req.uploadedImage.url);
-    }
-
-    return res.status(400).json({
-      error: "Missing required fields",
-      message: "Map preset name is required",
-    });
-  }
-
-  if (!req.uploadedImage) {
-    return res.status(400).json({
-      error: "Missing required fields",
-      message: "Map preset image is required",
-    });
-  }
-
-  try {
-    const eventMap = await prisma.eventMap.create({
-      data: {
-        name,
-        imageUrl: req.uploadedImage.url,
-      },
-    });
-
-    res.status(201).json({
-      message: "Event map preset created successfully",
-      eventMap,
-    });
-  } catch (error) {
-    if (req.uploadedImage) {
-      deleteImageFromMinio(req.uploadedImage.url);
-    }
-
-    if (error?.code === "P2002") {
-      return res.status(409).json({
-        error: "Name already exists",
-        message: "An event map preset with this name already exists",
-      });
-    }
-
-    console.error("Error creating event map preset:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-};
-
-export const updateEventMap = async (req, res) => {
-  const { mapId } = req.params;
-  const parsedMapId = parseInt(mapId, 10);
-
-  if (Number.isNaN(parsedMapId)) {
-    if (req.uploadedImage) {
-      deleteImageFromMinio(req.uploadedImage.url);
-    }
-
-    return res.status(400).json({ error: "Invalid map ID" });
-  }
-
-  try {
-    const existingEventMap = await prisma.eventMap.findUnique({
-      where: { id: parsedMapId },
-      select: {
-        id: true,
-        name: true,
-        imageUrl: true,
-      },
-    });
-
-    if (!existingEventMap) {
-      if (req.uploadedImage) {
-        deleteImageFromMinio(req.uploadedImage.url);
-      }
-
-      return res.status(404).json({ error: "Event map preset not found" });
-    }
-
-    const hasNameUpdate = req.body?.name !== undefined;
-    const trimmedName = hasNameUpdate
-      ? String(req.body.name).trim()
-      : undefined;
-
-    if (hasNameUpdate && !trimmedName) {
-      if (req.uploadedImage) {
-        deleteImageFromMinio(req.uploadedImage.url);
-      }
-
-      return res.status(400).json({
-        error: "Invalid name",
-        message: "Map preset name cannot be empty",
-      });
-    }
-
-    if (!hasNameUpdate && !req.uploadedImage) {
-      return res.status(400).json({
-        error: "No valid fields to update",
-        message: "Provide at least a new name or image",
-      });
-    }
-
-    const updateData = {};
-    if (hasNameUpdate) {
-      updateData.name = trimmedName;
-    }
-
-    if (req.uploadedImage) {
-      updateData.imageUrl = req.uploadedImage.url;
-    }
-
-    const updatedEventMap = await prisma.eventMap.update({
-      where: { id: parsedMapId },
-      data: updateData,
-    });
-
-    if (req.uploadedImage && existingEventMap.imageUrl) {
-      deleteImageFromMinio(existingEventMap.imageUrl);
-    }
-
-    res.json({
-      message: "Event map preset updated successfully",
-      eventMap: updatedEventMap,
-    });
-  } catch (error) {
-    if (req.uploadedImage) {
-      deleteImageFromMinio(req.uploadedImage.url);
-    }
-
-    if (error?.code === "P2002") {
-      return res.status(409).json({
-        error: "Name already exists",
-        message: "An event map preset with this name already exists",
-      });
-    }
-
-    console.error("Error updating event map preset:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-};
-
-export const deleteEventMap = async (req, res) => {
-  const { mapId } = req.params;
-  const parsedMapId = parseInt(mapId, 10);
-
-  if (Number.isNaN(parsedMapId)) {
-    return res.status(400).json({ error: "Invalid map ID" });
-  }
-
-  try {
-    const existingEventMap = await prisma.eventMap.findUnique({
-      where: { id: parsedMapId },
-      include: {
-        _count: {
-          select: {
-            events: true,
-          },
-        },
-      },
-    });
-
-    if (!existingEventMap) {
-      return res.status(404).json({ error: "Event map preset not found" });
-    }
-
-    if (existingEventMap._count.events > 0) {
-      return res.status(409).json({
-        error: "Map preset is in use",
-        message:
-          "This map preset is assigned to one or more events and cannot be deleted",
-      });
-    }
-
-    await prisma.eventMap.delete({
-      where: { id: parsedMapId },
-    });
-
-    if (existingEventMap.imageUrl) {
-      deleteImageFromMinio(existingEventMap.imageUrl);
-    }
-
-    res.json({
-      message: "Event map preset deleted successfully",
-    });
-  } catch (error) {
-    console.error("Error deleting event map preset:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-};
-
 export const createEvent = async (req, res) => {
-  let { name, description, location, date, maxParticipants, eventMapId, creator } =
+  let { name, description, location, date, maxParticipants, classroom, creator } =
    
     req.body;
 
   try {
     const normalizedCreator = typeof creator === "string" ? creator.trim() : "";
+    const normalizedClassroom =
+      typeof classroom === "string" ? classroom.trim() : "";
 
     // Validate required fields
-    if (!name || !description || !location || !date || !normalizedCreator) {
+    if (
+      !name ||
+      !description ||
+      !location ||
+      !date ||
+      !normalizedCreator ||
+      !normalizedClassroom
+    ) {
       if (req.uploadedImage) {
         deleteEventImageFromMinio(req.uploadedImage.url);
       }
 
       return res.status(400).json({
         error: "Missing required fields",
-        message: "Name, description, location, date, and creator are required",
+        message:
+          "Name, description, location, date, creator, and classroom are required",
       });
     }
 
@@ -956,35 +706,6 @@ export const createEvent = async (req, res) => {
       maxParticipants = null;
     }
 
-    const parsedEventMap = parseEventMapValue(eventMapId, {
-      allowMissing: false,
-    });
-
-    if (parsedEventMap.error) {
-      if (req.uploadedImage) {
-        deleteEventImageFromMinio(req.uploadedImage.url);
-      }
-
-      return res.status(400).json({
-        error: parsedEventMap.error,
-        message: parsedEventMap.message,
-      });
-    }
-
-    if (
-      parsedEventMap.value !== null &&
-      !(await ensureEventMapExists(parsedEventMap.value))
-    ) {
-      if (req.uploadedImage) {
-        deleteEventImageFromMinio(req.uploadedImage.url);
-      }
-
-      return res.status(400).json({
-        error: "Invalid eventMapId",
-        message: "Selected map preset does not exist",
-      });
-    }
-
     // Get image URL from uploaded file if available
     const imageUrl = req.uploadedImage ? req.uploadedImage.url : null;
 
@@ -995,7 +716,7 @@ export const createEvent = async (req, res) => {
         imageUrl,
         creator: normalizedCreator,
         location,
-        eventMapId: parsedEventMap.value,
+        classroom: normalizedClassroom,
         date: new Date(date),
         maxParticipants: maxParticipants || null,
       },
@@ -1020,7 +741,7 @@ export const createEvent = async (req, res) => {
 // Update an existing event
 export const updateEvent = async (req, res) => {
   const { eventId } = req.params;
-  let { name, description, location, date, maxParticipants, eventMapId } =
+  let { name, description, location, date, maxParticipants, classroom } =
     req.body;
 
   try {
@@ -1068,35 +789,17 @@ export const updateEvent = async (req, res) => {
     if (maxParticipants !== undefined)
       updateData.maxParticipants = maxParticipants || null;
 
-    const parsedEventMap = parseEventMapValue(eventMapId);
-
-    if (parsedEventMap.error) {
-      if (req.uploadedImage) {
-        deleteEventImageFromMinio(req.uploadedImage.url);
-      }
-
-      return res.status(400).json({
-        error: parsedEventMap.error,
-        message: parsedEventMap.message,
-      });
-    }
-
-    if (parsedEventMap.hasValue) {
-      if (
-        parsedEventMap.value !== null &&
-        !(await ensureEventMapExists(parsedEventMap.value))
-      ) {
+    if (classroom !== undefined) {
+      if (!String(classroom).trim()) {
         if (req.uploadedImage) {
           deleteEventImageFromMinio(req.uploadedImage.url);
         }
-
         return res.status(400).json({
-          error: "Invalid eventMapId",
-          message: "Selected map preset does not exist",
+          error: "Invalid classroom",
+          message: "Classroom cannot be empty",
         });
       }
-
-      updateData.eventMapId = parsedEventMap.value;
+      updateData.classroom = String(classroom).trim();
     }
 
     // Handle image update

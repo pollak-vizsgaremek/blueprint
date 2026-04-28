@@ -226,21 +226,10 @@ export interface Event {
   imageUrl: string | null;
   creator: string;
   location: string;
-  eventMapId: number | null;
-  mapImageUrl: string | null;
-  mapName: string | null;
+  classroom: string;
   date: string; // ISO datetime string
   maxParticipants: number | null;
   createdAt: string; // ISO datetime string
-}
-
-export interface EventMapPreset {
-  id: number;
-  name: string;
-  imageUrl: string;
-  createdAt: string;
-  updatedAt: string;
-  eventCount: number;
 }
 
 export interface UserRegistration {
@@ -287,9 +276,7 @@ export interface RegistrationWithEvent extends Omit<Registration, "userId"> {
     imageUrl: string | null;
     creator: string;
     location: string;
-    eventMapId: number | null;
-    mapImageUrl: string | null;
-    mapName: string | null;
+    classroom: string;
     date: string; // ISO datetime string
     maxParticipants: number | null;
     createdAt: string; // ISO datetime string
@@ -562,16 +549,6 @@ export interface AdminRegistrationMutationResponse {
 export interface AdminUserMutationResponse {
   message: string;
   user: User;
-}
-
-export interface GetEventMapsResponse {
-  message: string;
-  eventMaps: EventMapPreset[];
-}
-
-export interface EventMapMutationResponse {
-  message: string;
-  eventMap: EventMapPreset;
 }
 
 // Common error responses

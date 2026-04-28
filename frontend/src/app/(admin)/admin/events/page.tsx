@@ -2,11 +2,8 @@
 
 import { Spinner } from "@/components/Spinner";
 import {
-  EventMapMutationResponse,
-  EventMapPreset,
   EventWithRegistrationInfo,
   GetAllEventsResponse,
-  GetEventMapsResponse,
 } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
@@ -22,6 +19,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { CLASSROOM_OPTIONS, getClassroomLabel } from "@/lib/classrooms";
 import { AdminFormModal } from "../../components/AdminFormModal";
 import { AdminPageHeader } from "../../components/AdminPageHeader";
 import { AdminStatusBadge } from "../../components/AdminStatusBadge";
@@ -37,7 +35,7 @@ type EventFormState = {
   location: string;
   date: string;
   maxParticipants: string;
-  eventMapId: string;
+  classroom: string;
 };
 
 const initialFormState: EventFormState = {
@@ -47,7 +45,7 @@ const initialFormState: EventFormState = {
   location: "",
   date: "",
   maxParticipants: "",
-  eventMapId: "",
+  classroom: "",
 };
 
 const getErrorMessage = (error: unknown, fallback: string) => {
@@ -71,15 +69,6 @@ const EventsAdminPage = () => {
     type: "success" | "error";
     text: string;
   } | null>(null);
-  const [mapMessage, setMapMessage] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
-  const [newMapName, setNewMapName] = useState("");
-  const [newMapImage, setNewMapImage] = useState<File | null>(null);
-  const [editingMap, setEditingMap] = useState<EventMapPreset | null>(null);
-  const [editingMapName, setEditingMapName] = useState("");
-  const [editingMapImage, setEditingMapImage] = useState<File | null>(null);
   const [filter, setFilter] = useState("all");
 
   const {
@@ -99,22 +88,6 @@ const EventsAdminPage = () => {
       return data;
     },
   });
-
-  const { data: eventMapsData, isLoading: isEventMapsLoading } = useQuery({
-    queryKey: ["admin-event-maps"],
-    queryFn: async () => {
-      const { data } = await axios.get<GetEventMapsResponse>(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/event-maps`,
-        {
-          withCredentials: true,
-        },
-      );
-
-      return data;
-    },
-  });
-
-  const eventMaps = eventMapsData?.eventMaps ?? [];
 
   const resetForm = () => {
     setForm(initialFormState);
@@ -158,7 +131,7 @@ const EventsAdminPage = () => {
         payload.append("maxParticipants", form.maxParticipants.trim());
       }
 
-      payload.append("eventMapId", form.eventMapId);
+      payload.append("classroom", form.classroom);
 
       if (image) {
         payload.append("image", image);
@@ -217,115 +190,6 @@ const EventsAdminPage = () => {
     },
   });
 
-  const createEventMapMutation = useMutation({
-    mutationFn: async () => {
-      const payload = new FormData();
-      payload.append("name", newMapName.trim());
-
-      if (newMapImage) {
-        payload.append("image", newMapImage);
-      }
-
-      const { data } = await axios.post<EventMapMutationResponse>(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/event-maps`,
-        payload,
-        {
-          withCredentials: true,
-        },
-      );
-
-      return data;
-    },
-    onSuccess: () => {
-      setNewMapName("");
-      setNewMapImage(null);
-      setMapMessage({
-        type: "success",
-        text: "Térkép preset létrehozva.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["admin-event-maps"] });
-    },
-    onError: (error) => {
-      setMapMessage({
-        type: "error",
-        text: getErrorMessage(error, "A térkép preset mentése sikertelen."),
-      });
-    },
-  });
-
-  const updateEventMapMutation = useMutation({
-    mutationFn: async () => {
-      if (!editingMap) {
-        throw new Error("Nincs kiválasztott térkép preset");
-      }
-
-      const payload = new FormData();
-      payload.append("name", editingMapName.trim());
-
-      if (editingMapImage) {
-        payload.append("image", editingMapImage);
-      }
-
-      const { data } = await axios.put<EventMapMutationResponse>(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/event-maps/${editingMap.id}`,
-        payload,
-        {
-          withCredentials: true,
-        },
-      );
-
-      return data;
-    },
-    onSuccess: () => {
-      setEditingMap(null);
-      setEditingMapName("");
-      setEditingMapImage(null);
-      setMapMessage({
-        type: "success",
-        text: "Térkép preset frissítve.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["admin-event-maps"] });
-      queryClient.invalidateQueries({ queryKey: ["admin-events"] });
-      queryClient.invalidateQueries({ queryKey: ["events"] });
-      queryClient.invalidateQueries({ queryKey: ["myevents"] });
-    },
-    onError: (error) => {
-      setMapMessage({
-        type: "error",
-        text: getErrorMessage(error, "A térkép preset frissítése sikertelen."),
-      });
-    },
-  });
-
-  const deleteEventMapMutation = useMutation({
-    mutationFn: async (mapId: number) => {
-      const { data } = await axios.delete(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/event-maps/${mapId}`,
-        {
-          withCredentials: true,
-        },
-      );
-
-      return data;
-    },
-    onSuccess: () => {
-      setMapMessage({ type: "success", text: "Térkép preset törölve." });
-      if (editingMap) {
-        setEditingMap(null);
-        setEditingMapName("");
-        setEditingMapImage(null);
-      }
-
-      queryClient.invalidateQueries({ queryKey: ["admin-event-maps"] });
-      queryClient.invalidateQueries({ queryKey: ["admin-events"] });
-    },
-    onError: (error) => {
-      setMapMessage({
-        type: "error",
-        text: getErrorMessage(error, "A térkép preset törlése sikertelen."),
-      });
-    },
-  });
 
   const startEditing = (event: EventWithRegistrationInfo) => {
     setEditingEvent(event);
@@ -337,7 +201,7 @@ const EventsAdminPage = () => {
       location: event.location,
       date: toLocalInputValue(event.date),
       maxParticipants: event.maxParticipants?.toString() ?? "",
-      eventMapId: event.eventMapId ? String(event.eventMapId) : "",
+      classroom: event.classroom,
     });
     setMessage(null);
     setIsFormModalOpen(true);
@@ -351,6 +215,7 @@ const EventsAdminPage = () => {
       !form.creator.trim() ||
       !form.description.trim() ||
       !form.location.trim() ||
+      !form.classroom ||
       !form.date
     ) {
       setMessage({
@@ -388,63 +253,6 @@ const EventsAdminPage = () => {
     deleteMutation.mutate(editingEvent.id);
   };
 
-  const startMapEditing = (eventMap: EventMapPreset) => {
-    setEditingMap(eventMap);
-    setEditingMapName(eventMap.name);
-    setEditingMapImage(null);
-    setMapMessage(null);
-  };
-
-  const cancelMapEditing = () => {
-    setEditingMap(null);
-    setEditingMapName("");
-    setEditingMapImage(null);
-  };
-
-  const handleMapCreate = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (!newMapName.trim() || !newMapImage) {
-      setMapMessage({
-        type: "error",
-        text: "Adj meg nevet és képet az új presethez.",
-      });
-      return;
-    }
-
-    createEventMapMutation.mutate();
-  };
-
-  const handleMapUpdate = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (!editingMap) {
-      return;
-    }
-
-    if (!editingMapName.trim()) {
-      setMapMessage({
-        type: "error",
-        text: "A preset neve nem lehet üres.",
-      });
-      return;
-    }
-
-    updateEventMapMutation.mutate();
-  };
-
-  const handleMapDelete = (eventMap: EventMapPreset) => {
-    if (
-      !window.confirm(
-        `Biztosan törölni szeretnéd a(z) \"${eventMap.name}\" térkép presetet?`,
-      )
-    ) {
-      return;
-    }
-
-    deleteEventMapMutation.mutate(eventMap.id);
-  };
-
   return (
     <>
       <AdminPageHeader
@@ -473,155 +281,6 @@ const EventsAdminPage = () => {
           {message.text}
         </div>
       ) : null}
-
-      <section className="card-box h-auto! p-5 min-w-0 mb-5">
-        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-semibold">Térkép presetek</h2>
-            <p className="text-sm text-faded">
-              Hozz létre új termet/osztálytérképet, majd válaszd ki eseményeknél.
-            </p>
-          </div>
-          <div className="text-sm text-faded">
-            {eventMaps.length} mentett preset
-          </div>
-        </div>
-
-        {mapMessage ? (
-          <div
-            className={`mt-4 rounded-xl border px-4 py-3 text-sm ${
-              mapMessage.type === "success"
-                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                : "border-red-200 bg-red-50 text-red-700"
-            }`}
-          >
-            {mapMessage.text}
-          </div>
-        ) : null}
-
-        <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <form
-            onSubmit={handleMapCreate}
-            className="rounded-xl border border-faded/20 bg-secondary/40 p-4 space-y-3"
-          >
-            <h3 className="font-medium">Új preset</h3>
-            <div className="space-y-1">
-              <label className="text-sm text-faded">Név</label>
-              <input
-                value={newMapName}
-                onChange={(event) => setNewMapName(event.target.value)}
-                className="w-full rounded-xl border border-faded/25 bg-secondary/70 px-3 py-2 focus:outline-none focus:border-accent"
-                placeholder="Pl.: Matek II"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm text-faded">Térkép kép</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(event) =>
-                  setNewMapImage(event.target.files?.[0] ?? null)
-                }
-                className="w-full rounded-xl border border-faded/25 bg-secondary/70 px-3 py-2 text-sm focus:outline-none focus:border-accent"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={createEventMapMutation.isPending}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/80 transition ease-in-out disabled:bg-faded disabled:cursor-not-allowed cursor-pointer"
-            >
-              {createEventMapMutation.isPending ? "Mentés..." : "Preset mentése"}
-            </button>
-          </form>
-
-          <div className="rounded-xl border border-faded/20 bg-secondary/40 p-4 space-y-3">
-            <h3 className="font-medium">Mentett presetek</h3>
-            {isEventMapsLoading ? (
-              <div className="text-sm text-faded">Presetek betöltése...</div>
-            ) : eventMaps.length === 0 ? (
-              <div className="text-sm text-faded">Még nincs mentett preset.</div>
-            ) : (
-              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                {eventMaps.map((eventMap) => {
-                  const isEditingMap = editingMap?.id === eventMap.id;
-
-                  return (
-                    <div
-                      key={eventMap.id}
-                      className="rounded-lg border border-faded/20 bg-secondary/50 px-3 py-2"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="font-medium truncate">{eventMap.name}</div>
-                          <div className="text-xs text-faded">
-                            {eventMap.eventCount} hozzárendelt esemény
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => startMapEditing(eventMap)}
-                            className="rounded-md border border-faded/30 p-1.5 hover:bg-faded/10 transition ease-in-out cursor-pointer"
-                            title="Szerkesztés"
-                          >
-                            <Pencil size={14} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleMapDelete(eventMap)}
-                            disabled={deleteEventMapMutation.isPending}
-                            className="rounded-md border border-red-300/50 p-1.5 text-red-700 hover:bg-red-50 transition ease-in-out disabled:text-faded disabled:border-faded/30 disabled:cursor-not-allowed cursor-pointer"
-                            title="Törlés"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </div>
-
-                      {isEditingMap ? (
-                        <form onSubmit={handleMapUpdate} className="mt-3 space-y-2">
-                          <input
-                            value={editingMapName}
-                            onChange={(event) => setEditingMapName(event.target.value)}
-                            className="w-full rounded-lg border border-faded/25 bg-secondary/70 px-3 py-2 text-sm focus:outline-none focus:border-accent"
-                            placeholder="Preset név"
-                          />
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(event) =>
-                              setEditingMapImage(event.target.files?.[0] ?? null)
-                            }
-                            className="w-full rounded-lg border border-faded/25 bg-secondary/70 px-3 py-2 text-sm focus:outline-none focus:border-accent"
-                          />
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="submit"
-                              disabled={updateEventMapMutation.isPending}
-                              className="rounded-lg bg-accent px-3 py-1.5 text-sm text-white hover:bg-accent/80 transition ease-in-out disabled:bg-faded disabled:cursor-not-allowed cursor-pointer"
-                            >
-                              {updateEventMapMutation.isPending
-                                ? "Mentés..."
-                                : "Frissítés"}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={cancelMapEditing}
-                              className="rounded-lg border border-faded/30 px-3 py-1.5 text-sm hover:bg-faded/10 transition ease-in-out cursor-pointer"
-                            >
-                              Mégse
-                            </button>
-                          </div>
-                        </form>
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
 
       <section className="card-box h-auto! p-5 min-w-0">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
@@ -880,21 +539,22 @@ const EventsAdminPage = () => {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-sm text-faded">Terem/osztálytérkép</label>
+              <label className="text-sm text-faded">Tanterem</label>
               <select
-                value={form.eventMapId}
+                value={form.classroom}
                 onChange={(event) =>
                   setForm((current) => ({
                     ...current,
-                    eventMapId: event.target.value,
+                    classroom: event.target.value,
                   }))
                 }
                 className="w-full rounded-xl border border-faded/25 bg-secondary/70 px-3 py-2 focus:outline-none focus:border-accent"
+                required
               >
-                <option value="">Nincs kiválasztva</option>
-                {eventMaps.map((eventMap) => (
-                  <option key={eventMap.id} value={eventMap.id}>
-                    {eventMap.name}
+                <option value="">Válassz tantermet</option>
+                {CLASSROOM_OPTIONS.map((classroom) => (
+                  <option key={classroom} value={classroom}>
+                    {getClassroomLabel(classroom)}
                   </option>
                 ))}
               </select>
@@ -912,12 +572,9 @@ const EventsAdminPage = () => {
               />
             </div>
             <div className="rounded-xl border border-faded/20 bg-secondary/40 p-3 text-sm text-faded">
-              {form.eventMapId
-                ? `Kiválasztott preset: ${
-                    eventMaps.find((item) => String(item.id) === form.eventMapId)
-                      ?.name ?? "Ismeretlen"
-                  }`
-                : "Nincs térkép preset kiválasztva."}
+              {form.classroom
+                ? `Kiválasztott tanterem: ${getClassroomLabel(form.classroom)}`
+                : "Nincs tanterem kiválasztva."}
             </div>
           </div>
 

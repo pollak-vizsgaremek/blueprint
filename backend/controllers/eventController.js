@@ -151,7 +151,7 @@ const verifyCommentWithAI = async ({ content, event, userId }) => {
         systemInstruction: {
           parts: [
             {
-              text: "You verify event discussion comments. Return ONLY JSON with keys isVerified (boolean) and reason (string). Mark true only for respectful, non-spam comments.",
+              text: 'You are a strict moderator for event discussion comments. Evaluate the comment for safety and quality. Approve only if it is respectful, non-harassing, non-hateful, non-sexual, non-violent, non-spam. Reject profanity aimed at people, personal attacks, discrimination, threats, sexual content, scams, repeated promotional text, or nonsense. If uncertain, reject. Return ONLY valid JSON: {"isVerified": boolean, "reason": string}. Keep reason short (max 20 words), specific, and user-facing.',
             },
           ],
         },
@@ -279,12 +279,6 @@ export const getAllEvents = async (req, res) => {
 
     const events = await prisma.event.findMany({
       include: {
-        eventMap: {
-          select: {
-            name: true,
-            imageUrl: true,
-          },
-        },
         registrations: userId
           ? {
               where: {
@@ -321,9 +315,7 @@ export const getAllEvents = async (req, res) => {
         imageUrl: event.imageUrl,
         creator: event.creator,
         location: event.location,
-        eventMapId: event.eventMapId,
-        mapImageUrl: event.eventMap?.imageUrl ?? null,
-        mapName: event.eventMap?.name ?? null,
+        classroom: event.classroom,
         date: event.date,
         maxParticipants: event.maxParticipants,
         createdAt: event.createdAt,
@@ -1046,13 +1038,7 @@ export const getUserEventRegistrations = async (req, res) => {
             imageUrl: true,
             creator: true,
             location: true,
-            eventMapId: true,
-            eventMap: {
-              select: {
-                imageUrl: true,
-                name: true,
-              },
-            },
+            classroom: true,
             date: true,
             maxParticipants: true,
             createdAt: true,
@@ -1076,9 +1062,7 @@ export const getUserEventRegistrations = async (req, res) => {
           imageUrl: reg.event.imageUrl,
           creator: reg.event.creator,
           location: reg.event.location,
-          eventMapId: reg.event.eventMapId,
-          mapImageUrl: reg.event.eventMap?.imageUrl ?? null,
-          mapName: reg.event.eventMap?.name ?? null,
+          classroom: reg.event.classroom,
           date: reg.event.date,
           maxParticipants: reg.event.maxParticipants,
           createdAt: reg.event.createdAt,

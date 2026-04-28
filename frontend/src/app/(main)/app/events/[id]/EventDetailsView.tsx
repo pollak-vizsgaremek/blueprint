@@ -16,6 +16,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { ExternalLink } from "lucide-react";
 import Image from "next/image";
+import { EventNavigationMap } from "@/components/navigation/EventNavigationMap";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -585,27 +586,7 @@ export const EventDetailsView = ({
             <div className="text-lg font-semibold">Helyszín</div>
             <div className="text-faded mt-1 mb-4">{event.location}</div>
 
-            {event.mapImageUrl ? (
-              <div className="rounded-xl border border-faded/20 bg-secondary/40 p-3">
-                <div className="relative h-80 w-full overflow-hidden rounded-xl bg-faded/10">
-                  <Image
-                    src={event.mapImageUrl}
-                    alt={event.mapName ?? `${event.name} térkép`}
-                    fill
-                    className="object-contain"
-                  />
-                </div>
-                {event.mapName ? (
-                  <div className="mt-2 text-sm text-faded">
-                    Térkép preset: {event.mapName}
-                  </div>
-                ) : null}
-              </div>
-            ) : (
-              <div className="rounded-xl border border-dashed border-faded/30 bg-secondary/30 p-4 text-faded">
-                Ehhez az eseményhez még nincs hozzárendelt terem-/osztálytérkép.
-              </div>
-            )}
+            <EventNavigationMap classroom={event.classroom} />
           </div>
         )}
       </div>

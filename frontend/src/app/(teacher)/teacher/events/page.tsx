@@ -8,6 +8,7 @@ import { CalendarDays, MapPin, Plus, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { CLASSROOM_OPTIONS, getClassroomLabel } from "@/lib/classrooms";
 import { TeacherFormModal } from "../../components/TeacherFormModal";
 import { TeacherPageHeader } from "../../components/TeacherPageHeader";
 
@@ -16,6 +17,7 @@ type EventFormState = {
   creator: string;
   description: string;
   location: string;
+  classroom: string;
   date: string;
   maxParticipants: string;
 };
@@ -25,6 +27,7 @@ const initialFormState: EventFormState = {
   creator: "",
   description: "",
   location: "",
+  classroom: "",
   date: "",
   maxParticipants: "",
 };
@@ -108,6 +111,7 @@ const TeacherEventsPage = () => {
       payload.append("creator", form.creator.trim());
       payload.append("description", form.description.trim());
       payload.append("location", form.location.trim());
+      payload.append("classroom", form.classroom);
       payload.append("date", new Date(form.date).toISOString());
 
       if (form.maxParticipants.trim()) {
@@ -151,6 +155,7 @@ const TeacherEventsPage = () => {
       !form.creator.trim() ||
       !form.description.trim() ||
       !form.location.trim() ||
+      !form.classroom ||
       !form.date
     ) {
       setMessage({
@@ -357,6 +362,27 @@ const TeacherEventsPage = () => {
                 placeholder="Helyszín"
                 required
               />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm text-faded">Tanterem</label>
+              <select
+                value={form.classroom}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    classroom: event.target.value,
+                  }))
+                }
+                className="w-full rounded-xl border border-faded/25 bg-secondary/70 px-3 py-2 focus:outline-none focus:border-accent"
+                required
+              >
+                <option value="">Válassz tantermet</option>
+                {CLASSROOM_OPTIONS.map((classroom) => (
+                  <option key={classroom} value={classroom}>
+                    {getClassroomLabel(classroom)}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="space-y-1">
               <label className="text-sm text-faded">Időpont</label>

@@ -358,12 +358,6 @@ export const getTeacherCreatedEvents = async (req, res) => {
         deletedAt: null,
       },
       include: {
-        eventMap: {
-          select: {
-            name: true,
-            imageUrl: true,
-          },
-        },
         _count: {
           select: {
             registrations: {
@@ -386,9 +380,7 @@ export const getTeacherCreatedEvents = async (req, res) => {
       imageUrl: event.imageUrl,
       creator: event.creator,
       location: event.location,
-      eventMapId: event.eventMapId,
-      mapImageUrl: event.eventMap?.imageUrl ?? null,
-      mapName: event.eventMap?.name ?? null,
+      classroom: event.classroom,
       date: event.date,
       maxParticipants: event.maxParticipants,
       createdAt: event.createdAt,
@@ -411,16 +403,26 @@ export const getTeacherCreatedEvents = async (req, res) => {
 };
 
 export const createTeacherEvent = async (req, res) => {
-  let { name, description, location, date, maxParticipants, creator } =
+  let { name, description, location, date, maxParticipants, creator, classroom } =
     req.body;
 
   try {
     const normalizedCreator = typeof creator === "string" ? creator.trim() : "";
+    const normalizedClassroom =
+      typeof classroom === "string" ? classroom.trim() : "";
 
-    if (!name || !description || !location || !date || !normalizedCreator) {
+    if (
+      !name ||
+      !description ||
+      !location ||
+      !date ||
+      !normalizedCreator ||
+      !normalizedClassroom
+    ) {
       return res.status(400).json({
         error: "Missing required fields",
-        message: "Name, description, location, date, and creator are required",
+        message:
+          "Name, description, location, date, creator, and classroom are required",
       });
     }
 
@@ -450,6 +452,7 @@ export const createTeacherEvent = async (req, res) => {
         imageUrl,
         creator: normalizedCreator,
         location,
+        classroom: normalizedClassroom,
         date: new Date(date),
         maxParticipants: maxParticipants || null,
       },

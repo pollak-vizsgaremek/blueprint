@@ -61,7 +61,7 @@ model event {
   imageUrl      String?        @db.Text
   creator       String
   location      String
-  eventMapId    Int?
+  classroom     String         @default("Ismeretlen")
   date          DateTime
   maxParticipants Int?         // Optional field for maximum number of participants
   createdAt     DateTime       @default(now())
@@ -69,21 +69,9 @@ model event {
   updatedBy     Int?
   deletedAt     DateTime?
   updater       user?          @relation("EventUpdater", fields: [updatedBy], references: [id])
-  eventMap      eventMap?      @relation(fields: [eventMapId], references: [id])
   registrations registration[]
   eventNews     eventNews[]
   comments      eventComment[]
-
-  @@index([eventMapId])
-}
-
-model eventMap {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
-  imageUrl  String   @db.Text
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  events    event[]
 }
 
 model registration {

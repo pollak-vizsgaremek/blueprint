@@ -13,8 +13,10 @@ import appointmentRoutes from "./routes/appointments.js";
 import notificationRoutes from "./routes/notifications.js";
 import teacherAvailabilityRoutes from "./routes/teacherAvailability.js";
 import teacherRoutes from "./routes/teacher.js";
+import { globalRateLimiter } from "./middleware/rateLimit.js";
 
 const app = express();
+app.set("trust proxy", 1);
 
 // CORS configuration to allow credentials (cookies)
 // Get CORS origins from environment and normalize missing protocols.
@@ -86,6 +88,8 @@ app.use(cookieParser());
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok" });
 });
+
+app.use(globalRateLimiter);
 
 // Routes
 app.use("/events", eventRoutes);

@@ -46,11 +46,11 @@ export const AppointmentsPanel = () => {
   return (
     <div className="gap-2 grow w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
       {isLoading ? (
-        Array.from({ length: 4 }).map((_, index) => {
+        Array.from({ length: 3 }).map((_, index) => {
           return <div key={index} className="grow bg-faded/20 rounded-xl" />;
         })
       ) : upcomingAppointments.length > 0 ? (
-        upcomingAppointments.map((appointment) => {
+        upcomingAppointments.slice(0, 3).map((appointment) => {
           const dateLabel = new Date(appointment.startTime).toLocaleDateString(
             "hu-HU",
             {

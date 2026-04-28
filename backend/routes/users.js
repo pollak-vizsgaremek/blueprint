@@ -8,14 +8,15 @@ import {
   userLogout,
 } from "../controllers/userController.js";
 import { authenticateToken } from "../middleware/auth.js";
+import { authRateLimiter } from "../middleware/rateLimit.js";
 
 const router = express.Router();
 
 // POST /users - Create a new user (register)
-router.post("/", createUser);
+router.post("/", authRateLimiter, createUser);
 
 // POST /users/login - Check user credentials (login)
-router.post("/login", userLogin);
+router.post("/login", authRateLimiter, userLogin);
 
 // POST /users/logout - Logout user
 router.post("/logout", userLogout);

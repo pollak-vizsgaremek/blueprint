@@ -1,6 +1,7 @@
 "use client";
 
 import { Spinner } from "@/components/Spinner";
+import { DataState } from "@/components/ui/DataState";
 import {
   AdminAppointmentsResponse,
   AdminNewsResponse,
@@ -10,11 +11,13 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import {
+  CalendarX2,
   CalendarDays,
   Clock3,
   MessageSquareWarning,
   Newspaper,
   Ticket,
+  TriangleAlert,
   Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -97,9 +100,11 @@ const AdminPage = () => {
 
   if (isError) {
     return (
-      <div className="card-box h-auto! p-6 text-red-600">
-        Nem sikerült betölteni az admin áttekintést.
-      </div>
+      <DataState
+        icon={TriangleAlert}
+        title="Nem sikerült betölteni az admin áttekintést."
+        tone="error"
+      />
     );
   }
 
@@ -261,7 +266,7 @@ const AdminPage = () => {
           </div>
           <div className="space-y-3">
             {recent.events.length === 0 ? (
-              <div className="text-faded text-sm">Még nincs esemény.</div>
+              <DataState icon={CalendarX2} title="Még nincs esemény." compact />
             ) : (
               recent.events.map((event) => (
                 <Link
@@ -292,7 +297,7 @@ const AdminPage = () => {
           </div>
           <div className="space-y-3">
             {recent.users.length === 0 ? (
-              <div className="text-faded text-sm">Még nincs felhasználó.</div>
+              <DataState icon={Users} title="Még nincs felhasználó." compact />
             ) : (
               recent.users.map((user) => (
                 <div
@@ -328,7 +333,7 @@ const AdminPage = () => {
           </div>
           <div className="space-y-3">
             {recent.appointments.length === 0 ? (
-              <div className="text-faded text-sm">Nincs időpont.</div>
+              <DataState icon={Clock3} title="Nincs időpont." compact />
             ) : (
               recent.appointments.map((appointment) => (
                 <div
@@ -363,7 +368,7 @@ const AdminPage = () => {
           </div>
           <div className="space-y-3">
             {recent.news.length === 0 ? (
-              <div className="text-faded text-sm">Nincs hír.</div>
+              <DataState icon={Newspaper} title="Nincs hír." compact />
             ) : (
               recent.news.map((news) => (
                 <div

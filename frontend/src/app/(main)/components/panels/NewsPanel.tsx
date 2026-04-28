@@ -1,11 +1,13 @@
 "use client";
 
 import { Spinner } from "@/components/Spinner";
+import { DataState } from "@/components/ui/DataState";
 import { GetLatestPublishedNewsResponse } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import Image from "next/image";
 import Link from "next/link";
+import { Newspaper, TriangleAlert } from "lucide-react";
 
 const truncate = (value: string, maxLength: number) => {
   if (value.length <= maxLength) {
@@ -40,9 +42,12 @@ export const NewsPanel = () => {
 
   if (isError) {
     return (
-      <div className="grow flex items-center justify-center text-sm text-red-600 px-2 text-center">
-        Nem sikerült betölteni a híreket.
-      </div>
+      <DataState
+        icon={TriangleAlert}
+        title="Nem sikerült betölteni a híreket."
+        tone="error"
+        compact
+      />
     );
   }
 
@@ -50,9 +55,11 @@ export const NewsPanel = () => {
 
   if (!latestNews) {
     return (
-      <div className="grow flex items-center justify-center text-faded text-sm px-2 text-center">
-        Jelenleg nincs publikált hír.
-      </div>
+      <DataState
+        icon={Newspaper}
+        title="Jelenleg nincs publikált hír."
+        compact
+      />
     );
   }
 

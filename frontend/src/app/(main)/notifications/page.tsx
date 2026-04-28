@@ -1,6 +1,7 @@
 "use client";
 
 import { Spinner } from "@/components/Spinner";
+import { DataState } from "@/components/ui/DataState";
 import {
   DeleteNotificationResponse,
   GetNotificationsResponse,
@@ -11,6 +12,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import Link from "next/link";
+import { BellRing, TriangleAlert } from "lucide-react";
 
 const NotificationsPage = () => {
   const queryClient = useQueryClient();
@@ -102,9 +104,11 @@ const NotificationsPage = () => {
   if (isError) {
     return (
       <main className="w-7/8 m-auto min-h-screen pt-24 pb-20">
-        <div className="card-box h-auto p-5 text-red-600">
-          Nem sikerült betölteni az értesítéseket.
-        </div>
+        <DataState
+          icon={TriangleAlert}
+          title="Nem sikerült betölteni az értesítéseket."
+          tone="error"
+        />
       </main>
     );
   }
@@ -130,9 +134,11 @@ const NotificationsPage = () => {
       </div>
 
       {notifications.length === 0 ? (
-        <div className="card-box h-auto p-6 text-faded text-center">
-          Jelenleg nincs értesítésed.
-        </div>
+        <DataState
+          icon={BellRing}
+          title="Jelenleg nincs értesítésed."
+          description="Az események és időpontok frissítései itt jelennek meg."
+        />
       ) : (
         <section className="space-y-3">
           {notifications.map((notification: NotificationItem) => (

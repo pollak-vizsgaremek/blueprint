@@ -1,6 +1,7 @@
 "use client";
 
 import { Spinner } from "@/components/Spinner";
+import { DataState } from "@/components/ui/DataState";
 import {
   TeacherAppointment,
   TeacherAppointmentMutationResponse,
@@ -8,7 +9,14 @@ import {
 } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import { CalendarDays, Clock3, Pencil, UserRound } from "lucide-react";
+import {
+  CalendarDays,
+  CalendarX2,
+  Clock3,
+  Pencil,
+  TriangleAlert,
+  UserRound,
+} from "lucide-react";
 import { useState } from "react";
 import { TeacherFormModal } from "../../components/TeacherFormModal";
 import { TeacherPageHeader } from "../../components/TeacherPageHeader";
@@ -164,13 +172,13 @@ const TeacherAppointmentsPage = () => {
             <Spinner />
           </div>
         ) : isError ? (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
-            Nem sikerült betölteni az időpontokat.
-          </div>
+          <DataState
+            icon={TriangleAlert}
+            title="Nem sikerült betölteni az időpontokat."
+            tone="error"
+          />
         ) : appointments.length === 0 ? (
-          <div className="h-80 rounded-xl border border-dashed border-faded/30 flex items-center justify-center text-faded">
-            Nincs hozzád tartozó időpont.
-          </div>
+          <DataState icon={CalendarX2} title="Nincs hozzád tartozó időpont." />
         ) : (
           <div className="space-y-3 max-h-[820px] overflow-y-auto pr-1">
             {appointments.map((appointment) => (

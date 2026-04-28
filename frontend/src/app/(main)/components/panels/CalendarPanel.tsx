@@ -1,11 +1,13 @@
 "use client";
 
+import { DataState } from "@/components/ui/DataState";
 import {
   GetUserEventRegistrationsResponse,
   RegistrationWithEvent,
 } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
+import { CalendarX2, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 
 const monthNames = [
@@ -31,7 +33,7 @@ const toDateKey = (date: Date) => {
 };
 
 export const CalendarPanel = () => {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["myevents"],
     queryFn: async () => {
       const { data } = await axios.get<GetUserEventRegistrationsResponse>(
@@ -63,6 +65,29 @@ export const CalendarPanel = () => {
   const previewDate = upcomingEvent?.event.date
     ? new Date(upcomingEvent.event.date)
     : new Date();
+
+  if (isError) {
+    return (
+      <DataState
+        icon={TriangleAlert}
+        title="Nem sikerült betölteni a naptárat."
+        tone="error"
+        compact
+      />
+    );
+  }
+
+  if (!isLoading && !upcomingEvent) {
+    return (
+      <DataState
+        icon={CalendarX2}
+        title="Nincs közelgő esemény."
+        compact
+        href="/calendar"
+        actionLabel="Naptár megnyitása"
+      />
+    );
+  }
 
   return (
     <Link

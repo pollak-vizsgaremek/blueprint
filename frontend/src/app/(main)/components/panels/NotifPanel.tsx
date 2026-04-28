@@ -1,6 +1,7 @@
 "use client";
 
 import { Spinner } from "@/components/Spinner";
+import { DataState } from "@/components/ui/DataState";
 import { GetNotificationsResponse } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
@@ -32,9 +33,12 @@ export const NotifPanel = () => {
 
   if (isError) {
     return (
-      <div className="grow flex items-center justify-center text-red-600 text-sm text-center px-2">
-        Nem sikerült betölteni az értesítéseket.
-      </div>
+      <DataState
+        icon={BellRing}
+        title="Nem sikerült betölteni az értesítéseket."
+        tone="error"
+        compact
+      />
     );
   }
 

@@ -1,18 +1,18 @@
 "use client";
 
 import { Spinner } from "@/components/Spinner";
-import {
-  EventWithRegistrationInfo,
-  GetAllEventsResponse,
-} from "@/types";
+import { DataState } from "@/components/ui/DataState";
+import { EventWithRegistrationInfo, GetAllEventsResponse } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import {
   CalendarDays,
+  CalendarX2,
   Eye,
   MapPin,
   Pencil,
   Plus,
+  TriangleAlert,
   Trash2,
   Users,
 } from "lucide-react";
@@ -190,7 +190,6 @@ const EventsAdminPage = () => {
     },
   });
 
-
   const startEditing = (event: EventWithRegistrationInfo) => {
     setEditingEvent(event);
     setImage(null);
@@ -317,13 +316,13 @@ const EventsAdminPage = () => {
             <Spinner />
           </div>
         ) : isError ? (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
-            Nem sikerült betölteni az eseményeket.
-          </div>
+          <DataState
+            icon={TriangleAlert}
+            title="Nem sikerült betölteni az eseményeket."
+            tone="error"
+          />
         ) : filteredEvents.length === 0 ? (
-          <div className="h-80 rounded-xl border border-dashed border-faded/30 flex items-center justify-center text-faded text-center px-4">
-            Nincs megjeleníthető esemény.
-          </div>
+          <DataState icon={CalendarX2} title="Nincs megjeleníthető esemény." />
         ) : (
           <div className="space-y-3 max-h-[820px] overflow-y-auto pr-1">
             {filteredEvents.map((event) => {

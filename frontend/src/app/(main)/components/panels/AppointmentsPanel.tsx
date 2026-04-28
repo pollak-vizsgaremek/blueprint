@@ -1,7 +1,9 @@
 "use client";
+import { DataState } from "@/components/ui/DataState";
 import { Appointment, GetAppointmentsResponse } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
+import { CalendarX2, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 
 const statusLabelMap: Record<Appointment["status"], string> = {
@@ -19,7 +21,7 @@ const statusClassMap: Record<Appointment["status"], string> = {
 };
 
 export const AppointmentsPanel = () => {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["appointments"],
     queryFn: async () => {
       const { data } = await axios.get<GetAppointmentsResponse>(
@@ -49,6 +51,13 @@ export const AppointmentsPanel = () => {
         Array.from({ length: 3 }).map((_, index) => {
           return <div key={index} className="grow bg-faded/20 rounded-xl" />;
         })
+      ) : isError ? (
+        <DataState
+          icon={TriangleAlert}
+          title="Nem sikerült betölteni az időpontokat."
+          tone="error"
+          compact
+        />
       ) : upcomingAppointments.length > 0 ? (
         upcomingAppointments.slice(0, 3).map((appointment) => {
           const dateLabel = new Date(appointment.startTime).toLocaleDateString(
@@ -93,9 +102,7 @@ export const AppointmentsPanel = () => {
           );
         })
       ) : (
-        <div className="text-faded h-full w-full flex items-center justify-center text-sm">
-          Nincs közelgő időpont.
-        </div>
+        <DataState icon={CalendarX2} title="Nincs közelgő időpont." compact />
       )}
     </div>
   );

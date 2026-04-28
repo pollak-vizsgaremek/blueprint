@@ -1,10 +1,20 @@
 "use client";
 
 import { Spinner } from "@/components/Spinner";
+import { DataState } from "@/components/ui/DataState";
 import { AdminUserMutationResponse, GetAllUsersResponse, User } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import { Mail, Plus, Search, Shield, Trash2, UserRound } from "lucide-react";
+import {
+  Mail,
+  Plus,
+  Search,
+  Shield,
+  Trash2,
+  TriangleAlert,
+  UserRound,
+  Users,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { AdminFormModal } from "../../components/AdminFormModal";
 import { AdminPageHeader } from "../../components/AdminPageHeader";
@@ -279,13 +289,13 @@ const UsersAdminPage = () => {
             <Spinner />
           </div>
         ) : isError ? (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
-            Nem sikerült betölteni a felhasználókat.
-          </div>
+          <DataState
+            icon={TriangleAlert}
+            title="Nem sikerült betölteni a felhasználókat."
+            tone="error"
+          />
         ) : filteredUsers.length === 0 ? (
-          <div className="h-80 rounded-xl border border-dashed border-faded/30 flex items-center justify-center text-faded">
-            Nincs találat.
-          </div>
+          <DataState icon={Users} title="Nincs találat." />
         ) : (
           <div className="space-y-3 max-h-[820px] overflow-y-auto pr-1">
             {filteredUsers.map((user) => (
@@ -306,7 +316,9 @@ const UsersAdminPage = () => {
                         {user.name.slice(0, 1)}
                       </div>
                       <div className="min-w-0">
-                        <div className="font-semibold truncate">{user.name}</div>
+                        <div className="font-semibold truncate">
+                          {user.name}
+                        </div>
                         <div className="text-sm text-faded truncate inline-flex items-center gap-1">
                           <Mail size={13} />
                           {user.email}
@@ -359,7 +371,9 @@ const UsersAdminPage = () => {
         isOpen={isFormModalOpen}
         onClose={resetForm}
         title={editingUser ? "Felhasználó szerkesztése" : "Új felhasználó"}
-        description={editingUser ? editingUser.email : "Admin által létrehozott fiók"}
+        description={
+          editingUser ? editingUser.email : "Admin által létrehozott fiók"
+        }
       >
         {message ? (
           <div

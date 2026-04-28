@@ -1,6 +1,7 @@
 "use client";
 
 import { Spinner } from "@/components/Spinner";
+import { DataState } from "@/components/ui/DataState";
 import { usePopupModal } from "@/contexts/PopupModalContext";
 import {
   GetTeacherAvailabilityResponse,
@@ -9,7 +10,14 @@ import {
 } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import { CalendarRange, Clock3, Plus, Trash2 } from "lucide-react";
+import {
+  CalendarRange,
+  CalendarX2,
+  Clock3,
+  Plus,
+  Trash2,
+  TriangleAlert,
+} from "lucide-react";
 import { useState } from "react";
 import { TeacherFormModal } from "../../components/TeacherFormModal";
 import { TeacherPageHeader } from "../../components/TeacherPageHeader";
@@ -273,13 +281,16 @@ const TeacherAvailabilityPage = () => {
             <Spinner />
           </div>
         ) : isError ? (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
-            Nem sikerült betölteni az elérhetőségi sávokat.
-          </div>
+          <DataState
+            icon={TriangleAlert}
+            title="Nem sikerült betölteni az elérhetőségi sávokat."
+            tone="error"
+          />
         ) : availability.length === 0 ? (
-          <div className="h-48 rounded-xl border border-dashed border-faded/30 flex items-center justify-center text-faded">
-            Még nincs rögzített elérhetőségi sávod.
-          </div>
+          <DataState
+            icon={CalendarX2}
+            title="Még nincs rögzített elérhetőségi sávod."
+          />
         ) : (
           <div className="space-y-3 max-h-[820px] overflow-y-auto pr-1">
             {availability.map((item) => (

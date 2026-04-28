@@ -1,10 +1,18 @@
 "use client";
 
 import { Spinner } from "@/components/Spinner";
+import { DataState } from "@/components/ui/DataState";
 import { EventWithRegistrationInfo, TeacherEventsResponse } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import { CalendarDays, MapPin, Plus, Users } from "lucide-react";
+import {
+  CalendarDays,
+  CalendarX2,
+  MapPin,
+  Plus,
+  TriangleAlert,
+  Users,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -216,13 +224,13 @@ const TeacherEventsPage = () => {
             <Spinner />
           </div>
         ) : isError ? (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
-            Nem sikerült betölteni az eseményeidet.
-          </div>
+          <DataState
+            icon={TriangleAlert}
+            title="Nem sikerült betölteni az eseményeidet."
+            tone="error"
+          />
         ) : events.length === 0 ? (
-          <div className="h-80 rounded-xl border border-dashed border-faded/30 flex items-center justify-center text-faded text-center px-4">
-            Még nincs saját eseményed.
-          </div>
+          <DataState icon={CalendarX2} title="Még nincs saját eseményed." />
         ) : (
           <div className="space-y-3 max-h-[820px] overflow-y-auto pr-1">
             {events.map((event: EventWithRegistrationInfo) => (

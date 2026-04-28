@@ -5,6 +5,7 @@ import { PiSquaresFourFill } from "react-icons/pi";
 import { FaList } from "react-icons/fa6";
 import { useQuery } from "@tanstack/react-query";
 import { Spinner } from "@/components/Spinner";
+import { DataState } from "@/components/ui/DataState";
 import { useSearchParams } from "next/navigation";
 import { EventTiles } from "../components/EventTiles";
 import { Evenlist } from "../components/EventList";
@@ -14,10 +15,15 @@ import { Suspense } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { isReducedMotionEnabled } from "@/lib/motion";
+import { CalendarX2, TriangleAlert } from "lucide-react";
 
 const EventsContent = () => {
   const searchParams = useSearchParams();
-  const { data: events, isLoading } = useQuery({
+  const {
+    data: events,
+    isLoading,
+    isError,
+  } = useQuery({
     queryKey: ["events"],
     queryFn: async () => {
       const { data } = await axios.get(
@@ -129,6 +135,17 @@ const EventsContent = () => {
         <div className="flex justify-center items-center h-screen w-full">
           <Spinner />
         </div>
+      ) : isError ? (
+        <DataState
+          icon={TriangleAlert}
+          title="Nem sikerült betölteni az eseményeket."
+          tone="error"
+        />
+      ) : !events?.length ? (
+        <DataState
+          icon={CalendarX2}
+          title="Jelenleg nincs megjeleníthető esemény."
+        />
       ) : view === "tiles" ? (
         <EventTiles events={events} filter={filter} />
       ) : (

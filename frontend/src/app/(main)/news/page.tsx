@@ -1,9 +1,11 @@
 "use client";
 
 import { Spinner } from "@/components/Spinner";
+import { DataState } from "@/components/ui/DataState";
 import { GetPublishedNewsResponse, NewsItem } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
+import { Newspaper, TriangleAlert } from "lucide-react";
 import Image from "next/image";
 
 const formatNewsDate = (publishedAt: string | null, createdAt: string) => {
@@ -45,11 +47,11 @@ const NewsPage = () => {
   if (isError) {
     return (
       <main className="w-7/8 m-auto min-h-screen pt-24 pb-20">
-        <div className="card-box h-auto">
-          <div className="text-xl text-red-600">
-            Nem sikerült betölteni a híreket.
-          </div>
-        </div>
+        <DataState
+          icon={TriangleAlert}
+          title="Nem sikerült betölteni a híreket."
+          tone="error"
+        />
       </main>
     );
   }
@@ -66,9 +68,11 @@ const NewsPage = () => {
       </div>
 
       {newsItems.length === 0 ? (
-        <div className="card-box h-auto p-6 text-faded text-center">
-          Jelenleg nincs publikált hír.
-        </div>
+        <DataState
+          icon={Newspaper}
+          title="Jelenleg nincs publikált hír."
+          description="Amint új közlemény érkezik, itt megjelenik."
+        />
       ) : (
         <section className="space-y-4">
           {newsItems.map((news: NewsItem) => (

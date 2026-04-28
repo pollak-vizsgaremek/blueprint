@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { TeacherGuard } from "./TeacherGuard";
 import { TeacherShell } from "./components/TeacherShell";
 
 export const metadata: Metadata = {
@@ -12,9 +11,5 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <TeacherGuard>
-      <TeacherShell>{children}</TeacherShell>
-    </TeacherGuard>
-  );
+  return <TeacherShell>{children}</TeacherShell>;
 }

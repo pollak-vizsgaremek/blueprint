@@ -33,7 +33,8 @@ const LoginPage = () => {
       // Use the login function from auth context
       await login(email, password);
 
-      router.push("/");
+      router.replace("/");
+      router.refresh();
     } catch (err: unknown) {
       const authError = err as Error & { code?: string };
       if (authError.code === "email_not_verified") {

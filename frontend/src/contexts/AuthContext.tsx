@@ -127,11 +127,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           withCredentials: true, // Include cookies in request
         },
       );
-      router.push("/");
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
       setUser(null);
+      router.replace("/login");
+      router.refresh();
     }
   };
 

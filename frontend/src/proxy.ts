@@ -4,6 +4,9 @@ import type { NextRequest } from "next/server";
 export const proxy = async (request: NextRequest) => {
   const token = request.cookies.get("token");
   const pathname = request.nextUrl.pathname;
+  const isAdminRoute = pathname.startsWith("/admin");
+  const isTeacherRoute = pathname.startsWith("/teacher");
+  const isRoleProtectedRoute = isAdminRoute || isTeacherRoute;
 
   if (
     !token?.value &&
@@ -14,12 +17,12 @@ export const proxy = async (request: NextRequest) => {
       pathname.startsWith("/news") ||
       pathname.startsWith("/notifications") ||
       pathname.startsWith("/settings") ||
-      pathname.startsWith("/admin"))
+      isRoleProtectedRoute)
   ) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (token?.value && pathname.startsWith("/admin")) {
+  if (token?.value && isRoleProtectedRoute) {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
     if (!apiUrl) {
@@ -43,7 +46,13 @@ export const proxy = async (request: NextRequest) => {
       }
 
       const profileData = await profileResponse.json();
-      if (profileData?.user?.role !== "admin") {
+      const role = profileData?.user?.role;
+
+      if (isAdminRoute && role !== "admin") {
+        return NextResponse.redirect(new URL("/", request.url));
+      }
+
+      if (isTeacherRoute && role !== "teacher") {
         return NextResponse.redirect(new URL("/", request.url));
       }
     } catch {

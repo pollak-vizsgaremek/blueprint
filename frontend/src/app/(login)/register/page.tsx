@@ -53,7 +53,8 @@ const RegisterPage = () => {
       // Use the register function from auth context
       await register(name, email, password, dateString);
 
-      router.push("/");
+      router.replace("/");
+      router.refresh();
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "A regisztráció sikertelen",

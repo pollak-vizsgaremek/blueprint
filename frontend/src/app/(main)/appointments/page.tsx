@@ -15,21 +15,12 @@ import {
   GetTeachersResponse,
   TeacherAvailability,
   TeacherOption,
-  UpdateAppointmentRequest,
-  UpdateAppointmentResponse,
 } from "@/types";
 import { useGSAP } from "@gsap/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import gsap from "gsap";
-import {
-  CalendarDays,
-  Clock3,
-  MapPin,
-  Pencil,
-  Trash2,
-  UserRound,
-} from "lucide-react";
+import { CalendarDays, Clock3, MapPin, Trash2, UserRound } from "lucide-react";
 import { useMemo, useState } from "react";
 
 const statusOptions: Array<{
@@ -41,22 +32,6 @@ const statusOptions: Array<{
   { value: "cancelled", label: "Lemondva" },
   { value: "completed", label: "Teljesítve" },
 ];
-
-const toLocalInputValue = (value: string) => {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
-};
 
 const formatDateRange = (startTime: string, endTime: string) => {
   const startDate = new Date(startTime);
@@ -157,9 +132,6 @@ const AppointmentsPage = () => {
   const { settings } = useAppSettings();
 
   const [form, setForm] = useState<FormState>(initialFormState);
-  const [editingAppointmentId, setEditingAppointmentId] = useState<
-    number | null
-  >(null);
 
   const {
     data: appointmentsData,
@@ -279,7 +251,6 @@ const AppointmentsPage = () => {
 
   const resetForm = () => {
     setForm(initialFormState);
-    setEditingAppointmentId(null);
   };
 
   const { mutate: createAppointment, isPending: isCreating } = useMutation({
@@ -311,41 +282,6 @@ const AppointmentsPage = () => {
     },
   });
 
-  const { mutate: updateAppointment, isPending: isUpdating } = useMutation({
-    mutationFn: async ({
-      appointmentId,
-      payload,
-    }: {
-      appointmentId: number;
-      payload: UpdateAppointmentRequest;
-    }) => {
-      const { data } = await axios.put<UpdateAppointmentResponse>(
-        `${process.env.NEXT_PUBLIC_API_URL}/appointments/${appointmentId}`,
-        payload,
-        {
-          withCredentials: true,
-        },
-      );
-      return data;
-    },
-    onSuccess: () => {
-      resetForm();
-      queryClient.invalidateQueries({ queryKey: ["appointments"] });
-    },
-    onError: (error) => {
-      if (axios.isAxiosError(error)) {
-        const errorMessage =
-          error.response?.data?.message ??
-          error.response?.data?.error ??
-          "Időpont módosítása sikertelen.";
-        showAlert({ message: errorMessage, tone: "error" });
-        return;
-      }
-
-      showAlert({ message: "Időpont módosítása sikertelen.", tone: "error" });
-    },
-  });
-
   const { mutate: deleteAppointment, isPending: isDeleting } = useMutation({
     mutationFn: async (appointmentId: number) => {
       const { data } = await axios.delete<DeleteAppointmentResponse>(
@@ -357,9 +293,6 @@ const AppointmentsPage = () => {
       return data;
     },
     onSuccess: () => {
-      if (editingAppointmentId !== null) {
-        resetForm();
-      }
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
     },
     onError: (error) => {
@@ -390,10 +323,8 @@ const AppointmentsPage = () => {
     });
   }, []);
 
-  const submitLabel = editingAppointmentId
-    ? "Időpont frissítése"
-    : "Időpont létrehozása";
-  const isMutating = isCreating || isUpdating;
+  const submitLabel = "Időpont létrehozása";
+  const isMutating = isCreating;
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -460,10 +391,6 @@ const AppointmentsPage = () => {
     }
 
     const hasStudentOverlap = appointments.some((appointment) => {
-      if (editingAppointmentId && appointment.id === editingAppointmentId) {
-        return false;
-      }
-
       if (
         appointment.status !== "pending" &&
         appointment.status !== "confirmed"
@@ -504,39 +431,7 @@ const AppointmentsPage = () => {
       endTime: endIso,
     };
 
-    if (editingAppointmentId) {
-      updateAppointment({
-        appointmentId: editingAppointmentId,
-        payload,
-      });
-      return;
-    }
-
     createAppointment(payload);
-  };
-
-  const handleEdit = (appointment: Appointment) => {
-    const startDate = new Date(appointment.startTime);
-    const endDate = new Date(appointment.endTime);
-    const day = toIsoDay(startDate);
-    const startMinutes = startDate.getHours() * 60 + startDate.getMinutes();
-    const endMinutes = endDate.getHours() * 60 + endDate.getMinutes();
-
-    const matchingSlot = teacherAvailability.find(
-      (slot) =>
-        slot.teacherId === appointment.teacherId &&
-        slot.dayOfWeek === day &&
-        slot.startMinutes === startMinutes &&
-        slot.endMinutes === endMinutes,
-    );
-
-    setEditingAppointmentId(appointment.id);
-    setForm({
-      teacherId: String(appointment.teacherId),
-      title: appointment.title || appointment.purpose || "",
-      date: toLocalInputValue(appointment.startTime).split("T")[0] || "",
-      slotId: matchingSlot ? String(matchingSlot.id) : "",
-    });
   };
 
   const handleDelete = async (appointmentId: number) => {
@@ -566,18 +461,7 @@ const AppointmentsPage = () => {
       <section className="grid grid-cols-1 xl:grid-cols-[1fr_1.2fr] gap-5">
         <div className="card-box h-fit! p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">
-              {editingAppointmentId ? "Időpont szerkesztése" : "Új időpont"}
-            </h2>
-            {editingAppointmentId && (
-              <button
-                type="button"
-                onClick={resetForm}
-                className="text-sm text-faded hover:text-text transition cursor-pointer"
-              >
-                Mégse
-              </button>
-            )}
+            <h2 className="text-xl font-semibold">Új időpont</h2>
           </div>
 
           {isTeachersLoading ? (
@@ -601,9 +485,12 @@ const AppointmentsPage = () => {
                       slotId: "",
                     }))
                   }
+                  required
                   className="w-full border border-faded/25 rounded-xl px-3 py-2 bg-secondary/70 focus:outline-none focus:border-accent"
                 >
-                  <option value="">Válassz tanárt...</option>
+                  <option disabled value="">
+                    Válassz tanárt...
+                  </option>
                   {teachers.map((teacher: TeacherOption) => (
                     <option key={teacher.id} value={teacher.id}>
                       {teacher.name} ({teacher.email})
@@ -650,6 +537,7 @@ const AppointmentsPage = () => {
                     }
                     fromYear={new Date().getFullYear()}
                     toYear={new Date().getFullYear() + 2}
+                    weekStart={settings.weekStart}
                     className="w-full"
                   />
                 </div>
@@ -806,14 +694,6 @@ const AppointmentsPage = () => {
                     </div>
 
                     <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleEdit(appointment)}
-                        className="inline-flex items-center gap-1 text-sm px-3 py-1.5 rounded-lg border border-faded/30 hover:bg-faded/10 transition cursor-pointer"
-                      >
-                        <Pencil size={14} />
-                        Szerkesztés
-                      </button>
                       <button
                         type="button"
                         onClick={() => handleDelete(appointment.id)}

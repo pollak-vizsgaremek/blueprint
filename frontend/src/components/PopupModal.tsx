@@ -18,19 +18,19 @@ type PopupRequest = {
 const toneStyles: Record<PopupTone, { icon: React.ReactNode; accent: string }> =
   {
     info: {
-      icon: <Info size={18} />,
+      icon: <Info size={35} />,
       accent: "text-sky-700 bg-sky-100 border-sky-200",
     },
     success: {
-      icon: <CheckCircle2 size={18} />,
+      icon: <CheckCircle2 size={35} />,
       accent: "text-emerald-700 bg-emerald-100 border-emerald-200",
     },
     warning: {
-      icon: <TriangleAlert size={18} />,
+      icon: <TriangleAlert size={35} />,
       accent: "text-amber-700 bg-amber-100 border-amber-200",
     },
     error: {
-      icon: <AlertCircle size={18} />,
+      icon: <AlertCircle size={35} />,
       accent: "text-red-700 bg-red-100 border-red-200",
     },
   };
@@ -110,14 +110,14 @@ export const PopupModal = ({
     >
       <div className="absolute inset-0 bg-black/45 backdrop-blur-[1px]" />
       <div
-        className={`relative card-box h-auto! w-full max-w-md p-5 border border-faded/25 shadow-2xl transition-all duration-200 ${
+        className={`relative card-box bg-white! h-auto! w-full max-w-md p-5 border border-faded/25 shadow-2xl transition-all duration-200 ${
           isVisible
             ? "opacity-100 translate-y-0 scale-100"
             : "opacity-0 translate-y-1 scale-[0.98]"
         }`}
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-start gap-3 mb-3">
+        <div className="flex items-center gap-3">
           <div className={`rounded-full border p-1.5 ${tone.accent}`}>
             {tone.icon}
           </div>
@@ -125,11 +125,11 @@ export const PopupModal = ({
             <h3 className="text-xl font-semibold leading-tight">
               {request.title}
             </h3>
-            <p className="text-faded mt-1 text-sm whitespace-pre-wrap">
-              {request.message}
-            </p>
           </div>
         </div>
+        <p className="text-faded ml-16 text-sm whitespace-pre-wrap">
+          {request.message}
+        </p>
 
         <div className="flex justify-end gap-2 mt-5">
           {request.mode === "confirm" && (

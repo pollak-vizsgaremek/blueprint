@@ -161,7 +161,7 @@ const NotificationsPage = () => {
           {notifications.map((notification: NotificationItem) => (
             <article
               key={notification.id}
-              className={`card-box h-auto p-4 border ${
+              className={`card-box h-auto! p-4 border ${
                 notification.isRead ? "border-faded/10" : "border-accent/30"
               }`}
             >

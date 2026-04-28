@@ -13,6 +13,7 @@ export interface CalendarProps {
   onSelect?: (date: Date | undefined) => void;
   disabled?: (date: Date) => boolean;
   isAvailableDate?: (date: Date) => boolean;
+  isUnavailableDate?: (date: Date) => boolean;
   weekStart?: "monday" | "sunday";
   fromYear?: number;
   toYear?: number;
@@ -27,6 +28,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
       onSelect,
       disabled,
       isAvailableDate,
+      isUnavailableDate,
       weekStart = "monday",
       fromYear = 1900,
       toYear = new Date().getFullYear(),
@@ -312,6 +314,10 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
                               Boolean(isAvailableDate?.(day.date)) &&
                               !isDisabled &&
                               day.isCurrentMonth;
+                            const isUnavailable =
+                              Boolean(isUnavailableDate?.(day.date)) &&
+                              !isDisabled &&
+                              day.isCurrentMonth;
 
                             return (
                               <td key={dayIndex} className="p-1 text-center">
@@ -334,6 +340,9 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
                                     isAvailable &&
                                       !isSelected &&
                                       "ring-1 ring-accent/35",
+                                    isUnavailable &&
+                                      !isSelected &&
+                                      "bg-amber-100 text-amber-800 ring-1 ring-amber-300",
                                     isDisabled &&
                                       "text-gray-300 cursor-not-allowed hover:bg-transparent",
                                   )}

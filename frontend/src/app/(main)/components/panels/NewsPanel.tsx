@@ -77,14 +77,16 @@ export const NewsPanel = () => {
       href="/news"
       className="grow flex p-2 justify-between hover:bg-faded/20 transition ease-in-out cursor-pointer rounded-xl gap-3"
     >
-      <div className="min-w-0">
-        <div className="text-xl leading-tight mb-1 line-clamp-2">
-          {latestNews.title}
+      <div className="min-w-0 h-full flex flex-col justify-between pb-6">
+        <div className="">
+          <div className="text-xl leading-tight mb-1 line-clamp-2">
+            {latestNews.title}
+          </div>
+          <div className="text-faded text-sm line-clamp-3">
+            {truncate(latestNews.content, 140)}
+          </div>
         </div>
-        <div className="text-faded text-sm line-clamp-3">
-          {truncate(latestNews.content, 140)}
-        </div>
-        <div className="text-xs text-faded mt-2">
+        <div className="text-xs text-faded">
           {latestNews.author?.name
             ? `Szerző: ${latestNews.author.name}`
             : "Szerző ismeretlen"}
@@ -96,9 +98,9 @@ export const NewsPanel = () => {
           <Image
             src={latestNews.imageUrl}
             alt={latestNews.title}
-            width={120}
+            width={220}
             height={120}
-            className="rounded-xl mt-1 object-cover size-[92px]"
+            className="rounded-xl mt-1 object-cover "
           />
         </div>
       ) : null}

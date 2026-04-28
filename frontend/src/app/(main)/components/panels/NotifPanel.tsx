@@ -2,10 +2,13 @@
 
 import { Spinner } from "@/components/Spinner";
 import { DataState } from "@/components/ui/DataState";
+import { isReducedMotionEnabled } from "@/lib/motion";
 import { GetNotificationsResponse } from "@/types";
+import { useGSAP } from "@gsap/react";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
-import { BellRing, Circle } from "lucide-react";
+import gsap from "gsap";
+import { BellRing } from "lucide-react";
 import Link from "next/link";
 
 export const NotifPanel = () => {
@@ -22,6 +25,23 @@ export const NotifPanel = () => {
       return data;
     },
   });
+
+  useGSAP(() => {
+    if (isReducedMotionEnabled() || isLoading || !data?.notifications?.length) {
+      return;
+    }
+
+    gsap.fromTo(
+      ".bell",
+      { repeat: -1, rotate: 10, yoyo: true, duration: 0.5 },
+      {
+        repeat: -1,
+        rotate: -10,
+        yoyo: true,
+        duration: 0.5,
+      },
+    );
+  }, [isLoading, data]);
 
   if (isLoading) {
     return (
@@ -43,6 +63,7 @@ export const NotifPanel = () => {
   }
 
   const notifications = data?.notifications ?? [];
+  const latestNotification = notifications[0] ?? null;
 
   if (!notifications.length) {
     return (
@@ -59,31 +80,17 @@ export const NotifPanel = () => {
   return (
     <Link
       href="/notifications"
-      className="flex pt-2 cursor-pointer grow flex-col gap-2 text-sm rounded-xl px-2 relative hover:bg-faded/20 transition ease-in-out"
+      aria-label="Legfrissebb értesítés megnyitása"
+      className="pt-4 cursor-pointer grow text-sm rounded-xl px-4 text-center relative hover:bg-faded/20 transition ease-in-out"
     >
-      {notifications.map((notification) => (
-        <div
-          key={notification.id}
-          className="rounded-xl border border-faded/20 bg-white/30 p-2"
-        >
-          <div className="flex items-start justify-between gap-2">
-            <div className="font-semibold text-sm leading-tight">
-              {notification.title}
-            </div>
-            {!notification.isRead && (
-              <Circle
-                color="red"
-                fill="red"
-                size={10}
-                className="shrink-0 mt-1"
-              />
-            )}
-          </div>
-          <div className="text-faded text-xs mt-1 line-clamp-2">
-            {notification.message}
-          </div>
-        </div>
-      ))}
+      <BellRing className="size-20 mb-4 mx-auto bell" />
+      <div className="size-4 bg-red-500 rounded-full absolute top-0 right-[30%]"></div>
+      <div className="font-semibold text-lg leading-tight line-clamp-2 max-w-[18rem]">
+        {latestNotification?.title ?? "Értesítések"}
+      </div>
+      <div className="text-faded mb-3 line-clamp-2">
+        {latestNotification?.message || ""}
+      </div>
     </Link>
   );
 };

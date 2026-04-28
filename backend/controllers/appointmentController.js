@@ -133,6 +133,57 @@ export const getCurrentUserAppointments = async (req, res) => {
   }
 };
 
+export const getTeacherOccupiedSlots = async (req, res) => {
+  const teacherId = parseInt(req.params.teacherId, 10);
+
+  if (Number.isNaN(teacherId)) {
+    return res.status(400).json({
+      error: "Invalid teacher ID",
+      message: "Teacher ID must be a number",
+    });
+  }
+
+  try {
+    const teacher = await validateTeacher(teacherId);
+
+    if (!teacher) {
+      return res.status(400).json({
+        error: "Invalid teacher",
+        message: "Selected user is not a teacher",
+      });
+    }
+
+    const occupiedSlots = await prisma.teacherReservation.findMany({
+      where: {
+        teacherId,
+        status: {
+          in: ["pending", "confirmed"],
+        },
+        endTime: {
+          gt: new Date(),
+        },
+      },
+      select: {
+        id: true,
+        startTime: true,
+        endTime: true,
+        status: true,
+      },
+      orderBy: {
+        startTime: "asc",
+      },
+    });
+
+    res.json({
+      message: "Teacher occupied slots retrieved successfully",
+      occupiedSlots,
+    });
+  } catch (error) {
+    console.error("Error fetching teacher occupied slots:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 export const createAppointment = async (req, res) => {
   const studentId = req.user.id;
   const parsedTeacherId = parseInt(req.body?.teacherId, 10);

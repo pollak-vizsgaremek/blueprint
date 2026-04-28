@@ -175,7 +175,7 @@ export const Header = () => {
                         href="/admin"
                         className="flex w-full justify-start items-center gap-1"
                       >
-                        <Shield className="mr-2 h-4 w-4" />
+                        <Shield className="mr-2 size-5" />
                         Admin felület
                       </Link>
                     </Button>
@@ -190,7 +190,7 @@ export const Header = () => {
                         href="/teacher"
                         className="flex w-full justify-start items-center gap-1"
                       >
-                        <Shield className="mr-2 h-4 w-4" />
+                        <Shield className="mr-2 size-5" />
                         Tanári felület
                       </Link>
                     </Button>
@@ -204,7 +204,7 @@ export const Header = () => {
                       href="/calendar"
                       className="flex w-full justify-start items-center gap-1"
                     >
-                      <Calendar className="mr-2 h-4 w-4" />
+                      <Calendar className="mr-2 size-5" />
                       Naptár
                     </Link>
                   </Button>
@@ -217,7 +217,7 @@ export const Header = () => {
                       href="/news"
                       className="flex w-full justify-start items-center gap-1"
                     >
-                      <Newspaper className="mr-2 h-4 w-4" />
+                      <Newspaper className="mr-2 size-5" />
                       Hírek
                     </Link>
                   </Button>
@@ -230,7 +230,7 @@ export const Header = () => {
                       href="/notifications"
                       className="flex w-full justify-start items-center gap-1"
                     >
-                      <Bell className="mr-2 h-4 w-4" />
+                      <Bell className="mr-2 size-5" />
                       Értesítések
                       {unreadCount > 0 && (
                         <span className="ml-1 rounded-full bg-red-500 text-white text-[10px] px-1.5 py-0.5 leading-none">
@@ -246,7 +246,7 @@ export const Header = () => {
                     size="sm"
                     onClick={logout}
                   >
-                    <LogOut className="mr-2 h-4 w-4" />
+                    <LogOut className="mr-2 size-5" />
                     Kijelentkezés
                   </Button>
                 </div>

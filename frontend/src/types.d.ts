@@ -166,6 +166,18 @@ export interface GetTeacherAvailabilityResponse {
   availability: TeacherAvailability[];
 }
 
+export interface TeacherOccupiedSlot {
+  id: number;
+  startTime: string;
+  endTime: string;
+  status: "pending" | "confirmed";
+}
+
+export interface GetTeacherOccupiedSlotsResponse {
+  message: string;
+  occupiedSlots: TeacherOccupiedSlot[];
+}
+
 export interface TeacherAvailabilityMutationResponse {
   message: string;
   availability: TeacherAvailability;

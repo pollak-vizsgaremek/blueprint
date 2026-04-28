@@ -12,6 +12,7 @@ import {
   DeleteAppointmentResponse,
   GetAppointmentsResponse,
   GetTeacherAvailabilityResponse,
+  GetTeacherOccupiedSlotsResponse,
   GetTeachersResponse,
   TeacherAvailability,
   TeacherOption,
@@ -20,7 +21,14 @@ import { useGSAP } from "@gsap/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import gsap from "gsap";
-import { CalendarDays, Clock3, MapPin, Trash2, UserRound } from "lucide-react";
+import {
+  CalendarDays,
+  Clock3,
+  MapPin,
+  Trash2,
+  UserRound,
+  XCircle,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 
 const statusOptions: Array<{
@@ -186,6 +194,24 @@ const AppointmentsPage = () => {
     },
   });
 
+  const {
+    data: occupiedSlotsData,
+    isLoading: isOccupiedSlotsLoading,
+    isError: isOccupiedSlotsError,
+  } = useQuery({
+    queryKey: ["teacher-occupied-slots", selectedTeacherId],
+    enabled: !Number.isNaN(selectedTeacherId),
+    queryFn: async () => {
+      const { data } = await axios.get<GetTeacherOccupiedSlotsResponse>(
+        `${process.env.NEXT_PUBLIC_API_URL}/appointments/teacher/${selectedTeacherId}/occupied`,
+        {
+          withCredentials: true,
+        },
+      );
+      return data;
+    },
+  });
+
   const appointments = useMemo(
     () => appointmentsData?.appointments ?? [],
     [appointmentsData],
@@ -205,6 +231,10 @@ const AppointmentsPage = () => {
   const teacherAvailability = useMemo(
     () => availabilityData?.availability ?? [],
     [availabilityData],
+  );
+  const teacherOccupiedSlots = useMemo(
+    () => occupiedSlotsData?.occupiedSlots ?? [],
+    [occupiedSlotsData],
   );
 
   const selectedDate = form.date ? new Date(`${form.date}T00:00:00`) : null;
@@ -237,17 +267,69 @@ const AppointmentsPage = () => {
 
     return !teacherHasAvailabilityOnDate(date);
   };
+
+  const isSlotTakenOnDate = (
+    dateValue: string,
+    slot: Pick<TeacherAvailability, "startMinutes" | "endMinutes">,
+  ) => {
+    const slotStart = new Date(
+      toDateAndMinutesIso(dateValue, slot.startMinutes),
+    );
+    const slotEnd = new Date(toDateAndMinutesIso(dateValue, slot.endMinutes));
+
+    return teacherOccupiedSlots.some((occupiedSlot) => {
+      const occupiedStart = new Date(occupiedSlot.startTime);
+      const occupiedEnd = new Date(occupiedSlot.endTime);
+
+      if (
+        Number.isNaN(occupiedStart.getTime()) ||
+        Number.isNaN(occupiedEnd.getTime())
+      ) {
+        return false;
+      }
+
+      return rangesOverlap(slotStart, slotEnd, occupiedStart, occupiedEnd);
+    });
+  };
+
+  const getDailySlotsWithState = (date: Date) => {
+    const dateValue = toDateInputValue(date);
+    const day = toIsoDay(date);
+    const slots = teacherAvailability
+      .filter((slot) => slot.dayOfWeek === day && slot.isActive)
+      .sort((a, b) => a.startMinutes - b.startMinutes);
+
+    return slots.map((slot) => ({
+      ...slot,
+      isTaken: isSlotTakenOnDate(dateValue, slot),
+    }));
+  };
+
+  const isDayFullyBooked = (date: Date) => {
+    if (!form.teacherId || isDateDisabled(date)) {
+      return false;
+    }
+
+    const slots = getDailySlotsWithState(date);
+    return slots.length > 0 && slots.every((slot) => slot.isTaken);
+  };
+
+  const hasAnyFreeSlotOnDate = (date: Date) => {
+    if (!form.teacherId || isDateDisabled(date)) {
+      return false;
+    }
+
+    const slots = getDailySlotsWithState(date);
+    return slots.some((slot) => !slot.isTaken);
+  };
+
   const selectedDaySlots = useMemo(() => {
     if (!selectedDate) {
       return [];
     }
 
-    const day = toIsoDay(selectedDate);
-
-    return teacherAvailability
-      .filter((slot) => slot.dayOfWeek === day && slot.isActive)
-      .sort((a, b) => a.startMinutes - b.startMinutes);
-  }, [selectedDate, teacherAvailability]);
+    return getDailySlotsWithState(selectedDate);
+  }, [selectedDate, teacherAvailability, teacherOccupiedSlots]);
 
   const resetForm = () => {
     setForm(initialFormState);
@@ -356,6 +438,14 @@ const AppointmentsPage = () => {
     if (!selectedSlot) {
       await showAlert({
         message: "Kérlek válassz elérhető idősávot.",
+        tone: "warning",
+      });
+      return;
+    }
+
+    if (selectedSlot.isTaken) {
+      await showAlert({
+        message: "A kiválasztott idősáv már foglalt. Kérlek válassz másikat.",
         tone: "warning",
       });
       return;
@@ -500,7 +590,7 @@ const AppointmentsPage = () => {
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm text-faded">Cím</label>
+                <label className="text-sm text-faded">Rövid leírás</label>
                 <input
                   type="text"
                   value={form.title}
@@ -530,25 +620,14 @@ const AppointmentsPage = () => {
                       }))
                     }
                     disabled={isDateDisabled}
-                    isAvailableDate={(date) =>
-                      Boolean(form.teacherId) &&
-                      date >= todayStart &&
-                      teacherHasAvailabilityOnDate(date)
-                    }
+                    isAvailableDate={hasAnyFreeSlotOnDate}
+                    isUnavailableDate={isDayFullyBooked}
                     fromYear={new Date().getFullYear()}
                     toYear={new Date().getFullYear() + 2}
                     weekStart={settings.weekStart}
                     className="w-full"
                   />
                 </div>
-                {!form.teacherId ? (
-                  <p className="text-xs text-faded">Először válassz tanárt.</p>
-                ) : (
-                  <p className="text-xs text-faded">
-                    Csak azok a napok választhatók, amikor a tanárnak van aktív
-                    elérhetősége.
-                  </p>
-                )}
               </div>
 
               <div className="space-y-1">
@@ -559,9 +638,15 @@ const AppointmentsPage = () => {
                   </div>
                 ) : isAvailabilityLoading ? (
                   <Spinner />
+                ) : isOccupiedSlotsLoading ? (
+                  <Spinner />
                 ) : isAvailabilityError ? (
                   <div className="text-red-600 text-sm">
                     Nem sikerült betölteni a tanár elérhetőségét.
+                  </div>
+                ) : isOccupiedSlotsError ? (
+                  <div className="text-red-600 text-sm">
+                    Nem sikerült betölteni a foglalt idősávokat.
                   </div>
                 ) : !form.date ? (
                   <div className="text-faded text-sm">
@@ -586,18 +671,19 @@ const AppointmentsPage = () => {
                     required
                   >
                     <option value="">Válassz idősávot...</option>
-                    {selectedDaySlots.map((slot: TeacherAvailability) => (
-                      <option key={slot.id} value={slot.id}>
+                    {selectedDaySlots.map((slot) => (
+                      <option
+                        key={slot.id}
+                        value={slot.id}
+                        disabled={slot.isTaken}
+                      >
                         {toTimeLabel(slot.startMinutes)} -{" "}
                         {toTimeLabel(slot.endMinutes)}
+                        {slot.isTaken ? " (foglalt)" : ""}
                       </option>
                     ))}
                   </select>
                 )}
-                <p className="text-xs text-faded">
-                  Csak a tanár heti elérhetősége alapján foglalható idősávok
-                  jelennek meg.
-                </p>
               </div>
 
               <button
@@ -611,7 +697,7 @@ const AppointmentsPage = () => {
           )}
         </div>
 
-        <div className="card-box h-130! overflow-auto p-5">
+        <div className="card-box h-180! overflow-clip p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">Foglalt időpontjaid</h2>
             <span className="text-xs text-faded">
@@ -630,7 +716,7 @@ const AppointmentsPage = () => {
               Még nincs foglalt időpontod.
             </div>
           ) : (
-            <div className="space-y-3 max-h-[640px] overflow-y-auto pr-1">
+            <div className="space-y-3 max-h-[95%] overflow-y-scroll pr-1">
               {visibleAppointments.map((appointment) => {
                 const statusLabel =
                   statusOptions.find(
@@ -675,15 +761,6 @@ const AppointmentsPage = () => {
                         </span>
                       </div>
                       <div className="inline-flex items-center gap-2">
-                        <Clock3 size={14} />
-                        <span>
-                          Létrehozva:{" "}
-                          {new Date(appointment.createdAt).toLocaleString(
-                            "hu-HU",
-                          )}
-                        </span>
-                      </div>
-                      <div className="inline-flex items-center gap-2">
                         <MapPin size={14} />
                         <span>
                           {appointment.classroom
@@ -693,16 +770,25 @@ const AppointmentsPage = () => {
                       </div>
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex justify-between ">
                       <button
                         type="button"
                         onClick={() => handleDelete(appointment.id)}
                         disabled={isDeleting}
                         className="inline-flex items-center gap-1 text-sm px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition disabled:text-faded disabled:border-faded/30 disabled:hover:bg-transparent disabled:cursor-not-allowed cursor-pointer"
                       >
-                        <Trash2 size={14} />
-                        Törlés
+                        <XCircle size={16} />
+                        Lemondás
                       </button>
+                      <div className="inline-flex items-center text-sm text-faded gap-2">
+                        <Clock3 size={14} />
+                        <span>
+                          Létrehozva:{" "}
+                          {new Date(appointment.createdAt).toLocaleString(
+                            "hu-HU",
+                          )}
+                        </span>
+                      </div>
                     </div>
                   </article>
                 );

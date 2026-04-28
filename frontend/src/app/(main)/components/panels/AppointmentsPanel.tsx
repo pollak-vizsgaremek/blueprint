@@ -73,7 +73,7 @@ export const AppointmentsPanel = () => {
           return (
             <Link
               key={appointment.id}
-              href="/app/appointments"
+              href="/appointments"
               className=" border-faded/30 cursor-pointer border-[0.5px] rounded-xl flex flex-col p-3 hover:bg-faded/20 transition ease-in-out"
             >
               <div className="text-sm text-faded mb-1">{dateLabel}</div>

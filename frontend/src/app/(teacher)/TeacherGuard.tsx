@@ -10,7 +10,7 @@ export const TeacherGuard = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (!isLoading && user?.role !== "teacher") {
-      router.replace("/app");
+      router.replace("/");
     }
   }, [isLoading, router, user?.role]);
 

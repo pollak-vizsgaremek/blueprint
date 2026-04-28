@@ -53,10 +53,10 @@ const RegisterPage = () => {
       // Use the register function from auth context
       await register(name, email, password, dateString);
 
-      router.push("/app");
+      router.push("/");
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "A regisztráció sikertelen"
+        err instanceof Error ? err.message : "A regisztráció sikertelen",
       );
     } finally {
       setLoading(false);

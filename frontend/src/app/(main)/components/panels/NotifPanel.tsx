@@ -43,7 +43,7 @@ export const NotifPanel = () => {
   if (!notifications.length) {
     return (
       <Link
-        href="/app/notifications"
+        href="/notifications"
         className="flex pt-4 cursor-pointer justify-center items-center grow flex-col gap-3 text-center text-sm rounded-xl px-4 relative hover:bg-faded/20 transition ease-in-out"
       >
         <BellRing className="size-16 text-faded" />
@@ -54,7 +54,7 @@ export const NotifPanel = () => {
 
   return (
     <Link
-      href="/app/notifications"
+      href="/notifications"
       className="flex pt-2 cursor-pointer grow flex-col gap-2 text-sm rounded-xl px-2 relative hover:bg-faded/20 transition ease-in-out"
     >
       {notifications.map((notification) => (

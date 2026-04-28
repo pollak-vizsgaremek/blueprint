@@ -41,14 +41,14 @@ export const Header = () => {
   const { user, logout } = useAuth();
 
   const appNavLinks = [
-    { href: "/app", label: "Főoldal" },
-    { href: "/app/events", label: "Események" },
-    { href: "/app/appointments", label: "Időpontok" },
+    { href: "/", label: "Főoldal" },
+    { href: "/events", label: "Események" },
+    { href: "/appointments", label: "Időpontok" },
   ] as const;
 
   const isAppNavActive = (href: string) => {
-    if (href === "/app") {
-      return path === "/app";
+    if (href === "/") {
+      return path === "/";
     }
 
     return path === href || path.startsWith(`${href}/`);
@@ -156,7 +156,7 @@ export const Header = () => {
                       size="sm"
                     >
                       <Link
-                        href="/app/settings"
+                        href="/settings"
                         className="flex w-full justify-start items-center gap-1"
                       >
                         <Settings className="size-6" />
@@ -201,7 +201,7 @@ export const Header = () => {
                     size="sm"
                   >
                     <Link
-                      href="/app/calendar"
+                      href="/calendar"
                       className="flex w-full justify-start items-center gap-1"
                     >
                       <Calendar className="mr-2 h-4 w-4" />
@@ -214,7 +214,7 @@ export const Header = () => {
                     size="sm"
                   >
                     <Link
-                      href="/app/news"
+                      href="/news"
                       className="flex w-full justify-start items-center gap-1"
                     >
                       <Newspaper className="mr-2 h-4 w-4" />
@@ -235,7 +235,7 @@ export const Header = () => {
                     size="sm"
                   >
                     <Link
-                      href="/app/notifications"
+                      href="/notifications"
                       className="flex w-full justify-start items-center gap-1"
                     >
                       <Bell className="mr-2 h-4 w-4" />

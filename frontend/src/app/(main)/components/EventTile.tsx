@@ -34,7 +34,7 @@ export const EventTile = ({ event }: { event: Event }) => {
           <div className="flex items-center gap-2">
             <div className="">{event.date.slice(0, 10)}</div>
             <Link
-              href={`/app/events/${event.id}/details`}
+              href={`/events/${event.id}/details`}
               prefetch
               onClick={(e) => e.stopPropagation()}
               className="p-1 rounded-md hover:bg-faded/30 transition ease-in-out"

@@ -11,10 +11,10 @@ export const Footer = () => {
           </div>
           <div className="flex flex-col gap-2 *:hover:text-faded transition ease-in-out">
             <Link href={"/"}>Blueprint</Link>
-            <Link href={"/app"}>Főoldal</Link>
-            <Link href={"/app/events"}>Események</Link>
-            <Link href={"/app/appointments"}>Időpontok</Link>
-            <Link href={"/app/settings"}>Beállítások</Link>
+            <Link href={"/"}>Főoldal</Link>
+            <Link href={"/events"}>Események</Link>
+            <Link href={"/appointments"}>Időpontok</Link>
+            <Link href={"/settings"}>Beállítások</Link>
           </div>
         </div>
         <div className="">

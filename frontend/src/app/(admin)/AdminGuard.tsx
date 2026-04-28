@@ -11,7 +11,7 @@ export const AdminGuard = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (!isLoading && !isAdmin) {
-      router.replace("/app");
+      router.replace("/");
     }
   }, [isAdmin, isLoading, router]);
 

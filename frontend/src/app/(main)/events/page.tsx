@@ -6,8 +6,8 @@ import { FaList } from "react-icons/fa6";
 import { useQuery } from "@tanstack/react-query";
 import { Spinner } from "@/components/Spinner";
 import { useSearchParams } from "next/navigation";
-import { EventTiles } from "../../components/EventTiles";
-import { Evenlist } from "../../components/EventList";
+import { EventTiles } from "../components/EventTiles";
+import { Evenlist } from "../components/EventList";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Suspense } from "react";
@@ -56,7 +56,7 @@ const EventsContent = () => {
       <div className="flex justify-between border-b-[1px] border-faded/40 pb-1">
         <div className="flex gap-1 text-xl">
           <Link
-            href={`/app/events?v=${view}&f=all`}
+            href={`/events?v=${view}&f=all`}
             className={cn(
               "px-2 hover:bg-faded/40 transition ease-in-out rounded-md",
               {
@@ -67,7 +67,7 @@ const EventsContent = () => {
             Összes
           </Link>
           <Link
-            href={`/app/events?v=${view}&f=future`}
+            href={`/events?v=${view}&f=future`}
             className={cn(
               "px-2 hover:bg-faded/40 transition ease-in-out rounded-md",
               {
@@ -78,7 +78,7 @@ const EventsContent = () => {
             Jövőbeli
           </Link>
           <Link
-            href={`/app/events?v=${view}&f=past`}
+            href={`/events?v=${view}&f=past`}
             className={cn(
               "px-2 hover:bg-faded/40 transition ease-in-out rounded-md",
               {
@@ -92,14 +92,14 @@ const EventsContent = () => {
         <div className="flex gap-3 items-center">
           {view === "tiles" ? (
             <>
-              <Link href={`/app/events?v=tiles&f=${filter}`}>
+              <Link href={`/events?v=tiles&f=${filter}`}>
                 <PiSquaresFourFill
                   size={30}
                   className="bg-accent rounded-md"
                   color="white"
                 />
               </Link>
-              <Link href={`/app/events?v=list&f=${filter}`}>
+              <Link href={`/events?v=list&f=${filter}`}>
                 <FaList
                   size={30}
                   className="hover:bg-faded transition ease-in-out rounded-md p-1"
@@ -108,13 +108,13 @@ const EventsContent = () => {
             </>
           ) : (
             <>
-              <Link href={`/app/events?v=tiles&f=${filter}`}>
+              <Link href={`/events?v=tiles&f=${filter}`}>
                 <PiSquaresFourFill
                   size={30}
                   className="hover:bg-faded transition ease-in-out rounded-md"
                 />
               </Link>
-              <Link href={`/app/events?v=list&f=${filter}`}>
+              <Link href={`/events?v=list&f=${filter}`}>
                 <FaList
                   size={30}
                   className="bg-accent rounded-md p-1"

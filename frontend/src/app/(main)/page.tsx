@@ -1,13 +1,13 @@
 "use client";
-import { NotifPanel } from "../components/panels/NotifPanel";
+import { NotifPanel } from "./components/panels/NotifPanel";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { useAuth } from "@/contexts/AuthContext";
 import { isReducedMotionEnabled } from "@/lib/motion";
-import { EventsPanel } from "../components/panels/EventsPanel";
-import { NewsPanel } from "../components/panels/NewsPanel";
-import { CalendarPanel } from "../components/panels/CalendarPanel";
-import { AppointmentsPanel } from "../components/panels/AppointmentsPanel";
+import { EventsPanel } from "./components/panels/EventsPanel";
+import { NewsPanel } from "./components/panels/NewsPanel";
+import { CalendarPanel } from "./components/panels/CalendarPanel";
+import { AppointmentsPanel } from "./components/panels/AppointmentsPanel";
 import { LogOut, Settings, User } from "lucide-react";
 import Link from "next/link";
 
@@ -72,7 +72,7 @@ const DashboardPage = () => {
       </div>
       <div className="w-full gap-3 flex justify-end mt-5" id="icons">
         <button className="bg-secondary/40 backdrop-blur-xl py-2 px-3 rounded-xl border-[0.5px] border-faded/10 transition ease-in-out hover:bg-faded/40 cursor-pointer">
-          <Link href="/app/settings">
+          <Link href="/settings">
             <Settings />
           </Link>
         </button>

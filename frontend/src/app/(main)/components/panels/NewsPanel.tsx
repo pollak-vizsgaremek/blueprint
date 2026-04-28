@@ -67,7 +67,7 @@ export const NewsPanel = () => {
 
   return (
     <Link
-      href="/app/news"
+      href="/news"
       className="grow flex p-2 justify-between hover:bg-faded/20 transition ease-in-out cursor-pointer rounded-xl gap-3"
     >
       <div className="min-w-0">

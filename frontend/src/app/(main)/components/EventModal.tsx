@@ -755,7 +755,7 @@ export const EventModal = () => {
             <div className="relative h-[180px] shrink-0 w-full sm:h-[220px] md:h-[260px] lg:h-[300px]">
               <div className="absolute top-5 right-5 z-100 flex items-center gap-2">
                 <Link
-                  href={`/app/events/${selectedEvent?.id}/details`}
+                  href={`/events/${selectedEvent?.id}/details`}
                   prefetch
                   className="bg-white/30 backdrop-blur-sm p-1.5 rounded-full hover:bg-white/45 transition ease-in-out"
                   aria-label="Esemény oldal megnyitása"
@@ -868,7 +868,9 @@ export const EventModal = () => {
             ) : (
               <div className="mt-2 px-10 pb-6 flex grow overflow-y-scroll flex-col">
                 <div className="text-lg font-semibold">Helyszín</div>
-                <div className="text-faded mt-1 mb-4">{selectedEvent?.location}</div>
+                <div className="text-faded mt-1 mb-4">
+                  {selectedEvent?.location}
+                </div>
 
                 {selectedEvent ? (
                   <EventNavigationMap classroom={selectedEvent.classroom} />

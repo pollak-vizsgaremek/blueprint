@@ -33,7 +33,7 @@ const LoginPage = () => {
       // Use the login function from auth context
       await login(email, password);
 
-      router.push("/app");
+      router.push("/");
     } catch (err: unknown) {
       const authError = err as Error & { code?: string };
       if (authError.code === "email_not_verified") {
@@ -45,7 +45,7 @@ const LoginPage = () => {
       setError(
         authError instanceof Error
           ? authError.message
-          : "A bejelentkezés sikertelen"
+          : "A bejelentkezés sikertelen",
       );
     } finally {
       setLoading(false);
@@ -77,8 +77,7 @@ const LoginPage = () => {
       );
 
       setResendMessage(
-        data?.message ||
-          "Ha létezik a fiók, elküldtük a megerősítő emailt.",
+        data?.message || "Ha létezik a fiók, elküldtük a megerősítő emailt.",
       );
     } catch (err) {
       setResendError("A kérés sikertelen.");
@@ -265,9 +264,7 @@ const LoginPage = () => {
                 disabled={isResendLoading}
                 className="w-full py-2 px-4 text-sm rounded-md text-white bg-accent hover:bg-accent/80 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isResendLoading
-                  ? "Küldés..."
-                  : "Megerősítő email újraküldése"}
+                {isResendLoading ? "Küldés..." : "Megerősítő email újraküldése"}
               </button>
             </div>
           ) : null}

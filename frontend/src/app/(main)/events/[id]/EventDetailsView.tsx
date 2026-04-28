@@ -309,7 +309,7 @@ export const EventDetailsView = ({
           {tabs.map((tab) => (
             <Link
               key={tab.key}
-              href={`/app/events/${eventId}/${tab.key}`}
+              href={`/events/${eventId}/${tab.key}`}
               prefetch
               className={`px-4 relative transition ${
                 activeTab === tab.key

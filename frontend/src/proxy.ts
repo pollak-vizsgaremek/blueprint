@@ -7,7 +7,14 @@ export const proxy = async (request: NextRequest) => {
 
   if (
     !token?.value &&
-    (pathname.startsWith("/app") || pathname.startsWith("/admin"))
+    (pathname === "/" ||
+      pathname.startsWith("/events") ||
+      pathname.startsWith("/appointments") ||
+      pathname.startsWith("/calendar") ||
+      pathname.startsWith("/news") ||
+      pathname.startsWith("/notifications") ||
+      pathname.startsWith("/settings") ||
+      pathname.startsWith("/admin"))
   ) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
@@ -16,7 +23,7 @@ export const proxy = async (request: NextRequest) => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
     if (!apiUrl) {
-      return NextResponse.redirect(new URL("/app", request.url));
+      return NextResponse.redirect(new URL("/", request.url));
     }
 
     try {
@@ -32,15 +39,15 @@ export const proxy = async (request: NextRequest) => {
       }
 
       if (!profileResponse.ok) {
-        return NextResponse.redirect(new URL("/app", request.url));
+        return NextResponse.redirect(new URL("/", request.url));
       }
 
       const profileData = await profileResponse.json();
       if (profileData?.user?.role !== "admin") {
-        return NextResponse.redirect(new URL("/app", request.url));
+        return NextResponse.redirect(new URL("/", request.url));
       }
     } catch {
-      return NextResponse.redirect(new URL("/app", request.url));
+      return NextResponse.redirect(new URL("/", request.url));
     }
   }
 
@@ -48,7 +55,7 @@ export const proxy = async (request: NextRequest) => {
     (pathname.startsWith("/login") || pathname.startsWith("/register")) &&
     token?.value
   ) {
-    return NextResponse.redirect(new URL("/app", request.url));
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   return NextResponse.next();

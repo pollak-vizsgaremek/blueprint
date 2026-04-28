@@ -13,7 +13,7 @@ export const WorkspaceSwitcher = ({ className }: WorkspaceSwitcherProps) => {
   const { user } = useAuth();
   const pathname = usePathname();
 
-  const workspaces = [{ href: "/app", label: "Frontend" }];
+  const workspaces = [{ href: "/", label: "Frontend" }];
 
   if (user?.role === "teacher") {
     workspaces.push({ href: "/teacher", label: "Tanári felület" });

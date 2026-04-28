@@ -31,7 +31,7 @@ export const EventListItem = ({ event }: { event: Event }) => {
       <div className="flex gap-5 items-center">
         <div className="">{event.date.slice(0, 10)}</div>
         <Link
-          href={`/app/events/${event.id}/details`}
+          href={`/events/${event.id}/details`}
           prefetch
           className="p-2 rounded-xl hover:bg-faded/30 transition ease-in-out"
           aria-label="Esemény oldal megnyitása"

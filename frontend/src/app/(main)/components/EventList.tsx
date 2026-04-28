@@ -1,26 +1,29 @@
 import { Event } from "@/types";
 import { EventListItem } from "./EventListItem";
+import { useGSAP } from "@gsap/react";
+import { isReducedMotionEnabled } from "@/lib/motion";
+import gsap from "gsap";
 
-export const Evenlist = ({
-  events,
-  filter,
-}: {
-  events: Event[];
-  filter: string;
-}) => {
+export const Evenlist = ({ events }: { events: Event[] }) => {
+  useGSAP(() => {
+    if (isReducedMotionEnabled()) {
+      return;
+    }
+
+    gsap.from(".page-content1", {
+      scale: 0.9,
+      opacity: 0,
+      delay: 0.1,
+      ease: "expo.in",
+      duration: 0.5,
+    });
+  }, []);
+
   return (
-    <div className="pt-5 px-5 w-full flex flex-col gap-3">
-      {events.map((event: Event) => {
-        if (filter == "future" && new Date(event.date) > new Date()) {
-          return <EventListItem event={event} key={event.id} />;
-        }
-        if (filter == "past" && new Date(event.date) < new Date()) {
-          return <EventListItem event={event} key={event.id} />;
-        }
-        if (filter === "all") {
-          return <EventListItem event={event} key={event.id} />;
-        }
-      })}
+    <div className="pt-5 px-5 w-full flex flex-col gap-3 page-content1">
+      {events.map((event: Event) => (
+        <EventListItem event={event} key={event.id} />
+      ))}
     </div>
   );
 };

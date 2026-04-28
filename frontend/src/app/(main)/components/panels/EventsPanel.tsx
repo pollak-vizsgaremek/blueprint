@@ -4,7 +4,7 @@ import { useModal } from "@/contexts/ModalContext";
 import { EventWithRegistrationInfo, RegistrationWithEvent } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
-import { CalendarX2, TriangleAlert } from "lucide-react";
+import { CalendarX2, ImageOff, TriangleAlert } from "lucide-react";
 import Image from "next/image";
 
 export const EventsPanel = () => {
@@ -67,13 +67,19 @@ export const EventsPanel = () => {
                       className="h-45 border-faded/30 cursor-pointer border-[0.5px] rounded-xl flex flex-col group"
                     >
                       <div className="w-full h-28 relative">
-                        <Image
-                          src={registration.event.imageUrl!}
-                          alt={registration.event.name}
-                          fill
-                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                          className="rounded-t-xl w-full object-center"
-                        />
+                        {registration.event.imageUrl ? (
+                          <Image
+                            src={registration.event.imageUrl}
+                            alt={registration.event.name}
+                            fill
+                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                            className="rounded-t-xl w-full object-cover"
+                          />
+                        ) : (
+                          <div className="h-full w-full rounded-t-xl bg-faded/15 flex items-center justify-center text-faded">
+                            <ImageOff size={22} />
+                          </div>
+                        )}
                       </div>
                       <div className="flex flex-col justify-between p-2 items-start group-hover:bg-faded/20 transition ease-in-out group rounded-b-xl grow">
                         <div className="">{registration.event.name}</div>

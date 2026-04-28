@@ -52,7 +52,7 @@ const DashboardPage = () => {
           <NewsPanel />
         </div>
         <div className="card-box flex flex-col basis-3/5">
-          <div className="card-title mb-3">Jelentkezett események</div>
+          <div className="card-title mb-3">Közelgő események</div>
           <EventsPanel />
         </div>
       </div>

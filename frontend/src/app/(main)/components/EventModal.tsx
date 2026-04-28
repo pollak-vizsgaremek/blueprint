@@ -20,11 +20,13 @@ import Link from "next/link";
 import Image from "next/image";
 import { EventNavigationMap } from "@/components/navigation/EventNavigationMap";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 export const EventModal = () => {
   const { isOpen, closeModal, selectedEvent, setEvent } = useModal();
   const { showAlert, showConfirm } = usePopupModal();
   const queryClient = useQueryClient();
+  const pathname = usePathname();
   const [commentContent, setCommentContent] = useState("");
   const [newsTitle, setNewsTitle] = useState("");
   const [newsContent, setNewsContent] = useState("");
@@ -43,6 +45,12 @@ export const EventModal = () => {
       setEditingDraftId(null);
     }
   }, [isOpen, selectedEvent?.id]);
+
+  useEffect(() => {
+    if (isOpen) {
+      closeModal();
+    }
+  }, [pathname]);
 
   const { mutate: toggleRegistration, isPending } = useMutation({
     mutationFn: async () => {
@@ -757,6 +765,7 @@ export const EventModal = () => {
                 <Link
                   href={`/events/${selectedEvent?.id}/details`}
                   prefetch
+                  onClick={closeModal}
                   className="bg-white/30 backdrop-blur-sm p-1.5 rounded-full hover:bg-white/45 transition ease-in-out"
                   aria-label="Esemény oldal megnyitása"
                 >

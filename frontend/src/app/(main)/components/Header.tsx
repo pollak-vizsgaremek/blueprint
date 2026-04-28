@@ -226,14 +226,6 @@ export const Header = () => {
                     className="w-full justify-start"
                     size="sm"
                   >
-                    <Pen className="mr-2 h-4 w-4" />
-                    Jelentkezések
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start"
-                    size="sm"
-                  >
                     <Link
                       href="/notifications"
                       className="flex w-full justify-start items-center gap-1"

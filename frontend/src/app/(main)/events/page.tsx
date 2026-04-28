@@ -16,8 +16,11 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { isReducedMotionEnabled } from "@/lib/motion";
 import { CalendarX2, TriangleAlert } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { EventWithRegistrationInfo } from "@/types";
 
 const EventsContent = () => {
+  const { user } = useAuth();
   const searchParams = useSearchParams();
   const {
     data: events,
@@ -37,6 +40,25 @@ const EventsContent = () => {
   });
   const view = searchParams.get("v") ?? "tiles";
   const filter = searchParams.get("f") ?? "all";
+  const normalizedFilter =
+    filter === "joined" || filter === "mine" || filter === "all"
+      ? filter
+      : "all";
+  const currentUserName = user?.name ?? "";
+
+  const filteredEvents: EventWithRegistrationInfo[] = (events ?? []).filter(
+    (event: EventWithRegistrationInfo) => {
+      if (normalizedFilter === "joined") {
+        return event.isUserRegistered;
+      }
+
+      if (normalizedFilter === "mine") {
+        return Boolean(currentUserName) && event.creator === currentUserName;
+      }
+
+      return true;
+    },
+  );
 
   useGSAP(() => {
     if (isReducedMotionEnabled()) {
@@ -73,26 +95,28 @@ const EventsContent = () => {
             Összes
           </Link>
           <Link
-            href={`/events?v=${view}&f=future`}
+            href={`/events?v=${view}&f=joined`}
             className={cn(
               "px-2 hover:bg-faded/40 transition ease-in-out rounded-md",
               {
-                "bg-accent text-white pointer-events-none": filter === "future",
+                "bg-accent text-white pointer-events-none":
+                  normalizedFilter === "joined",
               },
             )}
           >
-            Jövőbeli
+            Csatlakozott
           </Link>
           <Link
-            href={`/events?v=${view}&f=past`}
+            href={`/events?v=${view}&f=mine`}
             className={cn(
               "px-2 hover:bg-faded/40 transition ease-in-out rounded-md",
               {
-                "bg-accent text-white pointer-events-none": filter === "past",
+                "bg-accent text-white pointer-events-none":
+                  normalizedFilter === "mine",
               },
             )}
           >
-            Befejezett
+            Saját
           </Link>
         </div>
         <div className="flex gap-3 items-center">
@@ -141,15 +165,21 @@ const EventsContent = () => {
           title="Nem sikerült betölteni az eseményeket."
           tone="error"
         />
-      ) : !events?.length ? (
+      ) : filteredEvents.length === 0 ? (
         <DataState
           icon={CalendarX2}
-          title="Jelenleg nincs megjeleníthető esemény."
+          title={
+            normalizedFilter === "joined"
+              ? "Nincs csatlakozott eseményed."
+              : normalizedFilter === "mine"
+                ? "Nincs saját eseményed."
+                : "Jelenleg nincs megjeleníthető esemény."
+          }
         />
       ) : view === "tiles" ? (
-        <EventTiles events={events} filter={filter} />
+        <EventTiles events={filteredEvents} />
       ) : (
-        <Evenlist events={events} filter={filter} />
+        <Evenlist events={filteredEvents} />
       )}
     </main>
   );

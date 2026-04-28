@@ -5,7 +5,7 @@ import { DataState } from "@/components/ui/DataState";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
-import { CircleAlert } from "lucide-react";
+import { CircleAlert, ImageOff } from "lucide-react";
 import {
   EventDetailProvider,
   useEventDetail,
@@ -54,12 +54,14 @@ const EventLayoutBody = ({ children }: { children: React.ReactNode }) => {
               height={0}
               sizes="100vw"
               priority
-              className="m-auto"
-              style={{ width: "auto", height: "400px" }}
+              className="h-[400px] w-full object-cover"
             />
           ) : (
-            <div className="h-[400px] flex items-center justify-center text-faded">
-              Nincs eseménykép
+            <div className="h-[400px] flex items-center justify-center text-faded bg-faded/10">
+              <div className="flex items-center gap-2">
+                <ImageOff size={22} />
+                Nincs eseménykép
+              </div>
             </div>
           )}
         </div>

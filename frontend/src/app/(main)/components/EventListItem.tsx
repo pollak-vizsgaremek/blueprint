@@ -1,7 +1,7 @@
 "use client";
 import { useModal } from "@/contexts/ModalContext";
 import { Event } from "@/types";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, ImageOff } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -14,14 +14,20 @@ export const EventListItem = ({ event }: { event: Event }) => {
     >
       <div className="flex items-center gap-5">
         <div className="w-30 h-16 relative">
-          <Image
-            src={event.imageUrl!}
-            alt="Event"
-            fill
-            sizes="120px"
-            priority
-            className="rounded-lg object-center"
-          />
+          {event.imageUrl ? (
+            <Image
+              src={event.imageUrl}
+              alt={event.name}
+              fill
+              sizes="120px"
+              priority
+              className="rounded-lg object-cover"
+            />
+          ) : (
+            <div className="h-full w-full rounded-lg bg-faded/15 flex items-center justify-center text-faded">
+              <ImageOff size={16} />
+            </div>
+          )}
         </div>
         <div className="">{event.name}</div>
         <div className="text-slate-500 max-[800px]:hidden">

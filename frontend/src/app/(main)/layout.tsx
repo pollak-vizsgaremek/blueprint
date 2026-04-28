@@ -3,6 +3,7 @@ import { Header } from "./components/Header";
 import { Footer } from "./components/Footer";
 import { ModalProvider } from "@/contexts/ModalContext";
 import { EventModal } from "./components/EventModal";
+import { SettingsEffects } from "./components/SettingsEffects";
 
 export const metadata: Metadata = {
   title: "Blueprint",
@@ -16,6 +17,7 @@ export default function RootLayout({
 }>) {
   return (
     <ModalProvider>
+      <SettingsEffects />
       <Header />
       {children}
       <Footer />

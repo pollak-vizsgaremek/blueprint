@@ -15,6 +15,13 @@ export const useAppSettings = () => {
   const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
+    document.documentElement.setAttribute(
+      "data-contrast",
+      settings.highContrast ? "high" : "normal",
+    );
+  }, [settings.highContrast]);
+
+  useEffect(() => {
     setSettings(readAppSettings());
     setIsHydrated(true);
 

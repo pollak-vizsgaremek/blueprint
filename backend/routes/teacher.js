@@ -6,13 +6,18 @@ import {
   getOwnTeacherAvailability,
   getTeacherAppointments,
   getTeacherCreatedEvents,
+  getTeacherProfile,
   updateOwnTeacherAvailability,
   updateTeacherAppointmentStatus,
+  updateTeacherProfile,
 } from "../controllers/teacherController.js";
 import { authenticateTeacherToken } from "../middleware/auth.js";
 import { uploadEventImage } from "../middleware/upload.js";
 
 const router = express.Router();
+
+router.get("/profile", authenticateTeacherToken, getTeacherProfile);
+router.put("/profile", authenticateTeacherToken, updateTeacherProfile);
 
 router.get("/appointments", authenticateTeacherToken, getTeacherAppointments);
 router.put(

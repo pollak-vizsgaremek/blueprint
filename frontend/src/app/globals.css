@@ -9,6 +9,14 @@
   --color-text: #000;
 }
 
+:root[data-contrast="high"] {
+  --color-primary: #ffffff;
+  --color-secondary: #ffffff;
+  --color-accent: #005fcc;
+  --color-faded: #3a3a3a;
+  --color-text: #000000;
+}
+
 body {
   @apply bg-primary;
 }

@@ -21,6 +21,8 @@ interface AuthContextType {
     dateOfBirth: string,
   ) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
   isLoading: boolean;
   isAdmin: boolean;
 }
@@ -43,26 +45,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+  const fetchUser = async () => {
+    try {
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/users/profile`,
+        {
+          withCredentials: true,
+        },
+      );
+
+      setUser(response.data.user);
+    } catch (_error) {
+      setUser(null);
+    }
+  };
+
   // Fetch user info from cookie on mount
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_URL}/users/profile`,
-          {
-            withCredentials: true,
-          },
-        );
-
-        setUser(response.data.user);
-      } catch (error) {
-        return { message: "Hiba történt." };
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchUser();
+    fetchUser().finally(() => {
+      setIsLoading(false);
+    });
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -138,6 +140,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     register,
     logout,
+    refreshUser: fetchUser,
+    setUser,
     isLoading,
     isAdmin: user?.role === "admin",
   };

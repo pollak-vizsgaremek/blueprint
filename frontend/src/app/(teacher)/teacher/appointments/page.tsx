@@ -203,6 +203,9 @@ const TeacherAppointmentsPage = () => {
                         <Clock3 size={14} />
                         Létrehozva: {formatDateTime(appointment.createdAt)}
                       </div>
+                      <div className="inline-flex items-center gap-2">
+                        Tanterem: {appointment.classroom || "Nincs megadva"}
+                      </div>
                     </div>
                   </div>
                   <span
@@ -256,6 +259,9 @@ const TeacherAppointmentsPage = () => {
               {editingAppointment
                 ? formatDateTime(editingAppointment.endTime)
                 : "-"}
+            </div>
+            <div>
+              Tanterem: {editingAppointment?.classroom || "Nincs megadva"}
             </div>
           </div>
 

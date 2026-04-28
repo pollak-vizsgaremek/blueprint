@@ -10,7 +10,7 @@ const parsePositiveInt = (value, fallback) => {
 
 const rateLimitWindowMs = parsePositiveInt(
   process.env.RATE_LIMIT_WINDOW_MS,
-  15 * 60 * 1000,
+  1 * 60 * 1000,
 );
 const globalRateLimitMax = parsePositiveInt(process.env.RATE_LIMIT_MAX, 200);
 const authRateLimitMax = parsePositiveInt(process.env.RATE_LIMIT_AUTH_MAX, 10);

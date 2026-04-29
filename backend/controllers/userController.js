@@ -133,18 +133,6 @@ export const createUser = async (req, res) => {
       }
     }
 
-    // Generate JWT token for the new user
-    const token = generateToken(newUser);
-
-    // Set token as httpOnly cookie
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      path: "/",
-    });
-
     // Return user data without password
     const { password: _, ...userWithoutPassword } = newUser;
     // Format dateOfBirth to only return the date part (YYYY-MM-DD)

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -20,6 +20,23 @@ const LoginPage = () => {
 
   const { login } = useAuth();
   const router = useRouter();
+  const didShowRegisteredNotice = useRef(false);
+
+  useEffect(() => {
+    if (didShowRegisteredNotice.current) {
+      return;
+    }
+
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get("registered") !== "1") {
+      return;
+    }
+
+    notify.info(
+      "Sikeres regisztráció. Ha még nem tetted, erősítsd meg az emailed, majd jelentkezz be.",
+    );
+    didShowRegisteredNotice.current = true;
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

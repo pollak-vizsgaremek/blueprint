@@ -57,9 +57,9 @@ const RegisterPage = () => {
 
       // Use the register function from auth context
       await register(name, email, password, dateString);
-      notify.success("Sikeres regisztráció.");
+      notify.success("Sikeres regisztráció. Jelentkezz be a folytatáshoz.");
 
-      router.replace("/");
+      router.replace("/login?registered=1");
       router.refresh();
     } catch (err) {
       const message =

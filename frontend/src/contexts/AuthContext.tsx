@@ -98,15 +98,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   ) => {
     setIsLoading(true);
     try {
-      const response = await axios.post(
+      await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/users`,
         { name, email, password, dateOfBirth },
         {
           withCredentials: true, // Include cookies in request
         },
       );
-
-      setUser(response.data.user);
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.error ||

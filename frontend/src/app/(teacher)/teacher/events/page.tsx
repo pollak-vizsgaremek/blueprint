@@ -23,6 +23,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { CLASSROOM_OPTIONS, getClassroomLabel } from "@/lib/classrooms";
+import { formatDateTimeHuCompact } from "@/lib/dateFormat";
+import { extractApiErrorMessage } from "@/lib/errors";
 import { TeacherFormModal } from "../../components/TeacherFormModal";
 import { TeacherPageHeader } from "../../components/TeacherPageHeader";
 
@@ -46,35 +48,6 @@ const initialFormState: EventFormState = {
   classroom: "",
   date: "",
   maxParticipants: "",
-};
-
-const formatDateTime = (value: string | null | undefined) => {
-  if (!value) {
-    return "-";
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "-";
-  }
-
-  return date.toLocaleString("hu-HU", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
-
-const getErrorMessage = (error: unknown, fallback: string) => {
-  if (axios.isAxiosError(error)) {
-    return (
-      error.response?.data?.message ?? error.response?.data?.error ?? fallback
-    );
-  }
-
-  return fallback;
 };
 
 const TeacherEventsPage = () => {
@@ -207,7 +180,10 @@ const TeacherEventsPage = () => {
     onError: (error) => {
       setMessage({
         type: "error",
-        text: getErrorMessage(error, "Az esemény létrehozása sikertelen."),
+        text: extractApiErrorMessage(
+          error,
+          "Az esemény létrehozása sikertelen.",
+        ),
       });
     },
   });
@@ -255,7 +231,10 @@ const TeacherEventsPage = () => {
     onError: (error) => {
       setMessage({
         type: "error",
-        text: getErrorMessage(error, "Az esemény frissítése sikertelen."),
+        text: extractApiErrorMessage(
+          error,
+          "Az esemény frissítése sikertelen.",
+        ),
       });
     },
   });
@@ -380,7 +359,7 @@ const TeacherEventsPage = () => {
                       </div>
                       <div className="inline-flex items-center gap-2">
                         <CalendarDays size={15} />
-                        <span>{formatDateTime(event.date)}</span>
+                        <span>{formatDateTimeHuCompact(event.date)}</span>
                       </div>
                       <div className="inline-flex items-center gap-2">
                         <Users size={15} />

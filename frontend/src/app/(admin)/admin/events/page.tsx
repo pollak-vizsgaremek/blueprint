@@ -20,6 +20,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { CLASSROOM_OPTIONS, getClassroomLabel } from "@/lib/classrooms";
+import { extractApiErrorMessage } from "@/lib/errors";
 import { AdminFormModal } from "../../components/AdminFormModal";
 import { AdminPageHeader } from "../../components/AdminPageHeader";
 import { AdminStatusBadge } from "../../components/AdminStatusBadge";
@@ -48,16 +49,6 @@ const initialFormState: EventFormState = {
   date: "",
   maxParticipants: "",
   classroom: "",
-};
-
-const getErrorMessage = (error: unknown, fallback: string) => {
-  if (axios.isAxiosError(error)) {
-    return (
-      error.response?.data?.message ?? error.response?.data?.error ?? fallback
-    );
-  }
-
-  return fallback;
 };
 
 const EventsAdminPage = () => {
@@ -191,7 +182,7 @@ const EventsAdminPage = () => {
     onError: (error) => {
       setMessage({
         type: "error",
-        text: getErrorMessage(error, "Az esemény mentése sikertelen."),
+        text: extractApiErrorMessage(error, "Az esemény mentése sikertelen."),
       });
     },
   });
@@ -214,7 +205,7 @@ const EventsAdminPage = () => {
     onError: (error) => {
       setMessage({
         type: "error",
-        text: getErrorMessage(error, "Az esemény törlése sikertelen."),
+        text: extractApiErrorMessage(error, "Az esemény törlése sikertelen."),
       });
     },
   });
@@ -239,7 +230,10 @@ const EventsAdminPage = () => {
     onError: (error) => {
       setMessage({
         type: "error",
-        text: getErrorMessage(error, "Az esemény visszaállítása sikertelen."),
+        text: extractApiErrorMessage(
+          error,
+          "Az esemény visszaállítása sikertelen.",
+        ),
       });
     },
   });

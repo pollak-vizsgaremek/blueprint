@@ -11,6 +11,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { CalendarDays, Clock3, Plus, Trash2, UserRound } from "lucide-react";
 import { useMemo, useState } from "react";
+import { extractApiErrorMessage } from "@/lib/errors";
 import { AdminFormModal } from "../../components/AdminFormModal";
 import { AdminPageHeader } from "../../components/AdminPageHeader";
 import { AdminStatusBadge } from "../../components/AdminStatusBadge";
@@ -46,16 +47,6 @@ const statusTone: Record<
   confirmed: "green",
   cancelled: "red",
   completed: "blue",
-};
-
-const getErrorMessage = (error: unknown, fallback: string) => {
-  if (axios.isAxiosError(error)) {
-    return (
-      error.response?.data?.message ?? error.response?.data?.error ?? fallback
-    );
-  }
-
-  return fallback;
 };
 
 const AppointmentsAdminPage = () => {
@@ -170,7 +161,7 @@ const AppointmentsAdminPage = () => {
     onError: (error) => {
       setMessage({
         type: "error",
-        text: getErrorMessage(error, "Az időpont mentése sikertelen."),
+        text: extractApiErrorMessage(error, "Az időpont mentése sikertelen."),
       });
     },
   });
@@ -194,7 +185,7 @@ const AppointmentsAdminPage = () => {
     onError: (error) => {
       setMessage({
         type: "error",
-        text: getErrorMessage(error, "Az időpont törlése sikertelen."),
+        text: extractApiErrorMessage(error, "Az időpont törlése sikertelen."),
       });
     },
   });

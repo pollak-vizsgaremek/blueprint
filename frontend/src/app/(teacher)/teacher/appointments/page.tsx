@@ -18,6 +18,8 @@ import {
   UserRound,
 } from "lucide-react";
 import { useState } from "react";
+import { formatDateTimeHuCompact } from "@/lib/dateFormat";
+import { extractApiErrorMessage } from "@/lib/errors";
 import { TeacherFormModal } from "../../components/TeacherFormModal";
 import { TeacherPageHeader } from "../../components/TeacherPageHeader";
 
@@ -33,31 +35,6 @@ const statusBadgeClasses: Record<TeacherAppointment["status"], string> = {
   confirmed: "bg-emerald-100 text-emerald-800",
   cancelled: "bg-red-100 text-red-700",
   completed: "bg-sky-100 text-sky-700",
-};
-
-const formatDateTime = (value: string) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "-";
-  }
-
-  return date.toLocaleString("hu-HU", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
-
-const getErrorMessage = (error: unknown, fallback: string) => {
-  if (axios.isAxiosError(error)) {
-    return (
-      error.response?.data?.message ?? error.response?.data?.error ?? fallback
-    );
-  }
-
-  return fallback;
 };
 
 const TeacherAppointmentsPage = () => {
@@ -123,7 +100,10 @@ const TeacherAppointmentsPage = () => {
     onError: (error) => {
       setMessage({
         type: "error",
-        text: getErrorMessage(error, "Az időpont frissítése sikertelen."),
+        text: extractApiErrorMessage(
+          error,
+          "Az időpont frissítése sikertelen.",
+        ),
       });
     },
   });
@@ -204,12 +184,13 @@ const TeacherAppointmentsPage = () => {
                       </div>
                       <div className="inline-flex items-center gap-2">
                         <CalendarDays size={14} />
-                        {formatDateTime(appointment.startTime)} -{" "}
-                        {formatDateTime(appointment.endTime)}
+                        {formatDateTimeHuCompact(appointment.startTime)} -{" "}
+                        {formatDateTimeHuCompact(appointment.endTime)}
                       </div>
                       <div className="inline-flex items-center gap-2">
                         <Clock3 size={14} />
-                        Létrehozva: {formatDateTime(appointment.createdAt)}
+                        Létrehozva:{" "}
+                        {formatDateTimeHuCompact(appointment.createdAt)}
                       </div>
                       <div className="inline-flex items-center gap-2">
                         Tanterem: {appointment.classroom || "Nincs megadva"}
@@ -259,13 +240,13 @@ const TeacherAppointmentsPage = () => {
             <div>
               Kezdés:{" "}
               {editingAppointment
-                ? formatDateTime(editingAppointment.startTime)
+                ? formatDateTimeHuCompact(editingAppointment.startTime)
                 : "-"}
             </div>
             <div>
               Befejezés:{" "}
               {editingAppointment
-                ? formatDateTime(editingAppointment.endTime)
+                ? formatDateTimeHuCompact(editingAppointment.endTime)
                 : "-"}
             </div>
             <div>

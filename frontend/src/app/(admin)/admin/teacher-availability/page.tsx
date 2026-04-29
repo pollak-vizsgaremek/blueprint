@@ -11,6 +11,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { CalendarRange, Clock3, Plus, Trash2, UserRound } from "lucide-react";
 import { useMemo, useState } from "react";
+import { extractApiErrorMessage } from "@/lib/errors";
 import { AdminFormModal } from "../../components/AdminFormModal";
 import { AdminPageHeader } from "../../components/AdminPageHeader";
 
@@ -60,16 +61,6 @@ const toMinutes = (value: string) => {
 
 const toTimeInputValue = (minutes: number) => {
   return toTimeLabel(minutes);
-};
-
-const getErrorMessage = (error: unknown, fallback: string) => {
-  if (axios.isAxiosError(error)) {
-    return (
-      error.response?.data?.message ?? error.response?.data?.error ?? fallback
-    );
-  }
-
-  return fallback;
 };
 
 const TeacherAvailabilityAdminPage = () => {
@@ -194,7 +185,10 @@ const TeacherAvailabilityAdminPage = () => {
     onError: (error) => {
       setMessage({
         type: "error",
-        text: getErrorMessage(error, "Az elérhetőség mentése sikertelen."),
+        text: extractApiErrorMessage(
+          error,
+          "Az elérhetőség mentése sikertelen.",
+        ),
       });
     },
   });
@@ -220,7 +214,10 @@ const TeacherAvailabilityAdminPage = () => {
     onError: (error) => {
       setMessage({
         type: "error",
-        text: getErrorMessage(error, "Az elérhetőség törlése sikertelen."),
+        text: extractApiErrorMessage(
+          error,
+          "Az elérhetőség törlése sikertelen.",
+        ),
       });
     },
   });

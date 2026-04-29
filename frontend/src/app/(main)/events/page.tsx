@@ -8,7 +8,7 @@ import { Spinner } from "@/components/Spinner";
 import { DataState } from "@/components/ui/DataState";
 import { useSearchParams } from "next/navigation";
 import { EventTiles } from "../components/EventTiles";
-import { Evenlist } from "../components/EventList";
+import { EventList } from "../components/EventList";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Suspense } from "react";
@@ -18,6 +18,7 @@ import { isReducedMotionEnabled } from "@/lib/motion";
 import { CalendarX2, TriangleAlert } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { EventWithRegistrationInfo } from "@/types";
+import { queryKeys } from "@/lib/queryKeys";
 
 const EventsContent = () => {
   const { user } = useAuth();
@@ -27,7 +28,7 @@ const EventsContent = () => {
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ["events"],
+    queryKey: queryKeys.events,
     queryFn: async () => {
       const { data } = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/events`,
@@ -181,7 +182,7 @@ const EventsContent = () => {
       ) : view === "tiles" ? (
         <EventTiles events={filteredEvents} />
       ) : (
-        <Evenlist events={filteredEvents} />
+        <EventList events={filteredEvents} />
       )}
     </main>
   );

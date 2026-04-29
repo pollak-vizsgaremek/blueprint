@@ -1,4 +1,4 @@
-"Use client";
+"use client";
 import { useModal } from "@/contexts/ModalContext";
 import { Event } from "@/types";
 import {
@@ -11,22 +11,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-
-const formatDateTime = (value: string) => {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "Ismeretlen dátum";
-  }
-
-  return date.toLocaleString("hu-HU", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
+import { formatDateTimeHuCompact } from "@/lib/dateFormat";
 
 export const EventTile = ({ event }: { event: Event }) => {
   const { openModal } = useModal();
@@ -41,9 +26,9 @@ export const EventTile = ({ event }: { event: Event }) => {
   return (
     <div
       onClick={() => openModal(event)}
-      className="min-h-[480px] sm:min-h-[500px] cursor-pointer flex flex-col hover:shadow-md hover:shadow-gray-500 transition rounded-2xl"
+      className="min-h-[400px] sm:min-h-[400px] cursor-pointer flex flex-col hover:shadow-md hover:shadow-gray-500 transition rounded-2xl"
     >
-      <div className="h-[52%] w-full relative">
+      <div className="h-[42%] w-full relative">
         {event.imageUrl ? (
           <Image
             src={event.imageUrl}
@@ -59,7 +44,7 @@ export const EventTile = ({ event }: { event: Event }) => {
           </div>
         )}
       </div>
-      <div className="h-[48%] bg-secondary/40 backdrop-blur-xl border-[0.5px] border-faded/10 rounded-b-2xl flex flex-col justify-between p-3">
+      <div className="h-[58%] bg-secondary/40 backdrop-blur-xl border-[0.5px] border-faded/10 rounded-b-2xl flex flex-col justify-between p-3">
         <div>
           <div className="font-semibold text-lg leading-tight line-clamp-2">
             {event.name}
@@ -71,7 +56,7 @@ export const EventTile = ({ event }: { event: Event }) => {
         <div className="space-y-1.5 text-sm text-faded">
           <div className="flex items-center gap-2">
             <CalendarDays size={14} />
-            <span>{formatDateTime(event.date)}</span>
+            <span>{formatDateTimeHuCompact(event.date)}</span>
           </div>
           <div className="flex items-center gap-2">
             <MapPin size={14} />

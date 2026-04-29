@@ -19,6 +19,7 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { useState } from "react";
+import { extractApiErrorMessage } from "@/lib/errors";
 import { TeacherFormModal } from "../../components/TeacherFormModal";
 import { TeacherPageHeader } from "../../components/TeacherPageHeader";
 
@@ -62,16 +63,6 @@ const toMinutes = (value: string) => {
   }
 
   return h * 60 + m;
-};
-
-const getErrorMessage = (error: unknown, fallback: string) => {
-  if (axios.isAxiosError(error)) {
-    return (
-      error.response?.data?.message ?? error.response?.data?.error ?? fallback
-    );
-  }
-
-  return fallback;
 };
 
 const TeacherAvailabilityPage = () => {
@@ -155,7 +146,10 @@ const TeacherAvailabilityPage = () => {
     onError: (error) => {
       setMessage({
         type: "error",
-        text: getErrorMessage(error, "Az elérhetőség mentése sikertelen."),
+        text: extractApiErrorMessage(
+          error,
+          "Az elérhetőség mentése sikertelen.",
+        ),
       });
     },
   });
@@ -179,7 +173,10 @@ const TeacherAvailabilityPage = () => {
     onError: (error) => {
       setMessage({
         type: "error",
-        text: getErrorMessage(error, "Az elérhetőség törlése sikertelen."),
+        text: extractApiErrorMessage(
+          error,
+          "Az elérhetőség törlése sikertelen.",
+        ),
       });
     },
   });

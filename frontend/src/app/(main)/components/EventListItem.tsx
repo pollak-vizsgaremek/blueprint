@@ -11,22 +11,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-
-const formatDateTime = (value: string) => {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "Ismeretlen dátum";
-  }
-
-  return date.toLocaleString("hu-HU", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
+import { formatDateTimeHuCompact } from "@/lib/dateFormat";
 
 export const EventListItem = ({ event }: { event: Event }) => {
   const { openModal } = useModal();
@@ -70,7 +55,7 @@ export const EventListItem = ({ event }: { event: Event }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-sm text-faded">
             <div className="inline-flex items-center gap-2">
               <CalendarDays size={14} />
-              <span>{formatDateTime(event.date)}</span>
+              <span>{formatDateTimeHuCompact(event.date)}</span>
             </div>
             <div className="inline-flex items-center gap-2">
               <MapPin size={14} />

@@ -8,8 +8,6 @@ import {
   CreateEventCommentResponse,
   DeleteEventNewsResponse,
   DeleteEventCommentResponse,
-  EventComment,
-  EventNewsItem,
   GetEventCommentsResponse,
   GetEventNewsResponse,
   GetUsersLiteResponse,
@@ -17,68 +15,23 @@ import {
 } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import {
-  Building2,
-  CalendarDays,
-  ExternalLink,
-  MapPin,
-  UserRound,
-  Users,
-  X,
-} from "lucide-react";
+import { ExternalLink, Users, X } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { EventNavigationMap } from "@/components/navigation/EventNavigationMap";
+import { EventModalDiscussionTab } from "@/components/events/modal/EventModalDiscussionTab";
+import { EventModalDetailsTab } from "@/components/events/modal/EventModalDetailsTab";
+import { EventModalNewsTab } from "@/components/events/modal/EventModalNewsTab";
+import { EventModalPlaceTab } from "@/components/events/modal/EventModalPlaceTab";
+import { EventModalTabs } from "@/components/events/modal/EventModalTabs";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-
-const formatDateTime = (value?: string) => {
-  if (!value) return "Ismeretlen";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Ismeretlen";
-  return date.toLocaleString("hu-HU", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
-
-const formatDateOnly = (value?: string) => {
-  if (!value) return "Ismeretlen";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Ismeretlen";
-  return date.toLocaleDateString("hu-HU", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-};
-
-const toLocalInputValue = (value?: string) => {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
-};
-
-type EventEditFormState = {
-  name: string;
-  description: string;
-  location: string;
-  classroom: string;
-  date: string;
-  maxParticipants: string;
-  updatedBy: string;
-};
+import {
+  buildEventUpdatePayload,
+  canManageEvent,
+  createEventEditFormState,
+  EventEditFormState,
+} from "@/lib/eventManage";
+import { queryKeys } from "@/lib/queryKeys";
 
 export const EventModal = () => {
   const { isOpen, closeModal, selectedEvent, setEvent } = useModal();
@@ -96,15 +49,9 @@ export const EventModal = () => {
     "details" | "discussion" | "news" | "place"
   >("details");
   const [isEditingEvent, setIsEditingEvent] = useState(false);
-  const [eventForm, setEventForm] = useState<EventEditFormState>({
-    name: "",
-    description: "",
-    location: "",
-    classroom: "",
-    date: "",
-    maxParticipants: "",
-    updatedBy: "",
-  });
+  const [eventForm, setEventForm] = useState<EventEditFormState>(
+    createEventEditFormState(),
+  );
 
   useEffect(() => {
     if (isOpen) {
@@ -116,33 +63,16 @@ export const EventModal = () => {
       setIsEditingEvent(false);
 
       if (selectedEvent) {
-        setEventForm({
-          name: selectedEvent.name,
-          description: selectedEvent.description,
-          location: selectedEvent.location,
-          classroom: selectedEvent.classroom,
-          date: toLocalInputValue(selectedEvent.date),
-          maxParticipants: selectedEvent.maxParticipants
-            ? String(selectedEvent.maxParticipants)
-            : "",
-          updatedBy: selectedEvent.updatedBy
-            ? String(selectedEvent.updatedBy)
-            : "",
-        });
+        setEventForm(createEventEditFormState(selectedEvent));
       }
     }
   }, [isOpen, selectedEvent?.id]);
 
-  const canManageEvent =
-    Boolean(user) &&
-    Boolean(selectedEvent) &&
-    (user?.role === "admin" ||
-      (selectedEvent?.updatedBy !== null &&
-        selectedEvent?.updatedBy === user?.id));
+  const canManageSelectedEvent = canManageEvent(user, selectedEvent ?? null);
 
   const { data: usersLiteData } = useQuery({
-    queryKey: ["users-lite"],
-    enabled: isOpen && canManageEvent,
+    queryKey: queryKeys.usersLite,
+    enabled: isOpen && canManageSelectedEvent,
     queryFn: async () => {
       const { data } = await axios.get<GetUsersLiteResponse>(
         `${process.env.NEXT_PUBLIC_API_URL}/users/list`,
@@ -214,8 +144,8 @@ export const EventModal = () => {
         ),
       });
 
-      queryClient.invalidateQueries({ queryKey: ["events"] });
-      queryClient.invalidateQueries({ queryKey: ["myevents"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.events });
+      queryClient.invalidateQueries({ queryKey: queryKeys.myEvents });
     },
     onError: (error) => {
       if (axios.isAxiosError(error)) {
@@ -297,7 +227,7 @@ export const EventModal = () => {
       }
 
       queryClient.invalidateQueries({
-        queryKey: ["event-comments", selectedEvent.id],
+        queryKey: queryKeys.eventComments(selectedEvent.id),
       });
     },
     onError: (error) => {
@@ -334,7 +264,7 @@ export const EventModal = () => {
         }
 
         queryClient.invalidateQueries({
-          queryKey: ["event-comments", selectedEvent.id],
+          queryKey: queryKeys.eventComments(selectedEvent.id),
         });
       },
       onError: (error) => {
@@ -383,7 +313,7 @@ export const EventModal = () => {
         setPublishNow(false);
 
         queryClient.invalidateQueries({
-          queryKey: ["event-news", selectedEvent.id],
+          queryKey: queryKeys.eventNews(selectedEvent.id),
         });
       },
       onError: (error) => {
@@ -440,7 +370,7 @@ export const EventModal = () => {
         setPublishNow(false);
 
         queryClient.invalidateQueries({
-          queryKey: ["event-news", selectedEvent.id],
+          queryKey: queryKeys.eventNews(selectedEvent.id),
         });
       },
       onError: (error) => {
@@ -477,7 +407,7 @@ export const EventModal = () => {
         }
 
         queryClient.invalidateQueries({
-          queryKey: ["event-news", selectedEvent.id],
+          queryKey: queryKeys.eventNews(selectedEvent.id),
         });
       },
       onError: (error) => {
@@ -501,20 +431,7 @@ export const EventModal = () => {
           return;
         }
 
-        const payload: Record<string, string | number | null> = {
-          name: eventForm.name.trim(),
-          description: eventForm.description.trim(),
-          location: eventForm.location.trim(),
-          classroom: eventForm.classroom.trim(),
-          date: new Date(eventForm.date).toISOString(),
-          updatedBy: Number(eventForm.updatedBy),
-        };
-
-        if (eventForm.maxParticipants.trim()) {
-          payload.maxParticipants = Number(eventForm.maxParticipants.trim());
-        } else {
-          payload.maxParticipants = null;
-        }
+        const payload = buildEventUpdatePayload(eventForm);
 
         return axios.put(
           `${process.env.NEXT_PUBLIC_API_URL}/events/${selectedEvent.id}`,
@@ -544,11 +461,11 @@ export const EventModal = () => {
 
         setIsEditingEvent(false);
         showAlert({ message: "Esemény frissítve.", tone: "success" });
-        queryClient.invalidateQueries({ queryKey: ["events"] });
+        queryClient.invalidateQueries({ queryKey: queryKeys.events });
         queryClient.invalidateQueries({
-          queryKey: ["events", "detail", selectedEvent.id],
+          queryKey: queryKeys.eventDetail(selectedEvent.id),
         });
-        queryClient.invalidateQueries({ queryKey: ["myevents"] });
+        queryClient.invalidateQueries({ queryKey: queryKeys.myEvents });
       },
       onError: (error) => {
         if (axios.isAxiosError(error)) {
@@ -579,8 +496,8 @@ export const EventModal = () => {
         );
       },
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["events"] });
-        queryClient.invalidateQueries({ queryKey: ["myevents"] });
+        queryClient.invalidateQueries({ queryKey: queryKeys.events });
+        queryClient.invalidateQueries({ queryKey: queryKeys.myEvents });
         closeModal();
         router.push("/events");
       },
@@ -650,42 +567,6 @@ export const EventModal = () => {
     deleteComment(commentId);
   };
 
-  const validateEventForm = () => {
-    if (
-      !eventForm.name.trim() ||
-      !eventForm.description.trim() ||
-      !eventForm.location.trim() ||
-      !eventForm.classroom.trim() ||
-      !eventForm.date ||
-      !eventForm.updatedBy
-    ) {
-      showAlert({
-        message: "Minden kötelező mezőt tölts ki.",
-        tone: "warning",
-      });
-      return false;
-    }
-
-    if (Number.isNaN(new Date(eventForm.date).getTime())) {
-      showAlert({ message: "Érvénytelen dátum.", tone: "warning" });
-      return false;
-    }
-
-    if (
-      eventForm.maxParticipants.trim() &&
-      (!Number.isInteger(Number(eventForm.maxParticipants)) ||
-        Number(eventForm.maxParticipants) <= 0)
-    ) {
-      showAlert({
-        message: "A maximális létszám pozitív egész szám legyen.",
-        tone: "warning",
-      });
-      return false;
-    }
-
-    return true;
-  };
-
   const confirmDeleteEvent = async () => {
     const confirmed = await showConfirm({
       message: "Biztosan törölni szeretnéd ezt az eseményt?",
@@ -701,317 +582,21 @@ export const EventModal = () => {
     deleteManagedEvent();
   };
 
-  const renderNewsTab = () => {
-    if (isEventNewsLoading) {
-      return <div className="text-faded">Betöltés...</div>;
+  const canManageNews = eventNewsData?.canManageNews ?? false;
+  const allNews = eventNewsData?.news ?? [];
+  const drafts = allNews.filter((news) => !news.isPublished);
+
+  const submitDraftChanges = () => {
+    if (!editingDraftId) {
+      return;
     }
 
-    if (isEventNewsError) {
-      return (
-        <div className="text-red-600">
-          Nem sikerült betölteni az esemény híreit.
-        </div>
-      );
-    }
-
-    const canManageNews = eventNewsData?.canManageNews ?? false;
-    const allNews = eventNewsData?.news ?? [];
-    const drafts = allNews.filter((news) => !news.isPublished);
-
-    const submitDraftChanges = () => {
-      if (!editingDraftId) {
-        return;
-      }
-
-      updateEventNews({
-        newsId: editingDraftId,
-        isPublished: publishNow,
-        title: newsTitle.trim(),
-        content: newsContent.trim(),
-      });
-    };
-
-    return (
-      <div className="pt-2 px-4 sm:px-6 lg:px-10 pb-2 mt-5 flex grow overflow-y-auto flex-col">
-        {canManageNews && (
-          <div className="mb-5 rounded-xl border border-faded/40 bg-white/30 p-3">
-            <div className="text-lg mb-2">
-              {editingDraftId ? "Vázlat szerkesztése" : "Új hír létrehozása"}
-            </div>
-            <div className="flex flex-col gap-2">
-              <input
-                value={newsTitle}
-                onChange={(event) => setNewsTitle(event.target.value)}
-                maxLength={200}
-                placeholder="Hír címe"
-                className="w-full border border-faded/60 focus:outline-2 focus:outline-accent rounded-xl px-3 py-2 bg-white/20"
-              />
-              <textarea
-                value={newsContent}
-                onChange={(event) => setNewsContent(event.target.value)}
-                maxLength={4000}
-                rows={4}
-                placeholder="Hír tartalma..."
-                className="w-full border border-faded/60 focus:outline-2 focus:outline-accent rounded-xl px-3 py-2 bg-white/20"
-              />
-              <div className="flex items-center justify-between gap-3 border border-faded/20 rounded-xl px-3 py-2 bg-secondary/40">
-                <div className="text-sm text-faded">Azonnal publikálás</div>
-                <button
-                  type="button"
-                  onClick={() => setPublishNow((previous) => !previous)}
-                  className="shrink-0 w-14 h-8 rounded-full border border-faded/20 bg-secondary/80 p-1 cursor-pointer"
-                  aria-pressed={publishNow}
-                  aria-label="Azonnal publikálás kapcsoló"
-                >
-                  <span
-                    className={`block h-6 w-6 rounded-full transition ease-in-out ${
-                      publishNow
-                        ? "translate-x-6 bg-accent"
-                        : "translate-x-0 bg-faded/60"
-                    }`}
-                  />
-                </button>
-              </div>
-              <button
-                onClick={() => {
-                  if (editingDraftId) {
-                    submitDraftChanges();
-                    return;
-                  }
-
-                  createEventNews();
-                }}
-                disabled={editingDraftId ? !canUpdateDraft : !canSubmitNews}
-                className="bg-accent text-white px-4 py-2 rounded-xl disabled:bg-faded disabled:cursor-not-allowed self-start"
-              >
-                {isCreateEventNewsPending || isUpdateEventNewsPending
-                  ? "Mentés..."
-                  : editingDraftId
-                    ? "Vázlat frissítése"
-                    : "Mentés"}
-              </button>
-              {editingDraftId && (
-                <button
-                  onClick={() => {
-                    setEditingDraftId(null);
-                    setNewsTitle("");
-                    setNewsContent("");
-                    setPublishNow(false);
-                  }}
-                  className="text-sm text-faded hover:text-text self-start"
-                >
-                  Mégse
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {canManageNews && drafts.length > 0 && (
-          <div className="mb-4">
-            <div className="text-sm text-faded mb-2">Vázlatok</div>
-            <div className="space-y-2">
-              {drafts.map((news: EventNewsItem) => (
-                <div
-                  key={`draft-${news.id}`}
-                  className="rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-2"
-                >
-                  <div className="flex items-center justify-between gap-3 mb-1">
-                    <div className="font-semibold">{news.title}</div>
-                    <span className="text-[10px] rounded-full bg-amber-100 text-amber-700 px-2 py-0.5">
-                      Vázlat
-                    </span>
-                  </div>
-                  <div className="text-sm text-faded whitespace-pre-wrap">
-                    {news.content}
-                  </div>
-                  <div className="text-xs text-faded mt-1">
-                    Utoljára frissítve:{" "}
-                    {new Date(news.updatedAt).toLocaleString("hu-HU")}
-                  </div>
-                  <div className="mt-2 flex gap-2">
-                    <button
-                      onClick={() => {
-                        setEditingDraftId(news.id);
-                        setNewsTitle(news.title);
-                        setNewsContent(news.content);
-                        setPublishNow(false);
-                      }}
-                      disabled={isNewsManagementPending}
-                      className="text-xs px-2 py-1 rounded-lg bg-sky-100 text-sky-700 disabled:bg-faded/40 disabled:text-faded disabled:cursor-not-allowed"
-                    >
-                      Szerkesztés
-                    </button>
-                    <button
-                      onClick={() =>
-                        updateEventNews({
-                          newsId: news.id,
-                          isPublished: true,
-                        })
-                      }
-                      disabled={isNewsManagementPending}
-                      className="text-xs px-2 py-1 rounded-lg bg-emerald-100 text-emerald-700 disabled:bg-faded/40 disabled:text-faded disabled:cursor-not-allowed"
-                    >
-                      Publikálás
-                    </button>
-                    <button
-                      onClick={() => confirmDeleteNews(news.id)}
-                      disabled={isNewsManagementPending}
-                      className="text-xs px-2 py-1 rounded-lg bg-red-100 text-red-700 disabled:bg-faded/40 disabled:text-faded disabled:cursor-not-allowed"
-                    >
-                      Törlés
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="space-y-3">
-          {allNews.length ? (
-            allNews
-              .filter((news) => news.isPublished)
-              .map((news: EventNewsItem) => (
-                <div
-                  key={news.id}
-                  className="rounded-xl border border-faded/50 bg-white/40 px-3 py-2"
-                >
-                  <div className="flex items-center justify-between gap-3 mb-1">
-                    <div className="font-semibold">{news.title}</div>
-                    <span className="text-[10px] rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5">
-                      Publikált
-                    </span>
-                  </div>
-                  <div className="text-xs text-faded mb-2">
-                    {new Date(
-                      news.publishedAt || news.createdAt,
-                    ).toLocaleString("hu-HU")}
-                    {news.author?.name ? ` • ${news.author.name}` : ""}
-                  </div>
-                  <div className="text-sm whitespace-pre-wrap">
-                    {news.content}
-                  </div>
-                  {canManageNews && (
-                    <div className="mt-2 flex gap-2">
-                      <button
-                        onClick={() =>
-                          updateEventNews({
-                            newsId: news.id,
-                            isPublished: false,
-                          })
-                        }
-                        disabled={isNewsManagementPending}
-                        className="text-xs px-2 py-1 rounded-lg bg-slate-200 text-slate-700 disabled:bg-faded/40 disabled:text-faded disabled:cursor-not-allowed"
-                      >
-                        Vázlatba
-                      </button>
-                      <button
-                        onClick={() => confirmDeleteNews(news.id)}
-                        disabled={isNewsManagementPending}
-                        className="text-xs px-2 py-1 rounded-lg bg-red-100 text-red-700 disabled:bg-faded/40 disabled:text-faded disabled:cursor-not-allowed"
-                      >
-                        Törlés
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))
-          ) : (
-            <div className="text-faded text-xl text-center mt-10">
-              Ehhez az eseményhez még nincs publikált hír.
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  const renderDiscussionTab = () => {
-    return (
-      <div className="pt-2 px-4 sm:px-6 lg:px-10 mt-5 pb-2 flex grow overflow-y-auto flex-col">
-        <div className="flex gap-2 mb-4 mt-1">
-          <input
-            value={commentContent}
-            onChange={(e) => setCommentContent(e.target.value)}
-            maxLength={2000}
-            placeholder="Írj egy hozzászólást..."
-            className="w-full border border-faded/60 focus:outline-2 focus:outline-accent rounded-xl px-3 py-2 bg-white/20"
-          />
-          <button
-            onClick={() => createComment()}
-            disabled={!canSubmitComment}
-            className="bg-accent text-white px-4 py-2 rounded-xl disabled:bg-faded disabled:cursor-not-allowed"
-          >
-            {isCommentPending ? "Mentés..." : "Küldés"}
-          </button>
-        </div>
-
-        <div className="space-y-3">
-          {isCommentsLoading ? (
-            <div className="text-faded">Betöltés...</div>
-          ) : commentsData?.comments.length ? (
-            commentsData.comments.map((comment: EventComment) => (
-              <div
-                key={comment.id}
-                className={`rounded-xl border px-3 py-2 ${
-                  comment.isDeleted
-                    ? "border-slate-300/60 bg-slate-100/70"
-                    : "border-faded/50 bg-white/40"
-                }`}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <div className="text-sm font-semibold">
-                      {comment.user.name}
-                    </div>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[10px] ${
-                        comment.isVerified
-                          ? "bg-emerald-100 text-emerald-700"
-                          : "bg-slate-200 text-slate-700"
-                      }`}
-                    >
-                      {comment.isVerified
-                        ? "AI ellenőrzött"
-                        : "Nincs AI ellenőrzés"}
-                    </span>
-                    {comment.isDeleted && (
-                      <span className="rounded-full px-2 py-0.5 text-[10px] bg-red-100 text-red-700">
-                        Törölt
-                      </span>
-                    )}
-                  </div>
-                  {comment.canDelete && !comment.isDeleted && (
-                    <button
-                      onClick={() => confirmDeleteComment(comment.id)}
-                      disabled={isDeleteCommentPending}
-                      className="text-xs text-red-600 hover:underline disabled:text-slate-400 disabled:no-underline"
-                    >
-                      Törlés
-                    </button>
-                  )}
-                </div>
-                <div className="text-sm text-faded mb-1">
-                  {new Date(comment.createdAt).toLocaleString("hu-HU")}
-                </div>
-                <p
-                  className={`text-sm whitespace-pre-wrap ${
-                    comment.isDeleted ? "text-slate-500" : ""
-                  }`}
-                >
-                  {comment.content}
-                </p>
-              </div>
-            ))
-          ) : (
-            <div className="text-faded text-xl text-center mt-10">
-              Még nincs hozzászólás.
-            </div>
-          )}
-        </div>
-      </div>
-    );
+    updateEventNews({
+      newsId: editingDraftId,
+      isPublished: publishNow,
+      title: newsTitle.trim(),
+      content: newsContent.trim(),
+    });
   };
 
   return (
@@ -1054,277 +639,88 @@ export const EventModal = () => {
                 className="rounded-t-xl object-cover"
               />
             </div>
-            <div className="flex items-center p-5 pb-5 border-b-[1px] bg-secondary/30 border-b-faded/20 text-2xl">
-              <button
-                onClick={() => setActiveTab("details")}
-                className={`px-4 relative transition ${
-                  activeTab === "details"
-                    ? "after:content-[''] pointer-events-none after:block after:w-full after:h-[1px] after:bg-faded/80 after:absolute after:-bottom-[21px] after:left-0"
-                    : "text-gray-400 cursor-pointer"
-                }`}
-              >
-                Részletek
-              </button>
-              <button
-                onClick={() => setActiveTab("news")}
-                className={`px-4 relative transition ${
-                  activeTab === "news"
-                    ? "after:content-[''] pointer-events-none after:block after:w-full after:h-[1px] after:bg-faded/80 after:absolute after:-bottom-[21px] after:left-0"
-                    : "text-gray-400 cursor-pointer"
-                }`}
-              >
-                Hírek
-              </button>
-              <button
-                onClick={() => setActiveTab("place")}
-                className={`px-4 relative transition ${
-                  activeTab === "place"
-                    ? "after:content-[''] pointer-events-none after:block after:w-full after:h-[1px] after:bg-faded/80 after:absolute after:-bottom-[21px] after:left-0"
-                    : "text-gray-400 cursor-pointer"
-                }`}
-              >
-                Helyszín
-              </button>
-              <button
-                onClick={() => setActiveTab("discussion")}
-                className={`px-4 relative transition ${
-                  activeTab === "discussion"
-                    ? "after:content-[''] pointer-events-none after:block after:w-full after:h-[1px] after:bg-faded/80 after:absolute after:-bottom-[21px] after:left-0"
-                    : "text-gray-400 cursor-pointer"
-                }`}
-              >
-                Beszélgetés
-              </button>
-            </div>
+            <EventModalTabs activeTab={activeTab} onSelect={setActiveTab} />
             {activeTab === "details" ? (
-              <div className="px-4 sm:px-6 lg:px-10 pb-6 sm:pb-10 mt-5 flex justify-between flex-col grow">
-                <div>
-                  <div className="text-2xl sm:text-3xl lg:text-4xl mb-3">
-                    {selectedEvent?.name}
-                  </div>
-                  <div className="text-gray-600 text-justify mb-5">
-                    {selectedEvent?.description}
-                  </div>
-                  {canManageEvent && (
-                    <div className="mb-5 flex flex-wrap items-center gap-2">
-                      <button
-                        onClick={() =>
-                          setIsEditingEvent((previous) => !previous)
-                        }
-                        className="rounded-xl bg-sky-100 px-3 py-2 text-sm text-sky-700 hover:bg-sky-200 transition"
-                      >
-                        {isEditingEvent
-                          ? "Szerkesztés bezárása"
-                          : "Szerkesztés"}
-                      </button>
-                      <button
-                        onClick={confirmDeleteEvent}
-                        disabled={isDeleteManagedEventPending}
-                        className="rounded-xl bg-red-100 px-3 py-2 text-sm text-red-700 hover:bg-red-200 transition disabled:bg-faded disabled:text-faded disabled:cursor-not-allowed"
-                      >
-                        {isDeleteManagedEventPending ? "Törlés..." : "Törlés"}
-                      </button>
-                    </div>
-                  )}
-                  {canManageEvent && isEditingEvent && (
-                    <div className="mb-5 rounded-xl border border-faded/40 bg-white/30 p-3">
-                      <div className="text-lg mb-2">Esemény szerkesztése</div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        <input
-                          value={eventForm.name}
-                          onChange={(event) =>
-                            setEventForm((previous) => ({
-                              ...previous,
-                              name: event.target.value,
-                            }))
-                          }
-                          placeholder="Esemény neve"
-                          className="w-full border border-faded/60 rounded-xl px-3 py-2 bg-white/20"
-                        />
-                        <input
-                          value={eventForm.location}
-                          onChange={(event) =>
-                            setEventForm((previous) => ({
-                              ...previous,
-                              location: event.target.value,
-                            }))
-                          }
-                          placeholder="Helyszín"
-                          className="w-full border border-faded/60 rounded-xl px-3 py-2 bg-white/20"
-                        />
-                        <input
-                          value={eventForm.classroom}
-                          onChange={(event) =>
-                            setEventForm((previous) => ({
-                              ...previous,
-                              classroom: event.target.value,
-                            }))
-                          }
-                          placeholder="Tanterem"
-                          className="w-full border border-faded/60 rounded-xl px-3 py-2 bg-white/20"
-                        />
-                        <input
-                          type="datetime-local"
-                          value={eventForm.date}
-                          onChange={(event) =>
-                            setEventForm((previous) => ({
-                              ...previous,
-                              date: event.target.value,
-                            }))
-                          }
-                          className="w-full border border-faded/60 rounded-xl px-3 py-2 bg-white/20"
-                        />
-                        <input
-                          value={eventForm.maxParticipants}
-                          onChange={(event) =>
-                            setEventForm((previous) => ({
-                              ...previous,
-                              maxParticipants: event.target.value,
-                            }))
-                          }
-                          placeholder="Max létszám (opcionális)"
-                          className="w-full border border-faded/60 rounded-xl px-3 py-2 bg-white/20"
-                        />
-                        <select
-                          value={eventForm.updatedBy}
-                          onChange={(event) =>
-                            setEventForm((previous) => ({
-                              ...previous,
-                              updatedBy: event.target.value,
-                            }))
-                          }
-                          className="w-full border border-faded/60 rounded-xl px-3 py-2 bg-white/20"
-                        >
-                          <option value="">Válassz frissítőt</option>
-                          {usersLite.map((candidate) => (
-                            <option
-                              key={candidate.id}
-                              value={String(candidate.id)}
-                            >
-                              {candidate.name} ({candidate.role})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <textarea
-                        value={eventForm.description}
-                        onChange={(event) =>
-                          setEventForm((previous) => ({
-                            ...previous,
-                            description: event.target.value,
-                          }))
-                        }
-                        rows={3}
-                        placeholder="Leírás"
-                        className="mt-2 w-full border border-faded/60 rounded-xl px-3 py-2 bg-white/20"
-                      />
-                      <div className="mt-2 flex gap-2">
-                        <button
-                          onClick={() => {
-                            if (!validateEventForm()) {
-                              return;
-                            }
-
-                            updateManagedEvent();
-                          }}
-                          disabled={isUpdateManagedEventPending}
-                          className="rounded-xl bg-accent px-3 py-2 text-white disabled:bg-faded disabled:cursor-not-allowed"
-                        >
-                          {isUpdateManagedEventPending ? "Mentés..." : "Mentés"}
-                        </button>
-                        <button
-                          onClick={() => {
-                            setIsEditingEvent(false);
-                            if (selectedEvent) {
-                              setEventForm({
-                                name: selectedEvent.name,
-                                description: selectedEvent.description,
-                                location: selectedEvent.location,
-                                classroom: selectedEvent.classroom,
-                                date: toLocalInputValue(selectedEvent.date),
-                                maxParticipants: selectedEvent.maxParticipants
-                                  ? String(selectedEvent.maxParticipants)
-                                  : "",
-                                updatedBy: selectedEvent.updatedBy
-                                  ? String(selectedEvent.updatedBy)
-                                  : "",
-                              });
-                            }
-                          }}
-                          className="rounded-xl border border-faded/40 px-3 py-2 text-faded"
-                        >
-                          Mégse
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                    <div className="rounded-xl border border-faded/20 bg-secondary/35 px-3 py-2 inline-flex items-center gap-2">
-                      <UserRound size={16} className="text-accent" />
-                      <span>
-                        Szervező: {selectedEvent?.creator || "Ismeretlen"}
-                      </span>
-                    </div>
-                    <div className="rounded-xl border border-faded/20 bg-secondary/35 px-3 py-2 inline-flex items-center gap-2">
-                      <CalendarDays size={16} className="text-accent" />
-                      <span>{formatDateTime(selectedEvent?.date)}</span>
-                    </div>
-                    <div className="rounded-xl border border-faded/20 bg-secondary/35 px-3 py-2 inline-flex items-center gap-2">
-                      <MapPin size={16} className="text-accent" />
-                      <span>{selectedEvent?.location || "Nincs helyszín"}</span>
-                    </div>
-                    <div className="rounded-xl border border-faded/20 bg-secondary/35 px-3 py-2 inline-flex items-center gap-2">
-                      <Building2 size={16} className="text-accent" />
-                      <span>
-                        {selectedEvent?.classroom || "Nincs tanterem"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="w-full justify-between flex mt-10 items-center">
-                  <div className=" px-3 py-2 inline-flex text-faded text-sm items-center gap-2">
-                    <CalendarDays size={16} className="" />
-                    <span>
-                      Létrehozva: {formatDateOnly(selectedEvent?.createdAt)}
-                    </span>
-                  </div>
-                  <div className="flex gap-4 items-center">
-                    <div className="text-sm text-gray-600">
-                      {selectedEvent && selectedEvent.maxParticipants
-                        ? `${selectedEvent.registrationCount}/${selectedEvent.maxParticipants} jelentkező`
-                        : selectedEvent
-                          ? `${selectedEvent.registrationCount} jelentkező`
-                          : ""}
-                    </div>
-                    <button
-                      onClick={() => toggleRegistration()}
-                      disabled={!canRegister || isPending}
-                      className="bg-accent text-white text-xl px-3 py-2 hover:bg-accent/60 transition ease-in-out active:scale-95 active:duration-75 rounded-xl cursor-pointer disabled:bg-faded disabled:cursor-not-allowed"
-                    >
-                      {isPending
-                        ? "Feldolgozás..."
-                        : selectedEvent?.isUserRegistered
-                          ? "Lemondás"
-                          : "Jelentkezés"}
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <EventModalDetailsTab
+                selectedEvent={selectedEvent ?? null}
+                canManageSelectedEvent={canManageSelectedEvent}
+                isEditingEvent={isEditingEvent}
+                setIsEditingEvent={setIsEditingEvent}
+                isDeleteManagedEventPending={isDeleteManagedEventPending}
+                onDeleteEvent={confirmDeleteEvent}
+                eventForm={eventForm}
+                usersLite={usersLite}
+                isUpdateManagedEventPending={isUpdateManagedEventPending}
+                setEventForm={setEventForm}
+                onSaveManagedEvent={updateManagedEvent}
+                showWarning={(message) =>
+                  showAlert({ message, tone: "warning" })
+                }
+                canRegister={Boolean(canRegister)}
+                isRegisterPending={isPending}
+                onToggleRegistration={toggleRegistration}
+              />
             ) : activeTab === "news" ? (
-              renderNewsTab()
+              <EventModalNewsTab
+                isEventNewsLoading={isEventNewsLoading}
+                isEventNewsError={isEventNewsError}
+                canManageNews={canManageNews}
+                allNews={allNews}
+                drafts={drafts}
+                newsTitle={newsTitle}
+                setNewsTitle={setNewsTitle}
+                newsContent={newsContent}
+                setNewsContent={setNewsContent}
+                publishNow={publishNow}
+                setPublishNow={setPublishNow}
+                editingDraftId={editingDraftId}
+                canUpdateDraft={canUpdateDraft}
+                canSubmitNews={canSubmitNews}
+                isCreateEventNewsPending={isCreateEventNewsPending}
+                isUpdateEventNewsPending={isUpdateEventNewsPending}
+                isNewsManagementPending={isNewsManagementPending}
+                onCreateEventNews={createEventNews}
+                onSubmitDraftChanges={submitDraftChanges}
+                onCancelDraftEdit={() => {
+                  setEditingDraftId(null);
+                  setNewsTitle("");
+                  setNewsContent("");
+                  setPublishNow(false);
+                }}
+                onEditDraft={(news) => {
+                  setEditingDraftId(news.id);
+                  setNewsTitle(news.title);
+                  setNewsContent(news.content);
+                  setPublishNow(false);
+                }}
+                onPublishDraft={(newsId) =>
+                  updateEventNews({
+                    newsId,
+                    isPublished: true,
+                  })
+                }
+                onMovePublishedToDraft={(newsId) =>
+                  updateEventNews({
+                    newsId,
+                    isPublished: false,
+                  })
+                }
+                onDeleteNews={confirmDeleteNews}
+              />
             ) : activeTab === "discussion" ? (
-              renderDiscussionTab()
+              <EventModalDiscussionTab
+                commentContent={commentContent}
+                setCommentContent={setCommentContent}
+                canSubmitComment={canSubmitComment}
+                isCommentPending={isCommentPending}
+                onCreateComment={createComment}
+                isCommentsLoading={isCommentsLoading}
+                comments={commentsData?.comments ?? []}
+                isDeleteCommentPending={isDeleteCommentPending}
+                onDeleteComment={confirmDeleteComment}
+              />
             ) : (
-              <div className="px-4 sm:px-6 lg:px-10 mt-5 pb-6 flex grow overflow-y-auto flex-col">
-                <div className="text-lg font-semibold">Helyszín</div>
-                <div className="text-faded mt-1 mb-4">
-                  {selectedEvent?.location}
-                </div>
-
-                {selectedEvent ? (
-                  <EventNavigationMap classroom={selectedEvent.classroom} />
-                ) : null}
-              </div>
+              <EventModalPlaceTab selectedEvent={selectedEvent ?? null} />
             )}
           </div>
         </div>

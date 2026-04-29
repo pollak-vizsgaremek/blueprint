@@ -4,7 +4,7 @@ import { useGSAP } from "@gsap/react";
 import { isReducedMotionEnabled } from "@/lib/motion";
 import gsap from "gsap";
 
-export const Evenlist = ({ events }: { events: Event[] }) => {
+export const EventList = ({ events }: { events: Event[] }) => {
   useGSAP(() => {
     if (isReducedMotionEnabled()) {
       return;

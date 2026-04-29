@@ -24,6 +24,7 @@ import {
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMemo, useState } from "react";
+import { extractApiErrorMessage } from "@/lib/errors";
 import { AdminFormModal } from "../../../components/AdminFormModal";
 import { AdminPageHeader } from "../../../components/AdminPageHeader";
 import { AdminStatusBadge } from "../../../components/AdminStatusBadge";
@@ -69,16 +70,6 @@ const registrationManagementUnavailableMessage =
   "A backend jelenleg csak saját jelentkezés létrehozását és törlését támogatja.";
 const commentUpdateUnavailableMessage =
   "A backend kommenteknél jelenleg csak a törlés végpontot támogatja.";
-
-const getErrorMessage = (error: unknown, fallback: string) => {
-  if (axios.isAxiosError(error)) {
-    return (
-      error.response?.data?.message ?? error.response?.data?.error ?? fallback
-    );
-  }
-
-  return fallback;
-};
 
 const AdminEventDetailsPage = () => {
   const params = useParams<{ id: string }>();
@@ -235,7 +226,10 @@ const AdminEventDetailsPage = () => {
     onError: (error) => {
       setMessage({
         type: "error",
-        text: getErrorMessage(error, "A jelentkezés hozzáadása sikertelen."),
+        text: extractApiErrorMessage(
+          error,
+          "A jelentkezés hozzáadása sikertelen.",
+        ),
       });
     },
   });
@@ -262,7 +256,10 @@ const AdminEventDetailsPage = () => {
     onError: (error) => {
       setMessage({
         type: "error",
-        text: getErrorMessage(error, "A jelentkezés frissítése sikertelen."),
+        text: extractApiErrorMessage(
+          error,
+          "A jelentkezés frissítése sikertelen.",
+        ),
       });
     },
   });
@@ -285,7 +282,10 @@ const AdminEventDetailsPage = () => {
     onError: (error) => {
       setMessage({
         type: "error",
-        text: getErrorMessage(error, "A jelentkezés törlése sikertelen."),
+        text: extractApiErrorMessage(
+          error,
+          "A jelentkezés törlése sikertelen.",
+        ),
       });
     },
   });
@@ -331,7 +331,10 @@ const AdminEventDetailsPage = () => {
     onError: (error) => {
       setMessage({
         type: "error",
-        text: getErrorMessage(error, "Az eseményhír mentése sikertelen."),
+        text: extractApiErrorMessage(
+          error,
+          "Az eseményhír mentése sikertelen.",
+        ),
       });
     },
   });
@@ -354,7 +357,10 @@ const AdminEventDetailsPage = () => {
     onError: (error) => {
       setMessage({
         type: "error",
-        text: getErrorMessage(error, "Az eseményhír törlése sikertelen."),
+        text: extractApiErrorMessage(
+          error,
+          "Az eseményhír törlése sikertelen.",
+        ),
       });
     },
   });
@@ -380,7 +386,7 @@ const AdminEventDetailsPage = () => {
     onError: (error) => {
       setMessage({
         type: "error",
-        text: getErrorMessage(error, "A komment frissítése sikertelen."),
+        text: extractApiErrorMessage(error, "A komment frissítése sikertelen."),
       });
     },
   });
@@ -402,7 +408,7 @@ const AdminEventDetailsPage = () => {
     onError: (error) => {
       setMessage({
         type: "error",
-        text: getErrorMessage(error, "A komment törlése sikertelen."),
+        text: extractApiErrorMessage(error, "A komment törlése sikertelen."),
       });
     },
   });

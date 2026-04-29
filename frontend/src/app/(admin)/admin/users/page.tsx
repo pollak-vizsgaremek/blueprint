@@ -16,6 +16,7 @@ import {
   Users,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { extractApiErrorMessage } from "@/lib/errors";
 import { AdminFormModal } from "../../components/AdminFormModal";
 import { AdminPageHeader } from "../../components/AdminPageHeader";
 import { AdminStatusBadge } from "../../components/AdminStatusBadge";
@@ -43,16 +44,6 @@ const initialFormState: UserFormState = {
   role: "user",
   status: "active",
   emailVerified: false,
-};
-
-const getErrorMessage = (error: unknown, fallback: string) => {
-  if (axios.isAxiosError(error)) {
-    return (
-      error.response?.data?.message ?? error.response?.data?.error ?? fallback
-    );
-  }
-
-  return fallback;
 };
 
 const UsersAdminPage = () => {
@@ -156,7 +147,10 @@ const UsersAdminPage = () => {
     onError: (error) => {
       setMessage({
         type: "error",
-        text: getErrorMessage(error, "A felhasználó mentése sikertelen."),
+        text: extractApiErrorMessage(
+          error,
+          "A felhasználó mentése sikertelen.",
+        ),
       });
     },
   });
@@ -181,7 +175,10 @@ const UsersAdminPage = () => {
     onError: (error) => {
       setMessage({
         type: "error",
-        text: getErrorMessage(error, "A felhasználó deaktiválása sikertelen."),
+        text: extractApiErrorMessage(
+          error,
+          "A felhasználó deaktiválása sikertelen.",
+        ),
       });
     },
   });

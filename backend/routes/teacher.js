@@ -9,6 +9,7 @@ import {
   getTeacherProfile,
   updateOwnTeacherAvailability,
   updateTeacherAppointmentStatus,
+  updateTeacherEvent,
   updateTeacherProfile,
 } from "../controllers/teacherController.js";
 import { authenticateTeacherToken } from "../middleware/auth.js";
@@ -53,6 +54,12 @@ router.post(
   authenticateTeacherToken,
   uploadEventImage,
   createTeacherEvent,
+);
+router.put(
+  "/events/:eventId",
+  authenticateTeacherToken,
+  uploadEventImage,
+  updateTeacherEvent,
 );
 
 export default router;

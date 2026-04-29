@@ -424,12 +424,12 @@ export const deleteOwnTeacherAvailability = async (req, res) => {
 };
 
 export const getTeacherCreatedEvents = async (req, res) => {
-  const teacherName = req.user.name;
+  const teacherId = req.user.id;
 
   try {
     const events = await prisma.event.findMany({
       where: {
-        creator: teacherName,
+        createdBy: teacherId,
         deletedAt: null,
       },
       include: {
@@ -478,8 +478,15 @@ export const getTeacherCreatedEvents = async (req, res) => {
 };
 
 export const createTeacherEvent = async (req, res) => {
-  let { name, description, location, date, maxParticipants, creator, classroom } =
-    req.body;
+  let {
+    name,
+    description,
+    location,
+    date,
+    maxParticipants,
+    creator,
+    classroom,
+  } = req.body;
 
   try {
     const normalizedCreator = typeof creator === "string" ? creator.trim() : "";
@@ -526,6 +533,7 @@ export const createTeacherEvent = async (req, res) => {
         description,
         imageUrl,
         creator: normalizedCreator,
+        createdBy: req.user.id,
         location,
         classroom: normalizedClassroom,
         date: new Date(date),
@@ -539,6 +547,139 @@ export const createTeacherEvent = async (req, res) => {
     });
   } catch (error) {
     console.error("Error creating teacher event:", error);
+
+    if (req.uploadedImage) {
+      deleteEventImageFromMinio(req.uploadedImage.url);
+    }
+
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+export const updateTeacherEvent = async (req, res) => {
+  const teacherId = req.user.id;
+  const eventId = parseInt(req.params.eventId, 10);
+  let {
+    name,
+    description,
+    location,
+    date,
+    maxParticipants,
+    creator,
+    classroom,
+  } = req.body;
+
+  if (Number.isNaN(eventId)) {
+    if (req.uploadedImage) {
+      deleteEventImageFromMinio(req.uploadedImage.url);
+    }
+
+    return res.status(400).json({
+      error: "Invalid event ID",
+      message: "Event ID must be a number",
+    });
+  }
+
+  try {
+    const existingEvent = await prisma.event.findFirst({
+      where: {
+        id: eventId,
+        deletedAt: null,
+      },
+    });
+
+    if (!existingEvent) {
+      if (req.uploadedImage) {
+        deleteEventImageFromMinio(req.uploadedImage.url);
+      }
+
+      return res.status(404).json({ error: "Event not found" });
+    }
+
+    if (existingEvent.createdBy !== teacherId) {
+      if (req.uploadedImage) {
+        deleteEventImageFromMinio(req.uploadedImage.url);
+      }
+
+      return res.status(403).json({
+        error: "Forbidden",
+        message: "You can only edit your own events",
+      });
+    }
+
+    const normalizedCreator = typeof creator === "string" ? creator.trim() : "";
+    const normalizedClassroom =
+      typeof classroom === "string" ? classroom.trim() : "";
+
+    if (
+      !name ||
+      !description ||
+      !location ||
+      !date ||
+      !normalizedCreator ||
+      !normalizedClassroom
+    ) {
+      if (req.uploadedImage) {
+        deleteEventImageFromMinio(req.uploadedImage.url);
+      }
+
+      return res.status(400).json({
+        error: "Missing required fields",
+        message:
+          "Name, description, location, date, creator, and classroom are required",
+      });
+    }
+
+    if (
+      maxParticipants !== undefined &&
+      maxParticipants !== null &&
+      maxParticipants !== ""
+    ) {
+      maxParticipants = parseInt(maxParticipants, 10);
+
+      if (Number.isNaN(maxParticipants) || maxParticipants <= 0) {
+        if (req.uploadedImage) {
+          deleteEventImageFromMinio(req.uploadedImage.url);
+        }
+
+        return res.status(400).json({
+          error: "Invalid maxParticipants",
+          message: "Maximum participants must be a positive integer",
+        });
+      }
+    } else {
+      maxParticipants = null;
+    }
+
+    const updateData = {
+      name,
+      description,
+      location,
+      date: new Date(date),
+      maxParticipants: maxParticipants || null,
+      creator: normalizedCreator,
+      classroom: normalizedClassroom,
+    };
+
+    if (req.uploadedImage) {
+      updateData.imageUrl = req.uploadedImage.url;
+    }
+
+    const updatedEvent = await prisma.event.update({
+      where: { id: eventId },
+      data: updateData,
+    });
+
+    if (req.uploadedImage && existingEvent.imageUrl) {
+      deleteEventImageFromMinio(existingEvent.imageUrl);
+    }
+
+    res.json({
+      message: "Event updated successfully",
+      event: updatedEvent,
+    });
+  } catch (error) {
+    console.error("Error updating teacher event:", error);
 
     if (req.uploadedImage) {
       deleteEventImageFromMinio(req.uploadedImage.url);

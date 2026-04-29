@@ -30,6 +30,7 @@ model user {
   deletedAt    DateTime?
   registrations registration[]
   eventsUpdated event[]        @relation("EventUpdater")
+  eventsCreated event[]        @relation("EventCreator")
   notifications notification[]
   teacherReservations teacherReservation[] @relation("TeacherReservations")
   studentReservations teacherReservation[] @relation("StudentReservations")
@@ -68,11 +69,15 @@ model event {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   updatedBy     Int?
+  createdBy     Int?
   deletedAt     DateTime?
   updater       user?          @relation("EventUpdater", fields: [updatedBy], references: [id])
+  creatorUser   user?          @relation("EventCreator", fields: [createdBy], references: [id])
   registrations registration[]
   eventNews     eventNews[]
   comments      eventComment[]
+
+  @@index([createdBy, deletedAt])
 }
 
 model registration {

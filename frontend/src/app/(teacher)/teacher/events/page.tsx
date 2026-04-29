@@ -2,7 +2,11 @@
 
 import { Spinner } from "@/components/Spinner";
 import { DataState } from "@/components/ui/DataState";
-import { EventWithRegistrationInfo, TeacherEventsResponse } from "@/types";
+import {
+  CreateEventResponse,
+  EventWithRegistrationInfo,
+  TeacherEventsResponse,
+} from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import {
@@ -75,6 +79,8 @@ const TeacherEventsPage = () => {
   const [form, setForm] = useState<EventFormState>(initialFormState);
   const [image, setImage] = useState<File | null>(null);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [editingEvent, setEditingEvent] =
+    useState<EventWithRegistrationInfo | null>(null);
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -103,6 +109,7 @@ const TeacherEventsPage = () => {
   const resetForm = () => {
     setForm(initialFormState);
     setImage(null);
+    setEditingEvent(null);
     setIsFormModalOpen(false);
   };
 
@@ -110,6 +117,34 @@ const TeacherEventsPage = () => {
     setMessage(null);
     setForm(initialFormState);
     setImage(null);
+    setEditingEvent(null);
+    setIsFormModalOpen(true);
+  };
+
+  const openEditModal = (event: EventWithRegistrationInfo) => {
+    setMessage(null);
+    setImage(null);
+    setEditingEvent(event);
+
+    const eventDate = new Date(event.date);
+    const dateInputValue = Number.isNaN(eventDate.getTime())
+      ? ""
+      : new Date(eventDate.getTime() - eventDate.getTimezoneOffset() * 60000)
+          .toISOString()
+          .slice(0, 16);
+
+    setForm({
+      name: event.name,
+      creator: event.creator,
+      description: event.description,
+      location: event.location,
+      classroom: event.classroom || "",
+      date: dateInputValue,
+      maxParticipants: event.maxParticipants
+        ? String(event.maxParticipants)
+        : "",
+    });
+
     setIsFormModalOpen(true);
   };
 
@@ -156,6 +191,53 @@ const TeacherEventsPage = () => {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      if (!editingEvent) {
+        return;
+      }
+
+      const payload = new FormData();
+      payload.append("name", form.name.trim());
+      payload.append("creator", form.creator.trim());
+      payload.append("description", form.description.trim());
+      payload.append("location", form.location.trim());
+      payload.append("classroom", form.classroom);
+      payload.append("date", new Date(form.date).toISOString());
+
+      if (form.maxParticipants.trim()) {
+        payload.append("maxParticipants", form.maxParticipants.trim());
+      }
+
+      if (image) {
+        payload.append("image", image);
+      }
+
+      const { data } = await axios.put<CreateEventResponse>(
+        `${process.env.NEXT_PUBLIC_API_URL}/teacher/events/${editingEvent.id}`,
+        payload,
+        {
+          withCredentials: true,
+        },
+      );
+
+      return data;
+    },
+    onSuccess: () => {
+      resetForm();
+      setMessage({ type: "success", text: "Esemény frissítve." });
+      queryClient.invalidateQueries({ queryKey: ["teacher-events"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-events"] });
+    },
+    onError: (error) => {
+      setMessage({
+        type: "error",
+        text: getErrorMessage(error, "Az esemény frissítése sikertelen."),
+      });
+    },
+  });
+
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -184,6 +266,11 @@ const TeacherEventsPage = () => {
         type: "error",
         text: "A maximális létszám pozitív szám legyen.",
       });
+      return;
+    }
+
+    if (editingEvent) {
+      updateMutation.mutate();
       return;
     }
 
@@ -285,13 +372,16 @@ const TeacherEventsPage = () => {
                     </div>
 
                     <div className="mt-4">
-                      <Link
-                        href={`/teacher/events/${event.id}`}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-faded/30 px-3 py-1.5 text-sm hover:bg-faded/10 transition ease-in-out"
-                      >
-                        <Pen size={14} />
-                        Szerkesztés
-                      </Link>
+                      <div className="inline-flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(event)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-faded/30 px-3 py-1.5 text-sm hover:bg-faded/10 transition ease-in-out cursor-pointer"
+                        >
+                          <Pen size={14} />
+                          Szerkesztés
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -304,8 +394,12 @@ const TeacherEventsPage = () => {
       <TeacherFormModal
         isOpen={isFormModalOpen}
         onClose={resetForm}
-        title="Új esemény"
-        description="Tanárként létrehozható publikus esemény"
+        title={editingEvent ? "Esemény szerkesztése" : "Új esemény"}
+        description={
+          editingEvent
+            ? "A saját eseményed adatainak módosítása"
+            : "Tanárként létrehozható publikus esemény"
+        }
         maxWidthClassName="max-w-4xl"
       >
         <form className="space-y-4" onSubmit={handleSubmit}>
@@ -441,10 +535,14 @@ const TeacherEventsPage = () => {
 
           <button
             type="submit"
-            disabled={createMutation.isPending}
+            disabled={createMutation.isPending || updateMutation.isPending}
             className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 font-medium text-white hover:bg-accent/80 transition ease-in-out disabled:bg-faded disabled:cursor-not-allowed cursor-pointer"
           >
-            {createMutation.isPending ? "Mentés..." : "Létrehozás"}
+            {createMutation.isPending || updateMutation.isPending
+              ? "Mentés..."
+              : editingEvent
+                ? "Frissítés"
+                : "Létrehozás"}
           </button>
         </form>
       </TeacherFormModal>

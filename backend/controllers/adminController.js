@@ -700,8 +700,15 @@ export const updateAdminComment = async (req, res) => {
 };
 
 export const createEvent = async (req, res) => {
-  let { name, description, location, date, maxParticipants, classroom, creator } =
-    req.body;
+  let {
+    name,
+    description,
+    location,
+    date,
+    maxParticipants,
+    classroom,
+    creator,
+  } = req.body;
 
   try {
     const normalizedCreator = typeof creator === "string" ? creator.trim() : "";
@@ -760,6 +767,7 @@ export const createEvent = async (req, res) => {
         description,
         imageUrl,
         creator: normalizedCreator,
+        createdBy: req.user.id,
         location,
         classroom: normalizedClassroom,
         date: new Date(date),

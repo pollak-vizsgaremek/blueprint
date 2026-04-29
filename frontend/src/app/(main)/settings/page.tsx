@@ -6,6 +6,7 @@ import {
   AppSettings,
   BooleanAppSettingKey,
   DEFAULT_APP_SETTINGS,
+  normalizeAppSettings,
 } from "@/lib/appSettings";
 import { isReducedMotionEnabled } from "@/lib/motion";
 import { APP_SETTINGS_UPDATED_EVENT } from "@/lib/useAppSettings";
@@ -83,9 +84,9 @@ const SettingsPage = () => {
 
   const allowedSettingJson = useMemo<UserSettingJson>(
     () => ({
-      emailReminders: settings.emailReminders,
+      inAppReminders: settings.inAppReminders,
       eventUpdates: settings.eventUpdates,
-      commentsReplies: settings.commentsReplies,
+      appointmentUpdates: settings.appointmentUpdates,
       marketingNews: settings.marketingNews,
       showPastEvents: settings.showPastEvents,
       autoOpenEventModal: settings.autoOpenEventModal,
@@ -125,16 +126,16 @@ const SettingsPage = () => {
         ? (JSON.parse(rawSettings) as Partial<AppSettings>)
         : {};
 
-      setSettings({
-        ...DEFAULT_APP_SETTINGS,
-        ...parsedSettings,
-        ...(user.settingJson ?? {}),
-      });
+      setSettings(
+        normalizeAppSettings({
+          ...parsedSettings,
+          ...(user.settingJson ?? {}),
+        }),
+      );
     } catch {
-      setSettings({
-        ...DEFAULT_APP_SETTINGS,
-        ...(user.settingJson ?? {}),
-      });
+      setSettings(
+        normalizeAppSettings(user.settingJson ?? DEFAULT_APP_SETTINGS),
+      );
     } finally {
       hasInitializedFromDb.current = true;
       setIsHydrated(true);
@@ -209,9 +210,9 @@ const SettingsPage = () => {
 
   const notificationOptions: ToggleOption[] = [
     {
-      id: "emailReminders",
-      label: "Email emlékeztetők",
-      description: "Emlékeztető üzenet esemény előtt 24 órával.",
+      id: "inAppReminders",
+      label: "Alkalmazáson belüli emlékeztetők",
+      description: "Értesítés esemény vagy időpont előtt körülbelül 24 órával.",
     },
     {
       id: "eventUpdates",
@@ -219,9 +220,10 @@ const SettingsPage = () => {
       description: "Értesítés időpont- vagy helyszínváltozásról.",
     },
     {
-      id: "commentsReplies",
-      label: "Komment válaszok",
-      description: "Értesítés, ha válaszolnak a hozzászólásodra.",
+      id: "appointmentUpdates",
+      label: "Időpont frissítések",
+      description:
+        "Értesítés időpont létrehozásról, módosításról és lemondásról.",
     },
     {
       id: "marketingNews",

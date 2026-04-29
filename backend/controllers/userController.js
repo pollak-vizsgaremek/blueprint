@@ -8,9 +8,9 @@ import {
 } from "../services/emailService.js";
 
 const DEFAULT_SETTING_JSON = {
-  emailReminders: true,
+  inAppReminders: true,
   eventUpdates: true,
-  commentsReplies: false,
+  appointmentUpdates: true,
   marketingNews: false,
   showPastEvents: true,
   autoOpenEventModal: true,
@@ -28,9 +28,14 @@ const normalizeSettingJson = (value) => {
     return { ...DEFAULT_SETTING_JSON };
   }
 
+  const legacy = value;
+
   return {
     ...DEFAULT_SETTING_JSON,
-    ...value,
+    ...legacy,
+    appointmentUpdates:
+      legacy.appointmentUpdates ?? legacy.commentsReplies ?? true,
+    inAppReminders: legacy.inAppReminders ?? legacy.emailReminders ?? true,
   };
 };
 

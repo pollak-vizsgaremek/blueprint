@@ -2,6 +2,41 @@ import bcrypt from "bcrypt";
 import prisma from "../config/database.js";
 import { deleteEventImageFromMinio } from "../middleware/upload.js";
 import { findMatchingAvailabilitySlot } from "../services/teacherAvailabilityService.js";
+import { createBulkNotifications } from "../services/notificationService.js";
+
+const notifyUsersAboutMarketingNews = async (news) => {
+  if (!news?.id || !news?.title) {
+    return;
+  }
+
+  const users = await prisma.user.findMany({
+    where: {
+      deletedAt: null,
+      status: "active",
+      role: {
+        in: ["user", "teacher", "admin"],
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (users.length === 0) {
+    return;
+  }
+
+  await createBulkNotifications(
+    users.map((user) => ({
+      userId: user.id,
+      title: "Új platform hír",
+      message: news.title,
+      url: "/news",
+      type: "info",
+      category: "marketing",
+    })),
+  );
+};
 
 const getTeacherClassroom = async (teacherId) => {
   const teacher = await prisma.user.findUnique({
@@ -498,6 +533,10 @@ export const createNews = async (req, res) => {
       },
     });
 
+    if (news.isPublished) {
+      await notifyUsersAboutMarketingNews(news);
+    }
+
     res.status(201).json({ message: "News created successfully", news });
   } catch (error) {
     console.error("Error creating news:", error);
@@ -551,6 +590,10 @@ export const updateNews = async (req, res) => {
         author: { select: { id: true, name: true, email: true } },
       },
     });
+
+    if (!existing.isPublished && updated.isPublished) {
+      await notifyUsersAboutMarketingNews(updated);
+    }
 
     res.json({ message: "News updated successfully", news: updated });
   } catch (error) {

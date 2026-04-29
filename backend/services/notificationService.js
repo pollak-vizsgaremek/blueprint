@@ -10,18 +10,17 @@ const normalizeType = (type) => {
 };
 
 const DEFAULT_NOTIFICATION_PREFERENCES = {
-  emailReminders: true,
+  inAppReminders: true,
   eventUpdates: true,
-  commentsReplies: false,
+  appointmentUpdates: true,
   marketingNews: false,
 };
 
 const categoryToSettingKey = {
   event_updates: "eventUpdates",
-  appointments: "eventUpdates",
-  comments: "commentsReplies",
+  appointments: "appointmentUpdates",
   marketing: "marketingNews",
-  reminders: "emailReminders",
+  reminders: "inAppReminders",
 };
 
 const normalizeSettingJson = (settingJson) => {
@@ -29,9 +28,14 @@ const normalizeSettingJson = (settingJson) => {
     return DEFAULT_NOTIFICATION_PREFERENCES;
   }
 
+  const legacy = settingJson;
+
   return {
     ...DEFAULT_NOTIFICATION_PREFERENCES,
-    ...settingJson,
+    ...legacy,
+    appointmentUpdates:
+      legacy.appointmentUpdates ?? legacy.commentsReplies ?? true,
+    inAppReminders: legacy.inAppReminders ?? legacy.emailReminders ?? true,
   };
 };
 

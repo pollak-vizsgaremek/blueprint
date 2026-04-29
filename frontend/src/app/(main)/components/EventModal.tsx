@@ -32,6 +32,7 @@ import {
   EventEditFormState,
 } from "@/lib/eventManage";
 import { queryKeys } from "@/lib/queryKeys";
+import { notify } from "@/lib/notify";
 
 export const EventModal = () => {
   const { isOpen, closeModal, selectedEvent, setEvent } = useModal();
@@ -146,6 +147,12 @@ export const EventModal = () => {
 
       queryClient.invalidateQueries({ queryKey: queryKeys.events });
       queryClient.invalidateQueries({ queryKey: queryKeys.myEvents });
+
+      notify.success(
+        selectedEvent.isUserRegistered
+          ? "Sikeresen lemondtad a jelentkezést."
+          : "Sikeresen jelentkeztél az eseményre.",
+      );
     },
     onError: (error) => {
       if (axios.isAxiosError(error)) {
@@ -153,11 +160,11 @@ export const EventModal = () => {
           error.response?.data?.message ??
           error.response?.data?.error ??
           "Jelentkezés sikertelen.";
-        showAlert({ message: errorMessage, tone: "error" });
+        notify.error(errorMessage);
         return;
       }
 
-      showAlert({ message: "Jelentkezés sikertelen.", tone: "error" });
+      notify.error("Jelentkezés sikertelen.");
     },
   });
 
@@ -582,6 +589,27 @@ export const EventModal = () => {
     deleteManagedEvent();
   };
 
+  const handleToggleRegistration = async () => {
+    if (!selectedEvent?.isUserRegistered) {
+      toggleRegistration();
+      return;
+    }
+
+    const confirmed = await showConfirm({
+      message:
+        "Biztosan le szeretnéd mondani a jelentkezésedet erre az eseményre?",
+      tone: "warning",
+      confirmText: "Lemondás",
+      cancelText: "Mégse",
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    toggleRegistration();
+  };
+
   const canManageNews = eventNewsData?.canManageNews ?? false;
   const allNews = eventNewsData?.news ?? [];
   const drafts = allNews.filter((news) => !news.isPublished);
@@ -658,7 +686,7 @@ export const EventModal = () => {
                 }
                 canRegister={Boolean(canRegister)}
                 isRegisterPending={isPending}
-                onToggleRegistration={toggleRegistration}
+                onToggleRegistration={handleToggleRegistration}
               />
             ) : activeTab === "news" ? (
               <EventModalNewsTab

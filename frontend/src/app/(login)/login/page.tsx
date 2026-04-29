@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import axios from "axios";
 import Image from "next/image";
+import { notify } from "@/lib/notify";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -28,6 +29,7 @@ const LoginPage = () => {
     try {
       // Use the login function from auth context
       await login(email, password);
+      notify.success("Sikeres bejelentkezés.");
 
       router.replace("/");
       router.refresh();
@@ -44,6 +46,11 @@ const LoginPage = () => {
           ? authError.message
           : "A bejelentkezés sikertelen",
       );
+      notify.error(
+        authError instanceof Error
+          ? authError.message
+          : "A bejelentkezés sikertelen",
+      );
     } finally {
       setLoading(false);
     }
@@ -55,6 +62,7 @@ const LoginPage = () => {
     if (!targetEmail) {
       setResendError("A kérés sikertelen.");
       setResendMessage("");
+      notify.warning("Add meg az email címed az újraküldéshez.");
       return;
     }
 
@@ -76,8 +84,12 @@ const LoginPage = () => {
       setResendMessage(
         data?.message || "Ha létezik a fiók, elküldtük a megerősítő emailt.",
       );
+      notify.success(
+        data?.message || "Ha létezik a fiók, elküldtük a megerősítő emailt.",
+      );
     } catch (err) {
       setResendError("A kérés sikertelen.");
+      notify.error("A kérés sikertelen.");
     } finally {
       setIsResendLoading(false);
     }

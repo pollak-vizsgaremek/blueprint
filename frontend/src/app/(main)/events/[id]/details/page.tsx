@@ -28,6 +28,7 @@ import {
   validateEventEditForm,
 } from "@/lib/eventManage";
 import { queryKeys } from "@/lib/queryKeys";
+import { notify } from "@/lib/notify";
 
 const EventDetailsTabPage = () => {
   const queryClient = useQueryClient();
@@ -107,11 +108,33 @@ const EventDetailsTabPage = () => {
         );
       },
       onSuccess: () => {
+        if (!event) {
+          return;
+        }
+
         queryClient.invalidateQueries({ queryKey: queryKeys.events });
         queryClient.invalidateQueries({
           queryKey: queryKeys.eventDetail(eventId),
         });
         queryClient.invalidateQueries({ queryKey: queryKeys.myEvents });
+
+        notify.success(
+          event.isUserRegistered
+            ? "Sikeresen lemondtad a jelentkezést."
+            : "Sikeresen jelentkeztél az eseményre.",
+        );
+      },
+      onError: (error) => {
+        if (axios.isAxiosError(error)) {
+          const errorMessage =
+            error.response?.data?.message ??
+            error.response?.data?.error ??
+            "Jelentkezés sikertelen.";
+          notify.error(errorMessage);
+          return;
+        }
+
+        notify.error("Jelentkezés sikertelen.");
       },
     });
 
@@ -209,6 +232,27 @@ const EventDetailsTabPage = () => {
     deleteManagedEvent();
   };
 
+  const handleToggleRegistration = async () => {
+    if (!event.isUserRegistered) {
+      toggleRegistration();
+      return;
+    }
+
+    const confirmed = await showConfirm({
+      message:
+        "Biztosan le szeretnéd mondani a jelentkezésedet erre az eseményre?",
+      tone: "warning",
+      confirmText: "Lemondás",
+      cancelText: "Mégse",
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    toggleRegistration();
+  };
+
   return (
     <div className="px-4 sm:px-6 lg:px-10 mt-5 pb-8 sm:pb-10 flex justify-between flex-col grow page-content">
       <div>
@@ -288,7 +332,7 @@ const EventDetailsTabPage = () => {
               : `${event.registrationCount} jelentkező`}
           </div>
           <button
-            onClick={() => toggleRegistration()}
+            onClick={handleToggleRegistration}
             disabled={!canRegister || isRegistrationPending}
             className="bg-accent text-white text-base sm:text-lg px-3 py-2 hover:bg-accent/60 transition ease-in-out active:scale-95 active:duration-75 rounded-xl cursor-pointer disabled:bg-faded disabled:cursor-not-allowed"
           >

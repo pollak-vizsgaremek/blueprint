@@ -11,9 +11,9 @@ export interface ErrorResponse {
 }
 
 export interface UserSettingJson {
-  emailReminders?: boolean;
+  inAppReminders?: boolean;
   eventUpdates?: boolean;
-  commentsReplies?: boolean;
+  appointmentUpdates?: boolean;
   marketingNews?: boolean;
   showPastEvents?: boolean;
   autoOpenEventModal?: boolean;

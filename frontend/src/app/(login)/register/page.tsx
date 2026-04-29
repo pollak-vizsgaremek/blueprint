@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { DatePicker } from "@/components/ui/DatePicker";
 import Link from "next/link";
 import Image from "next/image";
+import { notify } from "@/lib/notify";
 
 const RegisterPage = () => {
   const [name, setName] = useState("");
@@ -27,12 +28,14 @@ const RegisterPage = () => {
     // Client-side validation
     if (password !== confirmPassword) {
       setError("A jelszavak nem egyeznek");
+      notify.warning("A jelszavak nem egyeznek.");
       setLoading(false);
       return;
     }
 
     if (password.length < 6) {
       setError("A jelszónak legalább 6 karakter hosszúnak kell lennie");
+      notify.warning("A jelszónak legalább 6 karakter hosszúnak kell lennie.");
       setLoading(false);
       return;
     }
@@ -40,6 +43,7 @@ const RegisterPage = () => {
     // Validate date of birth
     if (!dateOfBirth) {
       setError("Kérjük, válasszon születési dátumot");
+      notify.warning("Kérjük, válasszon születési dátumot.");
       setLoading(false);
       return;
     }
@@ -53,13 +57,15 @@ const RegisterPage = () => {
 
       // Use the register function from auth context
       await register(name, email, password, dateString);
+      notify.success("Sikeres regisztráció.");
 
       router.replace("/");
       router.refresh();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "A regisztráció sikertelen",
-      );
+      const message =
+        err instanceof Error ? err.message : "A regisztráció sikertelen";
+      setError(message);
+      notify.error(message);
     } finally {
       setLoading(false);
     }

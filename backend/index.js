@@ -14,6 +14,7 @@ import notificationRoutes from "./routes/notifications.js";
 import teacherAvailabilityRoutes from "./routes/teacherAvailability.js";
 import teacherRoutes from "./routes/teacher.js";
 import { globalRateLimiter } from "./middleware/rateLimit.js";
+import { startReminderScheduler } from "./services/reminderService.js";
 
 const app = express();
 app.set("trust proxy", 1);
@@ -108,4 +109,5 @@ app.use("/admin/notifications", adminNotificationsRoutes);
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
+  startReminderScheduler();
 });

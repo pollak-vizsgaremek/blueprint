@@ -3,6 +3,7 @@
 import { Spinner } from "@/components/Spinner";
 import { Calendar } from "@/components/ui/Calendar";
 import { usePopupModal } from "@/contexts/PopupModalContext";
+import { notify } from "@/lib/notify";
 import { useAppSettings } from "@/lib/useAppSettings";
 import { isReducedMotionEnabled } from "@/lib/motion";
 import {
@@ -136,7 +137,7 @@ const toDateInputValue = (date: Date) => {
 
 const AppointmentsPage = () => {
   const queryClient = useQueryClient();
-  const { showAlert, showConfirm } = usePopupModal();
+  const { showConfirm } = usePopupModal();
   const { settings } = useAppSettings();
 
   const [form, setForm] = useState<FormState>(initialFormState);
@@ -349,6 +350,7 @@ const AppointmentsPage = () => {
     onSuccess: () => {
       resetForm();
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      notify.success("Időpont sikeresen létrehozva.");
     },
     onError: (error) => {
       if (axios.isAxiosError(error)) {
@@ -356,11 +358,11 @@ const AppointmentsPage = () => {
           error.response?.data?.message ??
           error.response?.data?.error ??
           "Időpont létrehozása sikertelen.";
-        showAlert({ message: errorMessage, tone: "error" });
+        notify.error(errorMessage);
         return;
       }
 
-      showAlert({ message: "Időpont létrehozása sikertelen.", tone: "error" });
+      notify.error("Időpont létrehozása sikertelen.");
     },
   });
 
@@ -376,6 +378,7 @@ const AppointmentsPage = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      notify.success("Időpont sikeresen törölve.");
     },
     onError: (error) => {
       if (axios.isAxiosError(error)) {
@@ -383,11 +386,11 @@ const AppointmentsPage = () => {
           error.response?.data?.message ??
           error.response?.data?.error ??
           "Időpont törlése sikertelen.";
-        showAlert({ message: errorMessage, tone: "error" });
+        notify.error(errorMessage);
         return;
       }
 
-      showAlert({ message: "Időpont törlése sikertelen.", tone: "error" });
+      notify.error("Időpont törlése sikertelen.");
     },
   });
 
@@ -413,21 +416,18 @@ const AppointmentsPage = () => {
 
     const teacherId = parseInt(form.teacherId, 10);
     if (Number.isNaN(teacherId)) {
-      await showAlert({ message: "Kérlek válassz tanárt.", tone: "warning" });
+      notify.warning("Kérlek válassz tanárt.");
       return;
     }
 
     const title = form.title.trim();
     if (!title) {
-      await showAlert({ message: "Kérlek adj meg címet.", tone: "warning" });
+      notify.warning("Kérlek adj meg címet.");
       return;
     }
 
     if (!form.date) {
-      await showAlert({
-        message: "Kérlek add meg a dátumot.",
-        tone: "warning",
-      });
+      notify.warning("Kérlek add meg a dátumot.");
       return;
     }
 
@@ -436,18 +436,14 @@ const AppointmentsPage = () => {
     );
 
     if (!selectedSlot) {
-      await showAlert({
-        message: "Kérlek válassz elérhető idősávot.",
-        tone: "warning",
-      });
+      notify.warning("Kérlek válassz elérhető idősávot.");
       return;
     }
 
     if (selectedSlot.isTaken) {
-      await showAlert({
-        message: "A kiválasztott idősáv már foglalt. Kérlek válassz másikat.",
-        tone: "warning",
-      });
+      notify.warning(
+        "A kiválasztott idősáv már foglalt. Kérlek válassz másikat.",
+      );
       return;
     }
 
@@ -457,26 +453,19 @@ const AppointmentsPage = () => {
     const endDate = new Date(endIso);
 
     if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
-      await showAlert({
-        message: "Érvénytelen dátum formátum.",
-        tone: "warning",
-      });
+      notify.warning("Érvénytelen dátum formátum.");
       return;
     }
 
     if (endDate <= startDate) {
-      await showAlert({
-        message: "A befejezési időnek későbbinek kell lennie, mint a kezdés.",
-        tone: "warning",
-      });
+      notify.warning(
+        "A befejezési időnek későbbinek kell lennie, mint a kezdés.",
+      );
       return;
     }
 
     if (startDate.getTime() <= Date.now() || endDate.getTime() <= Date.now()) {
-      await showAlert({
-        message: "Csak jövőbeli időpontot lehet foglalni.",
-        tone: "warning",
-      });
+      notify.warning("Csak jövőbeli időpontot lehet foglalni.");
       return;
     }
 
@@ -507,10 +496,7 @@ const AppointmentsPage = () => {
     });
 
     if (hasStudentOverlap) {
-      await showAlert({
-        message: "Már van átfedő időpontod ebben az idősávban.",
-        tone: "warning",
-      });
+      notify.warning("Már van átfedő időpontod ebben az idősávban.");
       return;
     }
 

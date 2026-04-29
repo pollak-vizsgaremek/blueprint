@@ -1,7 +1,7 @@
 export type AppSettings = {
-  emailReminders: boolean;
+  inAppReminders: boolean;
   eventUpdates: boolean;
-  commentsReplies: boolean;
+  appointmentUpdates: boolean;
   marketingNews: boolean;
   showPastEvents: boolean;
   autoOpenEventModal: boolean;
@@ -21,9 +21,9 @@ export type BooleanAppSettingKey = {
 export const APP_SETTINGS_STORAGE_KEY = "blueprint-settings-v1";
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
-  emailReminders: true,
+  inAppReminders: true,
   eventUpdates: true,
-  commentsReplies: false,
+  appointmentUpdates: true,
   marketingNews: false,
   showPastEvents: true,
   autoOpenEventModal: true,
@@ -34,6 +34,25 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   showWeekNumbers: false,
   defaultCalendarView: "month",
   hideCancelledAppointments: true,
+};
+
+type LegacyAppSettings = Partial<AppSettings> & {
+  emailReminders?: boolean;
+  commentsReplies?: boolean;
+};
+
+export const normalizeAppSettings = (
+  input: LegacyAppSettings | null | undefined,
+): AppSettings => {
+  const legacy = input ?? {};
+
+  return {
+    ...DEFAULT_APP_SETTINGS,
+    ...legacy,
+    appointmentUpdates:
+      legacy.appointmentUpdates ?? legacy.commentsReplies ?? true,
+    inAppReminders: legacy.inAppReminders ?? legacy.emailReminders ?? true,
+  };
 };
 
 export const readAppSettings = (): AppSettings => {
@@ -47,12 +66,8 @@ export const readAppSettings = (): AppSettings => {
       return DEFAULT_APP_SETTINGS;
     }
 
-    const parsedSettings = JSON.parse(rawSettings) as Partial<AppSettings>;
-
-    return {
-      ...DEFAULT_APP_SETTINGS,
-      ...parsedSettings,
-    };
+    const parsedSettings = JSON.parse(rawSettings) as LegacyAppSettings;
+    return normalizeAppSettings(parsedSettings);
   } catch {
     return DEFAULT_APP_SETTINGS;
   }

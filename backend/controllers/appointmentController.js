@@ -1,11 +1,11 @@
 import prisma from "../config/database.js";
+import { createBulkNotifications } from "../services/notificationService.js";
+import { findMatchingAvailabilitySlot } from "../services/teacherAvailabilityService.js";
 
 const parseDate = (value) => {
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
-
-const addOneHour = (date) => new Date(date.getTime() + 60 * 60 * 1000);
 
 const isInFuture = (date) => date.getTime() > Date.now();
 
@@ -39,6 +39,7 @@ const mapAppointment = (appointment) => ({
   status: appointment.status,
   startTime: appointment.startTime,
   endTime: appointment.endTime,
+  classroom: appointment.classroom ?? null,
   createdAt: appointment.createdAt,
   updatedAt: appointment.updatedAt,
   teacher: appointment.teacher
@@ -57,6 +58,7 @@ const validateTeacher = async (teacherId) => {
     select: {
       id: true,
       role: true,
+      classroom: true,
     },
   });
 
@@ -131,12 +133,63 @@ export const getCurrentUserAppointments = async (req, res) => {
   }
 };
 
+export const getTeacherOccupiedSlots = async (req, res) => {
+  const teacherId = parseInt(req.params.teacherId, 10);
+
+  if (Number.isNaN(teacherId)) {
+    return res.status(400).json({
+      error: "Invalid teacher ID",
+      message: "Teacher ID must be a number",
+    });
+  }
+
+  try {
+    const teacher = await validateTeacher(teacherId);
+
+    if (!teacher) {
+      return res.status(400).json({
+        error: "Invalid teacher",
+        message: "Selected user is not a teacher",
+      });
+    }
+
+    const occupiedSlots = await prisma.teacherReservation.findMany({
+      where: {
+        teacherId,
+        status: {
+          in: ["pending", "confirmed"],
+        },
+        endTime: {
+          gt: new Date(),
+        },
+      },
+      select: {
+        id: true,
+        startTime: true,
+        endTime: true,
+        status: true,
+      },
+      orderBy: {
+        startTime: "asc",
+      },
+    });
+
+    res.json({
+      message: "Teacher occupied slots retrieved successfully",
+      occupiedSlots,
+    });
+  } catch (error) {
+    console.error("Error fetching teacher occupied slots:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 export const createAppointment = async (req, res) => {
   const studentId = req.user.id;
   const parsedTeacherId = parseInt(req.body?.teacherId, 10);
   const title = normalizeTitle(req.body?.title);
   const startTime = parseDate(req.body?.startTime);
-  const endTime = startTime ? addOneHour(startTime) : null;
+  const endTime = parseDate(req.body?.endTime);
 
   if (Number.isNaN(parsedTeacherId)) {
     return res.status(400).json({
@@ -152,10 +205,17 @@ export const createAppointment = async (req, res) => {
     });
   }
 
-  if (!startTime) {
+  if (!startTime || !endTime) {
     return res.status(400).json({
       error: "Invalid date",
-      message: "startTime must be a valid date",
+      message: "startTime and endTime must be valid dates",
+    });
+  }
+
+  if (endTime <= startTime) {
+    return res.status(400).json({
+      error: "Invalid date range",
+      message: "endTime must be later than startTime",
     });
   }
 
@@ -173,6 +233,20 @@ export const createAppointment = async (req, res) => {
       return res.status(400).json({
         error: "Invalid teacher",
         message: "Selected user is not a teacher",
+      });
+    }
+
+    const availability = await findMatchingAvailabilitySlot({
+      teacherId: parsedTeacherId,
+      startTime,
+      endTime,
+    });
+
+    if (!availability) {
+      return res.status(400).json({
+        error: "Invalid availability",
+        message:
+          "The selected time does not match an available weekly teacher slot",
       });
     }
 
@@ -203,6 +277,7 @@ export const createAppointment = async (req, res) => {
         startTime,
         endTime,
         purpose: title,
+        classroom: teacher.classroom ?? null,
       },
       include: {
         teacher: {
@@ -215,6 +290,25 @@ export const createAppointment = async (req, res) => {
         },
       },
     });
+
+    await createBulkNotifications([
+      {
+        userId: studentId,
+        title: "Időpont létrehozva",
+        message: `Sikeresen létrehoztad az időpontot: ${appointment.purpose || "Új időpont"}`,
+        url: "/appointments",
+        type: "success",
+        category: "appointments",
+      },
+      {
+        userId: parsedTeacherId,
+        title: "Új időpont kérés",
+        message: `Új időpont kérés érkezett tőled: ${appointment.purpose || "Új időpont"}`,
+        url: "/teacher/appointments",
+        type: "info",
+        category: "appointments",
+      },
+    ]);
 
     res.status(201).json({
       message: "Appointment created successfully",
@@ -276,6 +370,7 @@ export const updateAppointment = async (req, res) => {
       }
 
       updateData.teacherId = parsedTeacherId;
+      updateData.classroom = teacher.classroom ?? null;
     }
 
     if (req.body?.title !== undefined) {
@@ -299,7 +394,17 @@ export const updateAppointment = async (req, res) => {
         });
       }
       updateData.startTime = parsed;
-      updateData.endTime = addOneHour(parsed);
+    }
+
+    if (req.body?.endTime !== undefined) {
+      const parsed = parseDate(req.body.endTime);
+      if (!parsed) {
+        return res.status(400).json({
+          error: "Invalid endTime",
+          message: "endTime must be a valid date",
+        });
+      }
+      updateData.endTime = parsed;
     }
 
     if (req.body?.description !== undefined) {
@@ -317,10 +422,36 @@ export const updateAppointment = async (req, res) => {
     const nextEndTime = updateData.endTime || existing.endTime;
     const nextTeacherId = updateData.teacherId || existing.teacherId;
 
+    if (updateData.teacherId === undefined) {
+      const currentTeacher = await validateTeacher(nextTeacherId);
+      updateData.classroom = currentTeacher?.classroom ?? null;
+    }
+
+    if (nextEndTime <= nextStartTime) {
+      return res.status(400).json({
+        error: "Invalid date range",
+        message: "endTime must be later than startTime",
+      });
+    }
+
     if (!isInFuture(nextStartTime) || !isInFuture(nextEndTime)) {
       return res.status(400).json({
         error: "Invalid date range",
         message: "Appointments can only be scheduled for future times",
+      });
+    }
+
+    const availability = await findMatchingAvailabilitySlot({
+      teacherId: nextTeacherId,
+      startTime: nextStartTime,
+      endTime: nextEndTime,
+    });
+
+    if (!availability) {
+      return res.status(400).json({
+        error: "Invalid availability",
+        message:
+          "The selected time does not match an available weekly teacher slot",
       });
     }
 
@@ -360,6 +491,25 @@ export const updateAppointment = async (req, res) => {
       },
     });
 
+    await createBulkNotifications([
+      {
+        userId: studentId,
+        title: "Időpont frissítve",
+        message: `Frissítetted az időpontot: ${updated.purpose || "Időpont"}`,
+        url: "/appointments",
+        type: "info",
+        category: "appointments",
+      },
+      {
+        userId: updated.teacherId,
+        title: "Időpont módosítva",
+        message: `Egy hozzád kapcsolódó időpont módosult: ${updated.purpose || "Időpont"}`,
+        url: "/appointments",
+        type: "warning",
+        category: "appointments",
+      },
+    ]);
+
     res.json({
       message: "Appointment updated successfully",
       appointment: mapAppointment(updated),
@@ -396,6 +546,8 @@ export const deleteAppointment = async (req, res) => {
       },
       select: {
         id: true,
+        teacherId: true,
+        purpose: true,
       },
     });
 
@@ -406,6 +558,25 @@ export const deleteAppointment = async (req, res) => {
     await prisma.teacherReservation.delete({
       where: { id: appointmentId },
     });
+
+    await createBulkNotifications([
+      {
+        userId: studentId,
+        title: "Időpont törölve",
+        message: `Törölted az időpontot: ${existing.purpose || "Időpont"}`,
+        url: "/appointments",
+        type: "warning",
+        category: "appointments",
+      },
+      {
+        userId: existing.teacherId,
+        title: "Időpont lemondva",
+        message: `Egy hozzád kapcsolódó időpont törölve lett: ${existing.purpose || "Időpont"}`,
+        url: "/appointments",
+        type: "warning",
+        category: "appointments",
+      },
+    ]);
 
     res.json({
       message: "Appointment deleted successfully",

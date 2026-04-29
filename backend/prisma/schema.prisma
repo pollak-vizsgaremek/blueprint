@@ -18,6 +18,7 @@ model user {
   id           Int            @id @default(autoincrement())
   name         String   
   email        String         @unique
+  classroom    String?
   emailVerified Boolean       @default(false)
   password     String  
   dateOfBirth  DateTime       @db.Date
@@ -29,12 +30,30 @@ model user {
   deletedAt    DateTime?
   registrations registration[]
   eventsUpdated event[]        @relation("EventUpdater")
+  eventsCreated event[]        @relation("EventCreator")
   notifications notification[]
   teacherReservations teacherReservation[] @relation("TeacherReservations")
   studentReservations teacherReservation[] @relation("StudentReservations")
+  teacherAvailabilities teacherAvailability[] @relation("TeacherAvailabilities")
   news          news[]         @relation("NewsAuthor")
   eventNews     eventNews[]    @relation("EventNewsAuthor")
   eventComments eventComment[]
+}
+
+model teacherAvailability {
+  id           Int      @id @default(autoincrement())
+  teacherId    Int
+  dayOfWeek    Int
+  startMinutes Int
+  endMinutes   Int
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  teacher      user     @relation("TeacherAvailabilities", fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherId, dayOfWeek, startMinutes, endMinutes])
+  @@index([teacherId, dayOfWeek, isActive])
 }
 
 model event {
@@ -44,16 +63,21 @@ model event {
   imageUrl      String?        @db.Text
   creator       String
   location      String
+  classroom     String         @default("Ismeretlen")
   date          DateTime
   maxParticipants Int?         // Optional field for maximum number of participants
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   updatedBy     Int?
+  createdBy     Int?
   deletedAt     DateTime?
   updater       user?          @relation("EventUpdater", fields: [updatedBy], references: [id])
+  creatorUser   user?          @relation("EventCreator", fields: [createdBy], references: [id])
   registrations registration[]
   eventNews     eventNews[]
   comments      eventComment[]
+
+  @@index([createdBy, deletedAt])
 }
 
 model registration {
@@ -88,6 +112,7 @@ model teacherReservation {
   id          Int      @id @default(autoincrement())
   teacherId   Int
   studentId   Int
+  classroom   String?
   startTime   DateTime
   endTime     DateTime
   status      String   @default("pending") // pending, confirmed, cancelled, completed

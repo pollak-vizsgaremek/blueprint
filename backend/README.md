@@ -8,6 +8,7 @@ A comprehensive REST API backend for an event management system built with Node.
 
 - **User Authentication**: JWT-based authentication with bcrypt password hashing
 - **Event Management**: Full CRUD operations for events with advanced features
+- **Classroom Routing Data**: Events store required classroom values for frontend navigation
 - **File Storage**: MinIO integration for secure event image uploads and management
 - **Admin Panel**: Role-based access control with admin privileges and dedicated routes
 - **Registration System**: Advanced event registration with status tracking and capacity management
@@ -23,6 +24,8 @@ A comprehensive REST API backend for an event management system built with Node.
 - **Database**: MySQL database with Prisma ORM for robust data management
 - **CORS Support**: Cross-origin resource sharing enabled for frontend integration
 - **Error Handling**: Centralized error handling middleware with detailed responses
+- **Preference-filtered Notifications**: Notification delivery respects per-user `settingJson`
+- **24h Reminder Scheduler**: Rolling in-app reminders for upcoming events and appointments
 
 ## Tech Stack
 
@@ -89,38 +92,51 @@ backend/
    ```
 
 3. **Set up environment variables**
-   Create a `.env` file in the backend root directory:
+   Copy the example and edit values:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Example `.env` contents:
 
    ```env
-   # Database Configuration
+   # Database
    DATABASE_URL="mysql://username:password@localhost:3306/database_name"
 
-   # Authentication
+   # Auth
    JWT_SECRET="your-super-secret-jwt-key"
-
-   # Server Configuration
    PORT=8000
 
-   # MinIO Configuration
+   # MinIO
    MINIO_ENDPOINT="localhost"
    MINIO_PORT=9000
    MINIO_USE_SSL=false
    MINIO_ACCESS_KEY="blueprint"
    MINIO_SECRET_KEY="blueprint"
    MINIO_BUCKET="blueprint"
+
+   # Public frontend URL used in email links
+   PUBLIC_URL="http://localhost:3000"
+   EMAIL_CONFIRM_PATH="/confirm-email"
+   PASSWORD_RESET_PATH="/reset-password"
+
+   # Microsoft Graph OAuth2 (email sending)
+   MS_TENANT_ID=""
+   MS_CLIENT_ID=""
+   MS_CLIENT_SECRET=""
+   MS_SENDER_USER=""
+   MS_GRAPH_SCOPE="https://graph.microsoft.com/.default"
+
+   # Optional email debug mode
+   EMAIL_LOG_ONLY=false
+
+   # AI comment verification (optional)
+   AI_VERIFICATION_API_KEY=""
+   AI_VERIFICATION_MODEL="gemini-2.0-flash"
+   AI_MODERATION_LOG_LEVEL="verbose"
+   # AI_VERIFICATION_ENDPOINT="https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
    ```
-
-# AI Comment Verification (optional)
-
-AI_VERIFICATION_API_KEY=""
-AI_VERIFICATION_MODEL="gemini-2.0-flash"
-AI_MODERATION_LOG_LEVEL="verbose"
-
-# Optional override
-
-# AI_VERIFICATION_ENDPOINT="https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
-
-````
 
 4. **Set up the database**
 
@@ -133,23 +149,15 @@ npx prisma migrate deploy
 
 # (Optional) Seed the database
 npx prisma db seed
-````
+```
+
+After any Prisma schema update, run `npx prisma generate` again and restart the backend process.
 
 5. **Set up MinIO Server**
 
-   You need a running MinIO server for file storage. You can:
-
-   **Option A: Docker (Recommended)**
-
-   ```bash
-   docker run -p 9000:9000 -p 9001:9001 \
-     -e "MINIO_ROOT_USER=blueprint" \
-     -e "MINIO_ROOT_PASSWORD=blueprint" \
-     quay.io/minio/minio server /data --console-address ":9001"
-   ```
-
-   **Option B: Local Installation**
-   Download and install MinIO from [https://min.io/download](https://min.io/download)
+   You need a running MinIO server for file storage.
+   Download and run MinIO locally from [https://min.io/download](https://min.io/download),
+   then set matching `MINIO_*` values in `backend/.env`.
 
 6. **Start the server**
 
@@ -162,7 +170,7 @@ npx prisma db seed
    ```
 
 The server will start on `http://localhost:8000` by default.
-MinIO console will be available at `http://localhost:9001` (if using Docker setup).
+MinIO console is typically available at `http://localhost:9001` (depending on your local MinIO setup).
 
 ## Server Configuration
 
@@ -172,6 +180,12 @@ The application uses the following route structure:
 - `/users` - User authentication and profile management
 - `/admin/events` - Admin-only event management
 - `/admin/users` - Admin-only user management
+
+Background jobs:
+
+- A reminder scheduler starts with the API process and periodically creates in-app reminder notifications around exact `T-24h` windows.
+
+Note: legacy event map preset endpoints were removed; event navigation now relies on event `classroom`.
 
 The server is configured with:
 
@@ -186,11 +200,16 @@ The server is configured with:
 - `id`: Auto-increment primary key
 - `name`: User's full name
 - `email`: Unique email address
+- `emailVerified`: Email confirmation state
 - `password`: Hashed password
 - `dateOfBirth`: User's date of birth
-- `isAdmin`: Boolean flag for admin privileges (default: false)
+- `classroom`: Optional classroom assignment (mainly for teachers)
+- `role`: Role string (`user`, `teacher`, `admin`)
+- `status`: Account status (`active`, `inactive`, `banned`)
+- `settingJson`: Optional JSON user settings (includes notification preferences)
 - `createdAt`: Account creation timestamp
 - `updatedAt`: Last update timestamp
+- `deletedAt`: Soft-delete timestamp
 
 ### Events
 
@@ -200,6 +219,7 @@ The server is configured with:
 - `imageUrl`: Optional event image URL (stored in MinIO)
 - `creator`: Event creator name
 - `location`: Event location
+- `classroom`: Required classroom used by frontend navigation
 - `date`: Event date and time
 - `maxParticipants`: Optional maximum number of participants
 - `createdAt`: Event creation timestamp
@@ -242,6 +262,41 @@ Authorization: Bearer <your-jwt-token>
   {
     "email": "john@example.com",
     "password": "password123"
+  }
+  ```
+  - Login requires verified email.
+  - Unverified accounts return `403` with `code: "email_not_verified"`.
+
+- **POST** `/users/email-confirmation/request` - Request email confirmation link
+
+  ```json
+  {
+    "email": "john@example.com"
+  }
+  ```
+
+- **POST** `/users/email-confirmation/confirm` - Confirm email with token
+
+  ```json
+  {
+    "token": "<email-confirmation-token>"
+  }
+  ```
+
+- **POST** `/users/password-reset/request` - Request password reset link
+
+  ```json
+  {
+    "email": "john@example.com"
+  }
+  ```
+
+- **POST** `/users/password-reset/confirm` - Set new password with token
+
+  ```json
+  {
+    "token": "<password-reset-token>",
+    "password": "new-password-123"
   }
   ```
 
@@ -309,6 +364,29 @@ The API uses centralized error handling with consistent error response format:
 }
 ```
 
+## Notification Settings
+
+Notification filtering is enforced in backend services using category-to-setting mapping.
+
+Active notification keys:
+
+- `eventUpdates`
+- `appointmentUpdates`
+- `marketingNews`
+- `inAppReminders`
+
+Category mapping:
+
+- `event_updates` -> `eventUpdates`
+- `appointments` -> `appointmentUpdates`
+- `marketing` -> `marketingNews`
+- `reminders` -> `inAppReminders`
+
+Legacy key migration in normalization:
+
+- `commentsReplies` -> `appointmentUpdates`
+- `emailReminders` -> `inAppReminders`
+
 ## Development
 
 ### Available Scripts
@@ -361,6 +439,41 @@ The backend uses MinIO for secure file storage with the following features:
 | `AI_VERIFICATION_MODEL`    | Gemini model used for verification | gemini-2.0-flash   |
 | `AI_VERIFICATION_ENDPOINT` | Optional custom Gemini endpoint    | Derived from model |
 | `AI_MODERATION_LOG_LEVEL`  | Moderation logging verbosity       | verbose            |
+| `EMAIL_FROM`               | Sender email address               | no-reply@blueprint.local |
+| `EMAIL_LOG_ONLY`           | Log emails instead of sending      | false              |
+| `MS_TENANT_ID`             | Azure AD tenant ID                 | Optional           |
+| `MS_CLIENT_ID`             | Azure app client ID                | Optional           |
+| `MS_CLIENT_SECRET`         | Azure app client secret            | Optional           |
+| `MS_SENDER_USER`           | Mailbox used by Graph sendMail     | EMAIL_FROM         |
+| `MS_GRAPH_SCOPE`           | OAuth scope for Graph token        | https://graph.microsoft.com/.default |
+| `PUBLIC_URL`               | Frontend base URL for email links  | http://localhost:3000 |
+| `EMAIL_CONFIRM_PATH`       | Email confirmation path            | /confirm-email     |
+| `PASSWORD_RESET_PATH`      | Password reset path                | /reset-password    |
+
+## Email Delivery (OAuth2)
+
+- Email sending uses Microsoft Graph with OAuth2 client credentials.
+- SMTP/basic auth is not used.
+- `PUBLIC_URL` is used as the base URL for email links.
+
+Common Graph setup checks for `403 ErrorAccessDenied`:
+
+1. Add `Mail.Send` as **Application** permission in Microsoft Graph.
+2. Grant **Admin consent**.
+3. Ensure `MS_SENDER_USER` is a real mailbox in the same tenant.
+4. Ensure `MS_CLIENT_SECRET` uses the secret value (not secret ID).
+
+## AI Comment Moderation
+
+- Comment moderation uses a strict JSON-only classifier prompt.
+- The model must return exactly:
+
+```json
+{"isVerified": true, "reason": "meaningful and respectful"}
+```
+
+- Safety-first policy: uncertain content is treated as not verified.
+- The moderator blocks harassment, hate, threats, spam/scams, personal-data exposure, and clearly off-topic or meaningless content.
 
 ## Authorization & Security
 

@@ -12,8 +12,10 @@ import {
   getEventRegistrations,
   getEventComments,
   createEventComment,
+  deleteManagedEvent,
   deleteEventComment,
   updateEventNews,
+  updateManagedEvent,
 } from "../controllers/eventController.js";
 import { authenticateToken } from "../middleware/auth.js";
 
@@ -28,16 +30,16 @@ router.get("/news/latest", authenticateToken, getLatestPublishedNews);
 // GET /events/news - Get all published news items
 router.get("/news", authenticateToken, getPublishedNews);
 
-// GET /events/:eventId/news - Get event specific news (owner can see drafts)
+// GET /events/:eventId/news - Get event-specific news (admin can also see drafts)
 router.get("/:eventId/news", authenticateToken, getEventNews);
 
-// POST /events/:eventId/news - Create event news (owner/admin only)
+// POST /events/:eventId/news - Create event news (admin only)
 router.post("/:eventId/news", authenticateToken, createEventNews);
 
-// PUT /events/:eventId/news/:newsId - Publish/unpublish event news (owner/admin only)
+// PUT /events/:eventId/news/:newsId - Publish/unpublish event news (admin only)
 router.put("/:eventId/news/:newsId", authenticateToken, updateEventNews);
 
-// DELETE /events/:eventId/news/:newsId - Delete event news (owner/admin only)
+// DELETE /events/:eventId/news/:newsId - Delete event news (admin only)
 router.delete("/:eventId/news/:newsId", authenticateToken, deleteEventNews);
 
 // GET /events/my-registrations - Get user's event registrations (requires authentication)
@@ -49,7 +51,13 @@ router.post("/:eventId/register", authenticateToken, registerForEvent);
 // DELETE /events/:eventId/register - Unregister from an event (requires authentication)
 router.delete("/:eventId/register", authenticateToken, unregisterFromEvent);
 
-// GET /events/:eventId/registrations - Get event registrations (requires authentication)
+// PUT /events/:eventId - Update event (admin/creator/updater)
+router.put("/:eventId", authenticateToken, updateManagedEvent);
+
+// DELETE /events/:eventId - Soft delete event (admin/creator/updater)
+router.delete("/:eventId", authenticateToken, deleteManagedEvent);
+
+// GET /events/:eventId/registrations - Get event registrations (admin only)
 router.get("/:eventId/registrations", authenticateToken, getEventRegistrations);
 
 // GET /events/:eventId/comments - Get event comments (requires authentication)

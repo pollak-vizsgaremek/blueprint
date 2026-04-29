@@ -17,13 +17,17 @@ import {
   Menu,
   Pen,
   Settings,
-  User,
+  Shield,
   X,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { isReducedMotionEnabled } from "@/lib/motion";
+import { useQuery } from "@tanstack/react-query";
+import axios from "axios";
+import { GetUnreadNotificationCountResponse } from "@/types";
+import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
 const roboto = Roboto_Mono({
   subsets: ["latin"],
 });
@@ -35,6 +39,36 @@ export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const path = usePathname();
   const { user, logout } = useAuth();
+
+  const appNavLinks = [
+    { href: "/", label: "Főoldal" },
+    { href: "/events", label: "Események" },
+    { href: "/appointments", label: "Időpontok" },
+  ] as const;
+
+  const isAppNavActive = (href: string) => {
+    if (href === "/") {
+      return path === "/";
+    }
+
+    return path === href || path.startsWith(`${href}/`);
+  };
+
+  const { data: unreadData } = useQuery({
+    queryKey: ["notifications", "unread-count"],
+    queryFn: async () => {
+      const { data } = await axios.get<GetUnreadNotificationCountResponse>(
+        `${process.env.NEXT_PUBLIC_API_URL}/notifications/unread-count`,
+        {
+          withCredentials: true,
+        },
+      );
+
+      return data;
+    },
+  });
+
+  const unreadCount = unreadData?.unreadCount ?? 0;
   useGSAP(() => {
     if (isReducedMotionEnabled()) {
       return;
@@ -50,65 +84,105 @@ export const Header = () => {
   return (
     <>
       {isMenuOpen && (
-        <div className="w-8/10 p-2 max-w-[500px] h-screen bg-secondary/40 backdrop-blur-xl fixed top-0 right-0 z-[2000] shadow-md shadow-black/20">
-          <X
-            strokeWidth={"0.5px"}
-            size={40}
-            className="cursor-pointer"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
+        <div className="fixed inset-0 z-[2000] md:hidden">
+          <button
+            type="button"
+            onClick={() => setIsMenuOpen(false)}
+            className="absolute inset-0 bg-black/40"
+            aria-label="Menü bezárása"
           />
+          <aside className="absolute flex flex-col right-0 top-0 h-full w-[85%] max-w-sm bg-secondary/70 backdrop-blur-xl border-l border-faded/20 p-4 shadow-md shadow-black/20">
+            <X
+              strokeWidth={"1px"}
+              size={32}
+              className="cursor-pointer"
+              onClick={() => setIsMenuOpen(false)}
+            />
+            <div className="mt-6 flex flex-col pl-5 justify-between grow gap-3 text-lg">
+              <div className="flex flex-col gap-3 text-lg">
+                {appNavLinks.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+              <div className="flex flex-col gap-3 text-lg">
+                <Link href="/news" onClick={() => setIsMenuOpen(false)}>
+                  Hírek
+                </Link>
+                <Link href="/calendar" onClick={() => setIsMenuOpen(false)}>
+                  Naptár
+                </Link>
+                {user?.role === "admin" && (
+                  <Link href="/admin" onClick={() => setIsMenuOpen(false)}>
+                    Admin felület
+                  </Link>
+                )}
+                {user?.role === "teacher" && (
+                  <Link href="/teacher" onClick={() => setIsMenuOpen(false)}>
+                    Tanári felület
+                  </Link>
+                )}
+                <Link
+                  href="/notifications"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Értesítések
+                </Link>
+                <Link href="/settings" onClick={() => setIsMenuOpen(false)}>
+                  Beállítások
+                </Link>
+                <Separator className="my-1 bg-faded" />
+                <button
+                  type="button"
+                  onClick={logout}
+                  className=" inline-flex items-center gap-2 text-red-600"
+                >
+                  <LogOut className="size-5" />
+                  Kijelentkezés
+                </button>
+              </div>
+            </div>
+          </aside>
         </div>
       )}
-      {isMenuOpen && (
-        <div className="w-2/10 h-screen fixed z-[1000] left-0 top-0 bg-black/40"></div>
-      )}
-      <div className="mt-5 w-full header">
-        <header className="h-20 max-md:px-5 py-2 flex justify-between items-center w-9/10 transition ease-in-out  rounded-2xl m-auto">
+      <div className="mt-3 sm:mt-5 w-full header">
+        <header className="h-16 sm:h-20 py-2 flex justify-between items-center page-shell transition ease-in-out rounded-2xl">
           <Link href="/">
-            <div className="flex items-center select-none gap-3 text-2xl hover:text-accent hover:scale-90 transition ease-in-out">
-              <Image src="/blueprint.png" alt="Logo" width={50} height={50} />
+            <div className="flex items-center select-none gap-2 sm:gap-3 text-xl sm:text-2xl hover:text-accent transition ease-in-out">
+              <Image src="/blueprint.png" alt="Logo" width={44} height={44} />
               <div className={roboto.className}>Blueprint</div>
             </div>
           </Link>
-          <div className="flex gap-5 items-center relative max-md:hidden -translate-x-15 justify-center text-xl *:hover:text-faded *:hover:scale-90 *:transition *:ease-in-out">
-            <div
-              className={cn(
-                "bg-accent h-[2px] absolute bottom-0 transition left-0 ease-in-out",
-                {
-                  "w-[70px] translate-x-[0]": path === "/app",
-                  "w-[111px] translate-x-[87px]": path === "/app/events",
-                  "w-[105px] translate-x-[212px]": path === "/app/appointments",
-                },
-              )}
-            ></div>
-            <Link
-              href="/app"
-              className={cn("select-none", {
-                "pointer-events-none": path === "/app",
-              })}
-            >
-              Főoldal
-            </Link>
-            <Link
-              href="/app/events"
-              className={cn("select-none", {
-                "pointer-events-none": path === "/app/events",
-              })}
-            >
-              Események
-            </Link>
-            <Link
-              href="/app/appointments"
-              className={cn("select-none", {
-                "pointer-events-none": path === "/app/appointments",
-              })}
-            >
-              Időpontok
-            </Link>
+          <div className="hidden md:flex gap-5 items-center justify-center text-xl *:hover:text-faded *:transition *:ease-in-out">
+            {appNavLinks.map((item) => {
+              const isActive = isAppNavActive(item.href);
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "relative select-none pb-1 after:pointer-events-none after:absolute after:-bottom-0 after:left-1/2 after:block after:h-[2px] after:-translate-x-1/2 after:rounded-full after:bg-accent after:content-[''] after:transition-all after:duration-200",
+                    {
+                      "pointer-events-none after:w-[100%] after:opacity-100":
+                        isActive,
+                      "after:w-0 after:opacity-0": !isActive,
+                    },
+                  )}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
           </div>
           <div className="flex items-center flex-row-reverse gap-3">
             <Menu
-              className="min-md:hidden"
+              className="md:hidden"
               size={35}
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             />
@@ -136,25 +210,55 @@ export const Header = () => {
                       size="sm"
                     >
                       <Link
-                        href="/app/settings"
+                        href="/settings"
                         className="flex w-full justify-start items-center gap-1"
                       >
-                        <Settings className="mr-2 size-6" />
+                        <Settings className="size-6" />
                       </Link>
                     </Button>
                   </div>
                 </div>
                 <div className="grid gap-1 px-4">
+                  {user?.role === "admin" && (
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start"
+                      size="sm"
+                    >
+                      <Link
+                        href="/admin"
+                        className="flex w-full justify-start items-center gap-1"
+                      >
+                        <Shield className="mr-2 size-5" />
+                        Admin felület
+                      </Link>
+                    </Button>
+                  )}
+                  {user?.role === "teacher" && (
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start"
+                      size="sm"
+                    >
+                      <Link
+                        href="/teacher"
+                        className="flex w-full justify-start items-center gap-1"
+                      >
+                        <Shield className="mr-2 size-5" />
+                        Tanári felület
+                      </Link>
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     className="w-full justify-start"
                     size="sm"
                   >
                     <Link
-                      href="/app/calendar"
+                      href="/calendar"
                       className="flex w-full justify-start items-center gap-1"
                     >
-                      <Calendar className="mr-2 h-4 w-4" />
+                      <Calendar className="mr-2 size-5" />
                       Naptár
                     </Link>
                   </Button>
@@ -164,10 +268,10 @@ export const Header = () => {
                     size="sm"
                   >
                     <Link
-                      href="/app/news"
+                      href="/news"
                       className="flex w-full justify-start items-center gap-1"
                     >
-                      <Newspaper className="mr-2 h-4 w-4" />
+                      <Newspaper className="mr-2 size-5" />
                       Hírek
                     </Link>
                   </Button>
@@ -176,16 +280,18 @@ export const Header = () => {
                     className="w-full justify-start"
                     size="sm"
                   >
-                    <Pen className="mr-2 h-4 w-4" />
-                    Jelentkezések
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start"
-                    size="sm"
-                  >
-                    <Bell className="mr-2 h-4 w-4" />
-                    Értesítések
+                    <Link
+                      href="/notifications"
+                      className="flex w-full justify-start items-center gap-1"
+                    >
+                      <Bell className="mr-2 size-5" />
+                      Értesítések
+                      {unreadCount > 0 && (
+                        <span className="ml-1 rounded-full bg-red-500 text-white text-[10px] px-1.5 py-0.5 leading-none">
+                          {unreadCount > 9 ? "9+" : unreadCount}
+                        </span>
+                      )}
+                    </Link>
                   </Button>
                   <Separator className="my-1 bg-faded/20" />
                   <Button
@@ -194,7 +300,7 @@ export const Header = () => {
                     size="sm"
                     onClick={logout}
                   >
-                    <LogOut className="mr-2 h-4 w-4" />
+                    <LogOut className="mr-2 size-5" />
                     Kijelentkezés
                   </Button>
                 </div>

@@ -1,19 +1,17 @@
 export type AppSettings = {
-  emailReminders: boolean;
+  inAppReminders: boolean;
   eventUpdates: boolean;
-  commentsReplies: boolean;
+  appointmentUpdates: boolean;
   marketingNews: boolean;
   showPastEvents: boolean;
   autoOpenEventModal: boolean;
-  showEmailOnProfile: boolean;
-  mentionByEmail: boolean;
   compactCalendar: boolean;
   reducedMotion: boolean;
   highContrast: boolean;
   weekStart: "monday" | "sunday";
-  language: "hu" | "en";
-  timezone: "Europe/Budapest" | "UTC";
-  dateFormat: "YYYY.MM.DD" | "DD.MM.YYYY";
+  showWeekNumbers: boolean;
+  defaultCalendarView: "month" | "agenda";
+  hideCancelledAppointments: boolean;
 };
 
 export type BooleanAppSettingKey = {
@@ -23,21 +21,38 @@ export type BooleanAppSettingKey = {
 export const APP_SETTINGS_STORAGE_KEY = "blueprint-settings-v1";
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
-  emailReminders: true,
+  inAppReminders: true,
   eventUpdates: true,
-  commentsReplies: false,
+  appointmentUpdates: true,
   marketingNews: false,
   showPastEvents: true,
   autoOpenEventModal: true,
-  showEmailOnProfile: false,
-  mentionByEmail: true,
   compactCalendar: false,
   reducedMotion: false,
   highContrast: false,
   weekStart: "monday",
-  language: "hu",
-  timezone: "Europe/Budapest",
-  dateFormat: "YYYY.MM.DD",
+  showWeekNumbers: false,
+  defaultCalendarView: "month",
+  hideCancelledAppointments: true,
+};
+
+type LegacyAppSettings = Partial<AppSettings> & {
+  emailReminders?: boolean;
+  commentsReplies?: boolean;
+};
+
+export const normalizeAppSettings = (
+  input: LegacyAppSettings | null | undefined,
+): AppSettings => {
+  const legacy = input ?? {};
+
+  return {
+    ...DEFAULT_APP_SETTINGS,
+    ...legacy,
+    appointmentUpdates:
+      legacy.appointmentUpdates ?? legacy.commentsReplies ?? true,
+    inAppReminders: legacy.inAppReminders ?? legacy.emailReminders ?? true,
+  };
 };
 
 export const readAppSettings = (): AppSettings => {
@@ -51,12 +66,8 @@ export const readAppSettings = (): AppSettings => {
       return DEFAULT_APP_SETTINGS;
     }
 
-    const parsedSettings = JSON.parse(rawSettings) as Partial<AppSettings>;
-
-    return {
-      ...DEFAULT_APP_SETTINGS,
-      ...parsedSettings,
-    };
+    const parsedSettings = JSON.parse(rawSettings) as LegacyAppSettings;
+    return normalizeAppSettings(parsedSettings);
   } catch {
     return DEFAULT_APP_SETTINGS;
   }

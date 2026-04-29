@@ -1,18 +1,42 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import axios from "axios";
+import Image from "next/image";
+import { notify } from "@/lib/notify";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showResendVerification, setShowResendVerification] = useState(false);
+  const [isResendLoading, setIsResendLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
+  const [resendError, setResendError] = useState("");
 
-  const { login, user } = useAuth();
+  const { login } = useAuth();
   const router = useRouter();
+  const didShowRegisteredNotice = useRef(false);
+
+  useEffect(() => {
+    if (didShowRegisteredNotice.current) {
+      return;
+    }
+
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get("registered") !== "1") {
+      return;
+    }
+
+    notify.info(
+      "Sikeres regisztráció. Ha még nem tetted, erősítsd meg az emailed, majd jelentkezz be.",
+    );
+    didShowRegisteredNotice.current = true;
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,21 +46,85 @@ const LoginPage = () => {
     try {
       // Use the login function from auth context
       await login(email, password);
+      notify.success("Sikeres bejelentkezés.");
 
-      router.push("/app");
-    } catch (err) {
+      router.replace("/");
+      router.refresh();
+    } catch (err: unknown) {
+      const authError = err as Error & { code?: string };
+      if (authError.code === "email_not_verified") {
+        setShowResendVerification(true);
+      } else {
+        setShowResendVerification(false);
+      }
+
       setError(
-        err instanceof Error ? err.message : "A bejelentkezés sikertelen"
+        authError instanceof Error
+          ? authError.message
+          : "A bejelentkezés sikertelen",
+      );
+      notify.error(
+        authError instanceof Error
+          ? authError.message
+          : "A bejelentkezés sikertelen",
       );
     } finally {
       setLoading(false);
     }
   };
 
+  const handleResendVerification = async () => {
+    const targetEmail = email.trim();
+
+    if (!targetEmail) {
+      setResendError("A kérés sikertelen.");
+      setResendMessage("");
+      notify.warning("Add meg az email címed az újraküldéshez.");
+      return;
+    }
+
+    setIsResendLoading(true);
+    setResendError("");
+    setResendMessage("");
+
+    try {
+      const { data } = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/users/email-confirmation/request`,
+        {
+          email: targetEmail,
+        },
+        {
+          withCredentials: true,
+        },
+      );
+
+      setResendMessage(
+        data?.message || "Ha létezik a fiók, elküldtük a megerősítő emailt.",
+      );
+      notify.success(
+        data?.message || "Ha létezik a fiók, elküldtük a megerősítő emailt.",
+      );
+    } catch (err) {
+      setResendError("A kérés sikertelen.");
+      notify.error("A kérés sikertelen.");
+    } finally {
+      setIsResendLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="max-w-md w-full space-y-8">
+      <div className="max-w-md w-full bg-secondary/60 border-faded/20 border-[1px] p-10 rounded-xl space-y-8">
         <div>
+          <div className="">
+            <Image
+              src="/blueprint.png"
+              alt="Logo"
+              width={250}
+              height={250}
+              className="mx-auto"
+            />
+          </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Bejelentkezés
           </h2>
@@ -94,8 +182,45 @@ const LoginPage = () => {
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent"
                 placeholder="Írja be a jelszavát"
               />
+              <div className="mt-2 text-right">
+                <Link
+                  href="/forgot-password"
+                  className="text-sm text-accent hover:text-accent/80 cursor-pointer"
+                >
+                  Elfelejtett jelszó?
+                </Link>
+              </div>
             </div>
           </div>
+
+          {showResendVerification ? (
+            <div className="rounded-md border border-faded/30 bg-secondary/30 p-4 space-y-3">
+              <p className="text-sm text-gray-700">
+                Még nem erősítetted meg az email címed.
+              </p>
+
+              {resendError ? (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded text-sm">
+                  {resendError}
+                </div>
+              ) : null}
+
+              {resendMessage ? (
+                <div className="bg-emerald-100 border border-emerald-300 text-emerald-800 px-3 py-2 rounded text-sm">
+                  {resendMessage}
+                </div>
+              ) : null}
+
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={isResendLoading}
+                className="w-full py-2 px-4 text-sm rounded-md text-white bg-accent hover:bg-accent/80 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isResendLoading ? "Küldés..." : "Megerősítő email újraküldése"}
+              </button>
+            </div>
+          ) : null}
 
           <div>
             <button

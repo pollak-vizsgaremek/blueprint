@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AdminGuard } from "./AdminGuard";
+import { AdminShell } from "./components/AdminShell";
 
 export const metadata: Metadata = {
   title: "Blueprint",
@@ -11,9 +11,5 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <main>
-      <AdminGuard>{children}</AdminGuard>
-    </main>
-  );
+  return <AdminShell>{children}</AdminShell>;
 }

@@ -1,4 +1,8 @@
 import prisma from "../config/database.js";
+import {
+  createBulkNotifications,
+  createNotification,
+} from "../services/notificationService.js";
 
 const AI_VERIFICATION_API_KEY = process.env.AI_VERIFICATION_API_KEY;
 const AI_VERIFICATION_MODEL =
@@ -63,6 +67,31 @@ const logAIModeration = (level, message, details) => {
   }
 
   console.log(prefix);
+};
+
+const getEventManagerAccess = async (eventId, user) => {
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    select: {
+      id: true,
+      name: true,
+      creator: true,
+      createdBy: true,
+      updatedBy: true,
+      deletedAt: true,
+    },
+  });
+
+  if (!event) {
+    return { event: null, canManageEvent: false };
+  }
+
+  const canManageEvent =
+    user?.role === "admin" ||
+    (typeof user?.id === "number" &&
+      (event.updatedBy === user.id || event.createdBy === user.id));
+
+  return { event, canManageEvent };
 };
 
 const parseJsonFromModelOutput = (value) => {
@@ -147,7 +176,7 @@ const verifyCommentWithAI = async ({ content, event, userId }) => {
         systemInstruction: {
           parts: [
             {
-              text: "You verify event discussion comments. Return ONLY JSON with keys isVerified (boolean) and reason (string). Mark true only for respectful, non-spam comments.",
+              text: 'You are a strict moderator for event discussion comments. Evaluate the comment for safety and quality. Approve only if it is respectful, non-harassing, non-hateful, non-sexual, non-violent, non-spam. Reject profanity aimed at people, personal attacks, discrimination, threats, sexual content, scams, repeated promotional text, or nonsense. If uncertain, reject. Return ONLY valid JSON: {"isVerified": boolean, "reason": string}. Keep reason short (max 20 words), specific, and user-facing.',
             },
           ],
         },
@@ -274,6 +303,9 @@ export const getAllEvents = async (req, res) => {
     const userId = req.user ? req.user.id : null;
 
     const events = await prisma.event.findMany({
+      where: {
+        deletedAt: null,
+      },
       include: {
         registrations: userId
           ? {
@@ -311,8 +343,10 @@ export const getAllEvents = async (req, res) => {
         imageUrl: event.imageUrl,
         creator: event.creator,
         location: event.location,
+        classroom: event.classroom,
         date: event.date,
         maxParticipants: event.maxParticipants,
+        updatedBy: event.updatedBy,
         createdAt: event.createdAt,
         registrationCount: event._count.registrations,
         userRegistration:
@@ -412,21 +446,16 @@ export const getEventNews = async (req, res) => {
   }
 
   try {
-    const event = await prisma.event.findUnique({
-      where: { id: parsedEventId },
-      select: {
-        id: true,
-        name: true,
-        creator: true,
-      },
-    });
+    const { event, canManageEvent } = await getEventManagerAccess(
+      parsedEventId,
+      req.user,
+    );
 
     if (!event) {
       return res.status(404).json({ error: "Event not found" });
     }
 
-    const canManageNews =
-      req.user.role === "admin" || event.creator === req.user.name;
+    const canManageNews = canManageEvent;
 
     const news = await prisma.eventNews.findMany({
       where: {
@@ -496,25 +525,21 @@ export const createEventNews = async (req, res) => {
   }
 
   try {
-    const event = await prisma.event.findUnique({
-      where: { id: parsedEventId },
-      select: {
-        id: true,
-        creator: true,
-      },
-    });
+    const { event, canManageEvent } = await getEventManagerAccess(
+      parsedEventId,
+      req.user,
+    );
 
     if (!event) {
       return res.status(404).json({ error: "Event not found" });
     }
 
-    const canManageNews =
-      req.user.role === "admin" || event.creator === req.user.name;
+    const canManageNews = canManageEvent;
 
     if (!canManageNews) {
       return res.status(403).json({
         error: "Access denied",
-        message: "Only the event owner can manage event news",
+        message: "You do not have event updater permissions",
       });
     }
 
@@ -546,6 +571,33 @@ export const createEventNews = async (req, res) => {
         },
       },
     });
+
+    if (shouldPublishNow) {
+      const registrations = await prisma.registration.findMany({
+        where: {
+          eventId: parsedEventId,
+          status: "registered",
+        },
+        select: {
+          userId: true,
+        },
+      });
+
+      const recipientIds = registrations
+        .map((registration) => registration.userId)
+        .filter((recipientId) => recipientId !== req.user.id);
+
+      await createBulkNotifications(
+        recipientIds.map((recipientId) => ({
+          userId: recipientId,
+          title: "Új eseményhír",
+          message: createdNews.title,
+          url: `/events/${parsedEventId}/news`,
+          type: "info",
+          category: "event_updates",
+        })),
+      );
+    }
 
     res.status(201).json({
       message: shouldPublishNow
@@ -612,25 +664,21 @@ export const updateEventNews = async (req, res) => {
   }
 
   try {
-    const event = await prisma.event.findUnique({
-      where: { id: parsedEventId },
-      select: {
-        id: true,
-        creator: true,
-      },
-    });
+    const { event, canManageEvent } = await getEventManagerAccess(
+      parsedEventId,
+      req.user,
+    );
 
     if (!event) {
       return res.status(404).json({ error: "Event not found" });
     }
 
-    const canManageNews =
-      req.user.role === "admin" || event.creator === req.user.name;
+    const canManageNews = canManageEvent;
 
     if (!canManageNews) {
       return res.status(403).json({
         error: "Access denied",
-        message: "Only the event owner can manage event news",
+        message: "You do not have event updater permissions",
       });
     }
 
@@ -704,6 +752,33 @@ export const updateEventNews = async (req, res) => {
       },
     });
 
+    if (hasIsPublished && shouldPublish) {
+      const registrations = await prisma.registration.findMany({
+        where: {
+          eventId: parsedEventId,
+          status: "registered",
+        },
+        select: {
+          userId: true,
+        },
+      });
+
+      const recipientIds = registrations
+        .map((registration) => registration.userId)
+        .filter((recipientId) => recipientId !== req.user.id);
+
+      await createBulkNotifications(
+        recipientIds.map((recipientId) => ({
+          userId: recipientId,
+          title: "Új eseményhír",
+          message: updatedNews.title,
+          url: `/events/${parsedEventId}/news`,
+          type: "info",
+          category: "event_updates",
+        })),
+      );
+    }
+
     const wasPublicationOnlyUpdate =
       !hasTitle && !hasContent && !hasImageUrl && hasIsPublished;
 
@@ -733,25 +808,21 @@ export const deleteEventNews = async (req, res) => {
   }
 
   try {
-    const event = await prisma.event.findUnique({
-      where: { id: parsedEventId },
-      select: {
-        id: true,
-        creator: true,
-      },
-    });
+    const { event, canManageEvent } = await getEventManagerAccess(
+      parsedEventId,
+      req.user,
+    );
 
     if (!event) {
       return res.status(404).json({ error: "Event not found" });
     }
 
-    const canManageNews =
-      req.user.role === "admin" || event.creator === req.user.name;
+    const canManageNews = canManageEvent;
 
     if (!canManageNews) {
       return res.status(403).json({
         error: "Access denied",
-        message: "Only the event owner can manage event news",
+        message: "You do not have event updater permissions",
       });
     }
 
@@ -885,6 +956,15 @@ export const registerForEvent = async (req, res) => {
       },
     });
 
+    await createNotification({
+      userId,
+      title: "Sikeres esemény jelentkezés",
+      message: `Sikeresen jelentkeztél: ${event.name}`,
+      url: `/events/${event.id}/details`,
+      type: "success",
+      category: "event_updates",
+    });
+
     res.status(201).json({
       message: "Successfully registered for event",
       registration: {
@@ -943,6 +1023,15 @@ export const unregisterFromEvent = async (req, res) => {
       },
     });
 
+    await createNotification({
+      userId,
+      title: "Jelentkezés lemondva",
+      message: `Lemondtad a jelentkezésedet: ${eventId} azonosítójú esemény`,
+      url: `/events/${eventId}/details`,
+      type: "warning",
+      category: "event_updates",
+    });
+
     res.json({
       message: "Successfully cancelled registration for event",
     });
@@ -968,6 +1057,7 @@ export const getUserEventRegistrations = async (req, res) => {
             imageUrl: true,
             creator: true,
             location: true,
+            classroom: true,
             date: true,
             maxParticipants: true,
             createdAt: true,
@@ -984,7 +1074,18 @@ export const getUserEventRegistrations = async (req, res) => {
         id: reg.id,
         registeredAt: reg.registeredAt,
         status: reg.status,
-        event: reg.event,
+        event: {
+          id: reg.event.id,
+          name: reg.event.name,
+          description: reg.event.description,
+          imageUrl: reg.event.imageUrl,
+          creator: reg.event.creator,
+          location: reg.event.location,
+          classroom: reg.event.classroom,
+          date: reg.event.date,
+          maxParticipants: reg.event.maxParticipants,
+          createdAt: reg.event.createdAt,
+        },
       };
     });
 
@@ -1000,20 +1101,41 @@ export const getUserEventRegistrations = async (req, res) => {
 
 // Get event registrations (for event organizers/admin)
 export const getEventRegistrations = async (req, res) => {
-  const { eventId } = req.params;
+  const parsedEventId = parseInt(req.params.eventId, 10);
+
+  if (Number.isNaN(parsedEventId)) {
+    return res.status(400).json({
+      error: "Invalid event ID",
+      message: "Event ID must be a number",
+    });
+  }
 
   try {
     // Check if event exists
     const event = await prisma.event.findUnique({
-      where: { id: parseInt(eventId) },
+      where: { id: parsedEventId },
+      select: {
+        id: true,
+        name: true,
+        maxParticipants: true,
+      },
     });
 
     if (!event) {
       return res.status(404).json({ error: "Event not found" });
     }
 
+    const canManageRegistrations = req.user.role === "admin";
+
+    if (!canManageRegistrations) {
+      return res.status(403).json({
+        error: "Access denied",
+        message: "Admin privileges required",
+      });
+    }
+
     const registrations = await prisma.registration.findMany({
-      where: { eventId: parseInt(eventId) },
+      where: { eventId: parsedEventId },
       include: {
         user: {
           select: {
@@ -1040,6 +1162,7 @@ export const getEventRegistrations = async (req, res) => {
       event: {
         id: event.id,
         name: event.name,
+        maxParticipants: event.maxParticipants,
       },
       registrations: formattedRegistrations,
     });
@@ -1070,23 +1193,10 @@ export const getEventComments = async (req, res) => {
   }
 
   try {
-    const requester = req.user?.id
-      ? await prisma.user.findUnique({
-          where: { id: req.user.id },
-          select: { role: true },
-        })
-      : null;
-    const isAdmin = requester?.role === "admin" || req.user?.role === "admin";
-
-    const event = await prisma.event.findUnique({
-      where: { id: parsedEventId },
-      select: {
-        id: true,
-        name: true,
-        date: true,
-        location: true,
-      },
-    });
+    const { event, canManageEvent } = await getEventManagerAccess(
+      parsedEventId,
+      req.user,
+    );
 
     if (!event) {
       return res.status(404).json({ error: "Event not found" });
@@ -1095,7 +1205,7 @@ export const getEventComments = async (req, res) => {
     const comments = await prisma.eventComment.findMany({
       where: {
         eventId: parsedEventId,
-        ...(isAdmin ? {} : { deletedAt: null }),
+        ...(canManageEvent ? {} : { deletedAt: null }),
       },
       include: {
         user: {
@@ -1117,7 +1227,7 @@ export const getEventComments = async (req, res) => {
       isVerified: comment.isVerified,
       deletedAt: comment.deletedAt,
       isDeleted: Boolean(comment.deletedAt),
-      canDelete: isAdmin || comment.userId === req.user.id,
+      canDelete: canManageEvent || comment.userId === req.user.id,
       createdAt: comment.createdAt,
       updatedAt: comment.updatedAt,
       user: comment.user,
@@ -1285,10 +1395,14 @@ export const deleteEventComment = async (req, res) => {
   }
 
   try {
-    const requester = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { role: true },
-    });
+    const { event, canManageEvent } = await getEventManagerAccess(
+      parsedEventId,
+      req.user,
+    );
+
+    if (!event) {
+      return res.status(404).json({ error: "Event not found" });
+    }
 
     const comment = await prisma.eventComment.findFirst({
       where: {
@@ -1306,13 +1420,12 @@ export const deleteEventComment = async (req, res) => {
       return res.status(404).json({ error: "Comment not found" });
     }
 
-    const isAdmin = requester?.role === "admin" || req.user.role === "admin";
     const isOwner = comment.userId === userId;
 
-    if (!isAdmin && !isOwner) {
+    if (!canManageEvent && !isOwner) {
       return res.status(403).json({
         error: "Forbidden",
-        message: "You can only delete your own comments",
+        message: "You do not have permission to delete this comment",
       });
     }
 
@@ -1330,6 +1443,161 @@ export const deleteEventComment = async (req, res) => {
     });
   } catch (error) {
     console.error("Error deleting event comment:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+export const updateManagedEvent = async (req, res) => {
+  const parsedEventId = parseInt(req.params.eventId, 10);
+  let {
+    name,
+    description,
+    location,
+    date,
+    maxParticipants,
+    classroom,
+    updatedBy,
+  } = req.body;
+
+  if (Number.isNaN(parsedEventId)) {
+    return res.status(400).json({
+      error: "Invalid event ID",
+      message: "Event ID must be a number",
+    });
+  }
+
+  try {
+    const { event, canManageEvent } = await getEventManagerAccess(
+      parsedEventId,
+      req.user,
+    );
+
+    if (!event || event.deletedAt) {
+      return res.status(404).json({ error: "Event not found" });
+    }
+
+    if (!canManageEvent) {
+      return res.status(403).json({
+        error: "Forbidden",
+        message: "You do not have permission to edit this event",
+      });
+    }
+
+    if (
+      maxParticipants !== undefined &&
+      maxParticipants !== null &&
+      maxParticipants !== ""
+    ) {
+      maxParticipants = parseInt(maxParticipants, 10);
+      if (Number.isNaN(maxParticipants) || maxParticipants <= 0) {
+        return res.status(400).json({
+          error: "Invalid maxParticipants",
+          message: "Maximum participants must be a positive integer",
+        });
+      }
+    } else if (maxParticipants === "" || maxParticipants === null) {
+      maxParticipants = null;
+    }
+
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    if (location !== undefined) updateData.location = location;
+    if (date !== undefined) updateData.date = new Date(date);
+    if (maxParticipants !== undefined)
+      updateData.maxParticipants = maxParticipants || null;
+
+    if (classroom !== undefined) {
+      if (!String(classroom).trim()) {
+        return res.status(400).json({
+          error: "Invalid classroom",
+          message: "Classroom cannot be empty",
+        });
+      }
+      updateData.classroom = String(classroom).trim();
+    }
+
+    if (updatedBy !== undefined) {
+      const parsedUpdatedBy = parseInt(updatedBy, 10);
+      if (Number.isNaN(parsedUpdatedBy)) {
+        return res.status(400).json({
+          error: "Invalid updatedBy",
+          message: "Updater user ID must be a number",
+        });
+      }
+
+      const updaterUser = await prisma.user.findFirst({
+        where: {
+          id: parsedUpdatedBy,
+          deletedAt: null,
+        },
+        select: { id: true },
+      });
+
+      if (!updaterUser) {
+        return res.status(400).json({
+          error: "Invalid updatedBy",
+          message: "Selected updater user does not exist",
+        });
+      }
+
+      updateData.updatedBy = parsedUpdatedBy;
+    }
+
+    const updatedEvent = await prisma.event.update({
+      where: { id: parsedEventId },
+      data: updateData,
+    });
+
+    res.json({
+      message: "Event updated successfully",
+      event: updatedEvent,
+    });
+  } catch (error) {
+    console.error("Error updating managed event:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+export const deleteManagedEvent = async (req, res) => {
+  const parsedEventId = parseInt(req.params.eventId, 10);
+
+  if (Number.isNaN(parsedEventId)) {
+    return res.status(400).json({
+      error: "Invalid event ID",
+      message: "Event ID must be a number",
+    });
+  }
+
+  try {
+    const { event, canManageEvent } = await getEventManagerAccess(
+      parsedEventId,
+      req.user,
+    );
+
+    if (!event || event.deletedAt) {
+      return res.status(404).json({ error: "Event not found" });
+    }
+
+    if (!canManageEvent) {
+      return res.status(403).json({
+        error: "Forbidden",
+        message: "You do not have permission to delete this event",
+      });
+    }
+
+    await prisma.event.update({
+      where: { id: parsedEventId },
+      data: {
+        deletedAt: new Date(),
+      },
+    });
+
+    res.json({
+      message: "Event soft deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting managed event:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };

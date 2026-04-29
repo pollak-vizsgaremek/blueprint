@@ -5,6 +5,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { DatePicker } from "@/components/ui/DatePicker";
 import Link from "next/link";
+import Image from "next/image";
+import { notify } from "@/lib/notify";
 
 const RegisterPage = () => {
   const [name, setName] = useState("");
@@ -26,12 +28,14 @@ const RegisterPage = () => {
     // Client-side validation
     if (password !== confirmPassword) {
       setError("A jelszavak nem egyeznek");
+      notify.warning("A jelszavak nem egyeznek.");
       setLoading(false);
       return;
     }
 
     if (password.length < 6) {
       setError("A jelszónak legalább 6 karakter hosszúnak kell lennie");
+      notify.warning("A jelszónak legalább 6 karakter hosszúnak kell lennie.");
       setLoading(false);
       return;
     }
@@ -39,6 +43,7 @@ const RegisterPage = () => {
     // Validate date of birth
     if (!dateOfBirth) {
       setError("Kérjük, válasszon születési dátumot");
+      notify.warning("Kérjük, válasszon születési dátumot.");
       setLoading(false);
       return;
     }
@@ -52,12 +57,15 @@ const RegisterPage = () => {
 
       // Use the register function from auth context
       await register(name, email, password, dateString);
+      notify.success("Sikeres regisztráció. Jelentkezz be a folytatáshoz.");
 
-      router.push("/app");
+      router.replace("/login?registered=1");
+      router.refresh();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "A regisztráció sikertelen"
-      );
+      const message =
+        err instanceof Error ? err.message : "A regisztráció sikertelen";
+      setError(message);
+      notify.error(message);
     } finally {
       setLoading(false);
     }
@@ -65,7 +73,16 @@ const RegisterPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="max-w-md w-full space-y-8">
+      <div className="max-w-md w-full bg-secondary/60 border-faded/20 border-[1px] p-10 rounded-xl space-y-8">
+        <div className="">
+          <Image
+            src="/blueprint.png"
+            alt="Logo"
+            width={250}
+            height={250}
+            className="mx-auto"
+          />
+        </div>
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Regisztráció
@@ -197,25 +214,6 @@ const RegisterPage = () => {
             >
               {loading ? "Regisztráció..." : "Regisztráció"}
             </button>
-          </div>
-
-          <div className="text-xs text-gray-600 text-center">
-            A regisztráció gombra kattintva elfogadja az
-            <Link
-              href="/terms"
-              className="font-medium text-accent hover:text-accent/80"
-            >
-              {" "}
-              általános szerződési feltételeket
-            </Link>{" "}
-            és{" "}
-            <Link
-              href="/privacy"
-              className="font-medium text-accent hover:text-accent/80"
-            >
-              adatvédelmi szabályzatot
-            </Link>
-            .
           </div>
         </form>
       </div>

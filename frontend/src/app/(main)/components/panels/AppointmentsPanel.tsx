@@ -1,7 +1,15 @@
 "use client";
+import { DataState } from "@/components/ui/DataState";
 import { Appointment, GetAppointmentsResponse } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
+import {
+  CalendarX2,
+  Clock3,
+  MapPin,
+  TriangleAlert,
+  UserRound,
+} from "lucide-react";
 import Link from "next/link";
 
 const statusLabelMap: Record<Appointment["status"], string> = {
@@ -19,7 +27,7 @@ const statusClassMap: Record<Appointment["status"], string> = {
 };
 
 export const AppointmentsPanel = () => {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["appointments"],
     queryFn: async () => {
       const { data } = await axios.get<GetAppointmentsResponse>(
@@ -46,11 +54,18 @@ export const AppointmentsPanel = () => {
   return (
     <div className="gap-2 grow w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
       {isLoading ? (
-        Array.from({ length: 4 }).map((_, index) => {
+        Array.from({ length: 3 }).map((_, index) => {
           return <div key={index} className="grow bg-faded/20 rounded-xl" />;
         })
+      ) : isError ? (
+        <DataState
+          icon={TriangleAlert}
+          title="Nem sikerült betölteni az időpontokat."
+          tone="error"
+          compact
+        />
       ) : upcomingAppointments.length > 0 ? (
-        upcomingAppointments.map((appointment) => {
+        upcomingAppointments.slice(0, 3).map((appointment) => {
           const dateLabel = new Date(appointment.startTime).toLocaleDateString(
             "hu-HU",
             {
@@ -73,29 +88,38 @@ export const AppointmentsPanel = () => {
           return (
             <Link
               key={appointment.id}
-              href="/app/appointments"
+              href="/appointments"
               className=" border-faded/30 cursor-pointer border-[0.5px] rounded-xl flex flex-col p-3 hover:bg-faded/20 transition ease-in-out"
             >
-              <div className="text-sm text-faded mb-1">{dateLabel}</div>
-              <div className="font-medium line-clamp-2 mb-2">
-                {appointment.title || "Időpont"}
+              <div className="mt-2">
+                <div className="font-medium text-xl float-left line-clamp-2 mb-2 ml-1">
+                  {appointment.title || "Időpont"}
+                </div>
+                <div
+                  className={`text-sm px-2 float-right grow-0 py-1 rounded-full  ${statusClassMap[appointment.status]}`}
+                >
+                  {statusLabelMap[appointment.status]}
+                </div>
               </div>
-              <div className="text-sm text-faded truncate mb-2">
+              <div className="mt-auto text-sm text-faded truncate mb-2">
+                <UserRound size={14} className="inline mr-1" />
                 Tanár: {appointment.teacher?.name ?? "Ismeretlen"}
               </div>
-              <div className="text-xs text-faded mb-3">{timeLabel}</div>
-              <div
-                className={`text-[10px] px-2 py-1 rounded-full self-start ${statusClassMap[appointment.status]}`}
-              >
-                {statusLabelMap[appointment.status]}
+              <div className=" text-sm text-faded truncate mb-4">
+                <MapPin size={14} className="inline mr-1" />
+                Terem: {appointment.teacher?.classroom ?? "Ismeretlen"}
+              </div>
+              <div className="flex justify-between">
+                <div className="text-sm text-faded mb-3 flex items-center gap-1">
+                  <Clock3 size={14} /> {timeLabel}
+                </div>
+                <div className=" text-sm text-faded mb-1">{dateLabel}</div>
               </div>
             </Link>
           );
         })
       ) : (
-        <div className="text-faded h-full w-full flex items-center justify-center text-sm">
-          Nincs közelgő időpont.
-        </div>
+        <DataState icon={CalendarX2} title="Nincs közelgő időpont." compact />
       )}
     </div>
   );

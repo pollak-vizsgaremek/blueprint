@@ -1,0 +1,577 @@
+"use client";
+
+import { Spinner } from "@/components/Spinner";
+import { DataState } from "@/components/ui/DataState";
+import {
+  CreateEventResponse,
+  EventWithRegistrationInfo,
+  GetUsersLiteResponse,
+  TeacherEventsResponse,
+} from "@/types";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
+import {
+  CalendarDays,
+  CalendarX2,
+  MapPin,
+  Pen,
+  Plus,
+  TriangleAlert,
+  Users,
+} from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useState } from "react";
+import { CLASSROOM_OPTIONS, getClassroomLabel } from "@/lib/classrooms";
+import { formatDateTimeHuCompact } from "@/lib/dateFormat";
+import { extractApiErrorMessage } from "@/lib/errors";
+import { TeacherFormModal } from "../../components/TeacherFormModal";
+import { TeacherPageHeader } from "../../components/TeacherPageHeader";
+
+type EventFormState = {
+  name: string;
+  creator: string;
+  updatedBy: string;
+  description: string;
+  location: string;
+  classroom: string;
+  date: string;
+  maxParticipants: string;
+};
+
+const initialFormState: EventFormState = {
+  name: "",
+  creator: "",
+  updatedBy: "",
+  description: "",
+  location: "",
+  classroom: "",
+  date: "",
+  maxParticipants: "",
+};
+
+const TeacherEventsPage = () => {
+  const queryClient = useQueryClient();
+  const [form, setForm] = useState<EventFormState>(initialFormState);
+  const [image, setImage] = useState<File | null>(null);
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [editingEvent, setEditingEvent] =
+    useState<EventWithRegistrationInfo | null>(null);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+
+  const {
+    data: eventsData,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["teacher-events"],
+    queryFn: async () => {
+      const { data } = await axios.get<TeacherEventsResponse>(
+        `${process.env.NEXT_PUBLIC_API_URL}/teacher/events`,
+        {
+          withCredentials: true,
+        },
+      );
+
+      return data;
+    },
+  });
+
+  const events = eventsData?.events ?? [];
+
+  const { data: usersLiteData } = useQuery({
+    queryKey: ["users-lite"],
+    queryFn: async () => {
+      const { data } = await axios.get<GetUsersLiteResponse>(
+        `${process.env.NEXT_PUBLIC_API_URL}/users/list`,
+        {
+          withCredentials: true,
+        },
+      );
+
+      return data;
+    },
+  });
+
+  const usersLite = usersLiteData?.users ?? [];
+
+  const resetForm = () => {
+    setForm(initialFormState);
+    setImage(null);
+    setEditingEvent(null);
+    setIsFormModalOpen(false);
+  };
+
+  const openCreateModal = () => {
+    setMessage(null);
+    setForm(initialFormState);
+    setImage(null);
+    setEditingEvent(null);
+    setIsFormModalOpen(true);
+  };
+
+  const openEditModal = (event: EventWithRegistrationInfo) => {
+    setMessage(null);
+    setImage(null);
+    setEditingEvent(event);
+
+    const eventDate = new Date(event.date);
+    const dateInputValue = Number.isNaN(eventDate.getTime())
+      ? ""
+      : new Date(eventDate.getTime() - eventDate.getTimezoneOffset() * 60000)
+          .toISOString()
+          .slice(0, 16);
+
+    setForm({
+      name: event.name,
+      creator: event.creator,
+      updatedBy: event.updatedBy ? String(event.updatedBy) : "",
+      description: event.description,
+      location: event.location,
+      classroom: event.classroom || "",
+      date: dateInputValue,
+      maxParticipants: event.maxParticipants
+        ? String(event.maxParticipants)
+        : "",
+    });
+
+    setIsFormModalOpen(true);
+  };
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      const payload = new FormData();
+      payload.append("name", form.name.trim());
+      payload.append("creator", form.creator.trim());
+      payload.append("updatedBy", form.updatedBy);
+      payload.append("description", form.description.trim());
+      payload.append("location", form.location.trim());
+      payload.append("classroom", form.classroom);
+      payload.append("date", new Date(form.date).toISOString());
+
+      if (form.maxParticipants.trim()) {
+        payload.append("maxParticipants", form.maxParticipants.trim());
+      }
+
+      if (image) {
+        payload.append("image", image);
+      }
+
+      const { data } = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/teacher/events`,
+        payload,
+        {
+          withCredentials: true,
+        },
+      );
+
+      return data;
+    },
+    onSuccess: () => {
+      resetForm();
+      setMessage({ type: "success", text: "Esemény létrehozva." });
+      queryClient.invalidateQueries({ queryKey: ["teacher-events"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-events"] });
+    },
+    onError: (error) => {
+      setMessage({
+        type: "error",
+        text: extractApiErrorMessage(
+          error,
+          "Az esemény létrehozása sikertelen.",
+        ),
+      });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      if (!editingEvent) {
+        return;
+      }
+
+      const payload = new FormData();
+      payload.append("name", form.name.trim());
+      payload.append("creator", form.creator.trim());
+      payload.append("updatedBy", form.updatedBy);
+      payload.append("description", form.description.trim());
+      payload.append("location", form.location.trim());
+      payload.append("classroom", form.classroom);
+      payload.append("date", new Date(form.date).toISOString());
+
+      if (form.maxParticipants.trim()) {
+        payload.append("maxParticipants", form.maxParticipants.trim());
+      }
+
+      if (image) {
+        payload.append("image", image);
+      }
+
+      const { data } = await axios.put<CreateEventResponse>(
+        `${process.env.NEXT_PUBLIC_API_URL}/teacher/events/${editingEvent.id}`,
+        payload,
+        {
+          withCredentials: true,
+        },
+      );
+
+      return data;
+    },
+    onSuccess: () => {
+      resetForm();
+      setMessage({ type: "success", text: "Esemény frissítve." });
+      queryClient.invalidateQueries({ queryKey: ["teacher-events"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-events"] });
+    },
+    onError: (error) => {
+      setMessage({
+        type: "error",
+        text: extractApiErrorMessage(
+          error,
+          "Az esemény frissítése sikertelen.",
+        ),
+      });
+    },
+  });
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (
+      !form.name.trim() ||
+      !form.creator.trim() ||
+      !form.updatedBy ||
+      !form.description.trim() ||
+      !form.location.trim() ||
+      !form.classroom ||
+      !form.date
+    ) {
+      setMessage({
+        type: "error",
+        text: "A kötelező mezők kitöltése szükséges (szervezővel és frissítővel együtt).",
+      });
+      return;
+    }
+
+    if (Number.isNaN(new Date(form.date).getTime())) {
+      setMessage({ type: "error", text: "Érvénytelen esemény időpont." });
+      return;
+    }
+
+    if (form.maxParticipants.trim() && Number(form.maxParticipants) <= 0) {
+      setMessage({
+        type: "error",
+        text: "A maximális létszám pozitív szám legyen.",
+      });
+      return;
+    }
+
+    if (editingEvent) {
+      updateMutation.mutate();
+      return;
+    }
+
+    createMutation.mutate();
+  };
+
+  return (
+    <>
+      <TeacherPageHeader
+        title="Saját eseményeim"
+        description="Hozz létre új eseményeket, és kövesd a saját eseményeid listáját."
+        actions={
+          <button
+            type="button"
+            onClick={openCreateModal}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/80 transition ease-in-out cursor-pointer"
+          >
+            <Plus size={16} />
+            Új esemény
+          </button>
+        }
+      />
+
+      {message ? (
+        <div
+          className={`mb-5 rounded-xl border px-4 py-3 text-sm ${
+            message.type === "success"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+              : "border-red-200 bg-red-50 text-red-700"
+          }`}
+        >
+          {message.text}
+        </div>
+      ) : null}
+
+      <section className="card-box h-auto! p-5 min-w-0">
+        {isLoading ? (
+          <div className="flex min-h-[220px] sm:min-h-[320px] items-center justify-center">
+            <Spinner />
+          </div>
+        ) : isError ? (
+          <DataState
+            icon={TriangleAlert}
+            title="Nem sikerült betölteni az eseményeidet."
+            tone="error"
+          />
+        ) : events.length === 0 ? (
+          <DataState icon={CalendarX2} title="Még nincs saját eseményed." />
+        ) : (
+          <div className="space-y-3 max-h-[820px] overflow-y-auto pr-1">
+            {events.map((event: EventWithRegistrationInfo) => (
+              <article
+                key={event.id}
+                className="rounded-xl border border-faded/20 bg-secondary/40 p-4"
+              >
+                <div className="flex flex-col md:flex-row gap-4">
+                  {event.imageUrl ? (
+                    <div className="relative h-32 md:h-28 md:w-40 rounded-xl overflow-hidden shrink-0 bg-faded/20">
+                      <Image
+                        src={event.imageUrl}
+                        alt={event.name}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="h-32 md:h-28 md:w-40 rounded-xl bg-accent/10 text-accent flex items-center justify-center shrink-0">
+                      <CalendarDays size={32} />
+                    </div>
+                  )}
+
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-lg font-semibold leading-tight">
+                      {event.name}
+                    </h3>
+                    <p className="text-sm text-faded line-clamp-2 mt-1">
+                      {event.description}
+                    </p>
+
+                    <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-faded">
+                      <div className="inline-flex items-center gap-2">
+                        <MapPin size={15} />
+                        <span className="truncate">{event.location}</span>
+                      </div>
+                      <div className="inline-flex items-center gap-2">
+                        <CalendarDays size={15} />
+                        <span>{formatDateTimeHuCompact(event.date)}</span>
+                      </div>
+                      <div className="inline-flex items-center gap-2">
+                        <Users size={15} />
+                        <span>
+                          {event.registrationCount}
+                          {event.maxParticipants
+                            ? ` / ${event.maxParticipants}`
+                            : ""}{" "}
+                          fő
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mt-4">
+                      <div className="inline-flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(event)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-faded/30 px-3 py-1.5 text-sm hover:bg-faded/10 transition ease-in-out cursor-pointer"
+                        >
+                          <Pen size={14} />
+                          Szerkesztés
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <TeacherFormModal
+        isOpen={isFormModalOpen}
+        onClose={resetForm}
+        title={editingEvent ? "Esemény szerkesztése" : "Új esemény"}
+        description={
+          editingEvent
+            ? "A saját eseményed adatainak módosítása"
+            : "Tanárként létrehozható publikus esemény"
+        }
+        maxWidthClassName="max-w-4xl"
+      >
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <div className="space-y-1">
+            <label className="text-sm text-faded">Cím</label>
+            <input
+              value={form.name}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  name: event.target.value,
+                }))
+              }
+              className="w-full rounded-xl border border-faded/25 bg-secondary/70 px-3 py-2 focus:outline-none focus:border-accent"
+              placeholder="Esemény címe"
+              required
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm text-faded">Szervező</label>
+            <input
+              value={form.creator}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  creator: event.target.value,
+                }))
+              }
+              className="w-full rounded-xl border border-faded/25 bg-secondary/70 px-3 py-2 focus:outline-none focus:border-accent"
+              placeholder="Szervező neve"
+              required
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm text-faded">Frissítő felhasználó</label>
+            <select
+              value={form.updatedBy}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  updatedBy: event.target.value,
+                }))
+              }
+              className="w-full rounded-xl border border-faded/25 bg-secondary/70 px-3 py-2 focus:outline-none focus:border-accent"
+              required
+            >
+              <option value="">Válassz felhasználót</option>
+              {usersLite.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name} ({user.email})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm text-faded">Leírás</label>
+            <textarea
+              value={form.description}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  description: event.target.value,
+                }))
+              }
+              className="min-h-32 w-full rounded-xl border border-faded/25 bg-secondary/70 px-3 py-2 focus:outline-none focus:border-accent"
+              placeholder="Esemény leírása"
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-sm text-faded">Helyszín</label>
+              <input
+                value={form.location}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    location: event.target.value,
+                  }))
+                }
+                className="w-full rounded-xl border border-faded/25 bg-secondary/70 px-3 py-2 focus:outline-none focus:border-accent"
+                placeholder="Helyszín"
+                required
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm text-faded">Tanterem</label>
+              <select
+                value={form.classroom}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    classroom: event.target.value,
+                  }))
+                }
+                className="w-full rounded-xl border border-faded/25 bg-secondary/70 px-3 py-2 focus:outline-none focus:border-accent"
+                required
+              >
+                <option value="">Válassz tantermet</option>
+                {CLASSROOM_OPTIONS.map((classroom) => (
+                  <option key={classroom} value={classroom}>
+                    {getClassroomLabel(classroom)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm text-faded">Időpont</label>
+              <input
+                type="datetime-local"
+                value={form.date}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    date: event.target.value,
+                  }))
+                }
+                className="w-full rounded-xl border border-faded/25 bg-secondary/70 px-3 py-2 focus:outline-none focus:border-accent"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-sm text-faded">Maximális létszám</label>
+              <input
+                type="number"
+                min={1}
+                value={form.maxParticipants}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    maxParticipants: event.target.value,
+                  }))
+                }
+                className="w-full rounded-xl border border-faded/25 bg-secondary/70 px-3 py-2 focus:outline-none focus:border-accent"
+                placeholder="Opcionális"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm text-faded">Kép</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(event) => setImage(event.target.files?.[0] ?? null)}
+                className="w-full rounded-xl border border-faded/25 bg-secondary/70 px-3 py-2 text-sm focus:outline-none focus:border-accent"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={createMutation.isPending || updateMutation.isPending}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 font-medium text-white hover:bg-accent/80 transition ease-in-out disabled:bg-faded disabled:cursor-not-allowed cursor-pointer"
+          >
+            {createMutation.isPending || updateMutation.isPending
+              ? "Mentés..."
+              : editingEvent
+                ? "Frissítés"
+                : "Létrehozás"}
+          </button>
+        </form>
+      </TeacherFormModal>
+    </>
+  );
+};
+
+export default TeacherEventsPage;

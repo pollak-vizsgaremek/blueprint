@@ -12,6 +12,9 @@ export interface CalendarProps {
   selected?: Date;
   onSelect?: (date: Date | undefined) => void;
   disabled?: (date: Date) => boolean;
+  isAvailableDate?: (date: Date) => boolean;
+  isUnavailableDate?: (date: Date) => boolean;
+  weekStart?: "monday" | "sunday";
   fromYear?: number;
   toYear?: number;
 }
@@ -24,11 +27,14 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
       selected,
       onSelect,
       disabled,
+      isAvailableDate,
+      isUnavailableDate,
+      weekStart = "monday",
       fromYear = 1900,
       toYear = new Date().getFullYear(),
       ...props
     },
-    ref
+    ref,
   ) => {
     const [currentMonth, setCurrentMonth] = React.useState(() => {
       if (selected) return selected;
@@ -58,7 +64,10 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
       "December",
     ];
 
-    const dayNames = ["V", "H", "K", "Sze", "Cs", "P", "Szo"];
+    const dayNames =
+      weekStart === "monday"
+        ? ["H", "K", "Sze", "Cs", "P", "Szo", "V"]
+        : ["V", "H", "K", "Sze", "Cs", "P", "Szo"];
 
     const daysInMonth = (year: number, month: number) =>
       new Date(year, month + 1, 0).getDate();
@@ -70,7 +79,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
       const month = currentMonth.getMonth();
       const daysCount = daysInMonth(year, month);
       const firstDay = firstDayOfMonth(year, month);
-      const startDay = firstDay === 0 ? 6 : firstDay - 1; // Monday = 0
+      const startDay = weekStart === "monday" ? (firstDay + 6) % 7 : firstDay;
 
       const days = [];
 
@@ -178,7 +187,8 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
               <Button
                 variant="outline"
                 size="icon"
-                className="h-7 w-7"
+                type="button"
+                className="h-7 w-7 cursor-pointer"
                 onClick={goToPreviousMonth}
                 disabled={
                   currentYear === fromYear && currentMonth.getMonth() === 0
@@ -195,6 +205,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
                   <PopoverTrigger asChild>
                     <Button
                       variant="ghost"
+                      type="button"
                       className="text-sm font-medium px-2 py-1 h-auto hover:bg-gray-100"
                     >
                       {monthNames[currentMonth.getMonth()]}
@@ -208,10 +219,11 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
                           key={month}
                           variant="ghost"
                           size="sm"
+                          type="button"
                           className={cn(
                             "text-xs p-2 h-8",
                             index === currentMonth.getMonth() &&
-                              "bg-accent text-white"
+                              "bg-accent text-white",
                           )}
                           onClick={() => selectMonth(index)}
                         >
@@ -226,6 +238,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
                   <PopoverTrigger asChild>
                     <Button
                       variant="ghost"
+                      type="button"
                       className="text-sm font-medium px-2 py-1 h-auto hover:bg-gray-100"
                     >
                       {currentYear}
@@ -242,9 +255,10 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
                           key={year}
                           variant="ghost"
                           size="sm"
+                          type="button"
                           className={cn(
                             "w-full justify-start text-sm p-2 h-8",
-                            year === currentYear && "bg-accent text-white"
+                            year === currentYear && "bg-accent text-white",
                           )}
                           onClick={() => selectYear(year)}
                         >
@@ -259,7 +273,8 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
               <Button
                 variant="outline"
                 size="icon"
-                className="h-7 w-7"
+                type="button"
+                className="h-7 w-7 cursor-pointer"
                 onClick={goToNextMonth}
                 disabled={
                   currentYear === toYear && currentMonth.getMonth() === 11
@@ -295,10 +310,19 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
                               day.date.toDateString() ===
                                 selected.toDateString();
                             const isDisabled = disabled && disabled(day.date);
+                            const isAvailable =
+                              Boolean(isAvailableDate?.(day.date)) &&
+                              !isDisabled &&
+                              day.isCurrentMonth;
+                            const isUnavailable =
+                              Boolean(isUnavailableDate?.(day.date)) &&
+                              !isDisabled &&
+                              day.isCurrentMonth;
 
                             return (
                               <td key={dayIndex} className="p-1 text-center">
                                 <button
+                                  type="button"
                                   onClick={() => selectDate(day.date)}
                                   disabled={isDisabled}
                                   className={cn(
@@ -313,8 +337,14 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
                                     day.isToday &&
                                       !isSelected &&
                                       "bg-gray-100 text-accent font-semibold",
+                                    isAvailable &&
+                                      !isSelected &&
+                                      "ring-1 ring-accent/35",
+                                    isUnavailable &&
+                                      !isSelected &&
+                                      "bg-amber-100 text-amber-800 ring-1 ring-amber-300",
                                     isDisabled &&
-                                      "text-gray-300 cursor-not-allowed hover:bg-transparent"
+                                      "text-gray-300 cursor-not-allowed hover:bg-transparent",
                                   )}
                                 >
                                   {day.date.getDate()}
@@ -323,7 +353,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
                             );
                           })}
                       </tr>
-                    )
+                    ),
                   )}
                 </tbody>
               </table>
@@ -332,7 +362,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
         </div>
       </div>
     );
-  }
+  },
 );
 
 Calendar.displayName = "Calendar";

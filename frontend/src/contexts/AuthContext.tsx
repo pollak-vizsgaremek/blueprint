@@ -18,9 +18,11 @@ interface AuthContextType {
     name: string,
     email: string,
     password: string,
-    dateOfBirth: string
+    dateOfBirth: string,
   ) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
   isLoading: boolean;
   isAdmin: boolean;
 }
@@ -43,26 +45,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+  const fetchUser = async () => {
+    try {
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/users/profile`,
+        {
+          withCredentials: true,
+        },
+      );
+
+      setUser(response.data.user);
+    } catch (_error) {
+      setUser(null);
+    }
+  };
+
   // Fetch user info from cookie on mount
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_URL}/users/profile`,
-          {
-            withCredentials: true,
-          },
-        );
-
-        setUser(response.data.user);
-      } catch (error) {
-        return { message: "Hiba történt." };
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchUser();
+    fetchUser().finally(() => {
+      setIsLoading(false);
+    });
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -73,16 +75,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         { email, password },
         {
           withCredentials: true, // Include cookies in request
-        }
+        },
       );
 
       setUser(response.data.user);
     } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        "Sikertelen bejelentkezés";
-      throw new Error(errorMessage);
+      const payload = error.response?.data;
+      const errorMessage = "A bejelentkezés sikertelen.";
+      const authError = new Error(errorMessage) as Error & { code?: string };
+      authError.code = payload?.code;
+      throw authError;
     } finally {
       setIsLoading(false);
     }
@@ -92,19 +94,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     name: string,
     email: string,
     password: string,
-    dateOfBirth: string
+    dateOfBirth: string,
   ) => {
     setIsLoading(true);
     try {
-      const response = await axios.post(
+      await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/users`,
         { name, email, password, dateOfBirth },
         {
           withCredentials: true, // Include cookies in request
-        }
+        },
       );
-
-      setUser(response.data.user);
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.error ||
@@ -123,13 +123,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         {},
         {
           withCredentials: true, // Include cookies in request
-        }
+        },
       );
-      router.push("/");
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
       setUser(null);
+      router.replace("/login");
+      router.refresh();
     }
   };
 
@@ -138,6 +139,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     register,
     logout,
+    refreshUser: fetchUser,
+    setUser,
     isLoading,
     isAdmin: user?.role === "admin",
   };

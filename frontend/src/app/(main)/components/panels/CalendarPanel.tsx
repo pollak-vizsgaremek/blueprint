@@ -1,11 +1,13 @@
 "use client";
 
+import { DataState } from "@/components/ui/DataState";
 import {
   GetUserEventRegistrationsResponse,
   RegistrationWithEvent,
 } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
+import { CalendarX2, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 
 const monthNames = [
@@ -31,7 +33,7 @@ const toDateKey = (date: Date) => {
 };
 
 export const CalendarPanel = () => {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["myevents"],
     queryFn: async () => {
       const { data } = await axios.get<GetUserEventRegistrationsResponse>(
@@ -64,19 +66,44 @@ export const CalendarPanel = () => {
     ? new Date(upcomingEvent.event.date)
     : new Date();
 
+  if (isError) {
+    return (
+      <DataState
+        icon={TriangleAlert}
+        title="Nem sikerült betölteni a naptárat."
+        tone="error"
+        compact
+      />
+    );
+  }
+
+  if (!isLoading && !upcomingEvent) {
+    return (
+      <DataState
+        icon={CalendarX2}
+        title="Nincs közelgő esemény."
+        compact
+        href="/calendar"
+        actionLabel="Naptár megnyitása"
+      />
+    );
+  }
+
   return (
     <Link
-      href={`/app/calendar?date=${focusDate}`}
-      className="grow flex p-2 justify-between cursor-pointer rounded-xl"
+      href={`/calendar?date=${focusDate}`}
+      className="grow flex pb-2 justify-between cursor-pointer rounded-xl"
     >
       <div className="w-2/3 m-auto h-full hover:bg-faded/30 transition ease-in-out border-[2px] flex flex-col justify-between rounded-md border-faded/20 ">
-        <div className="flex justify-center grow items-center flex-col gap-2">
-          <div className="text-6xl font-bold">{previewDate.getDate()}.</div>
+        <div className="flex justify-center grow items-center flex-col md:gap-2 max-md:my-10">
+          <div className="text-7xl max-md:text-4xl font-bold">
+            {previewDate.getDate()}.
+          </div>
           <div className="tracking-wider text-sm text-faded">
             {monthNames[previewDate.getMonth()]}
           </div>
         </div>
-        <div className="text-center py-1 text-white text-sm w-full bg-green-400 rounded-b-sm px-2 truncate">
+        <div className="text-center py-1 text-white text-sm w-full bg-accent rounded-b-sm px-2 truncate">
           {isLoading
             ? "Betöltés..."
             : upcomingEvent

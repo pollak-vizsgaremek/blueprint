@@ -10,15 +10,45 @@ export interface ErrorResponse {
   message?: string;
 }
 
+export interface UserSettingJson {
+  inAppReminders?: boolean;
+  eventUpdates?: boolean;
+  appointmentUpdates?: boolean;
+  marketingNews?: boolean;
+  showPastEvents?: boolean;
+  autoOpenEventModal?: boolean;
+  compactCalendar?: boolean;
+  reducedMotion?: boolean;
+  highContrast?: boolean;
+  weekStart?: "monday" | "sunday";
+  showWeekNumbers?: boolean;
+  defaultCalendarView?: "month" | "agenda";
+  hideCancelledAppointments?: boolean;
+}
+
 // User-related types
 export interface User {
   id: number;
   name: string;
   email: string;
+  emailVerified?: boolean;
   role: "admin" | "user" | "teacher";
+  classroom?: string | null;
+  status?: "active" | "inactive" | "banned";
   dateOfBirth: string | null; // ISO date string format (YYYY-MM-DD)
+  settingJson?: UserSettingJson;
   createdAt?: string; // ISO datetime string
   updatedAt?: string; // ISO datetime string
+  deletedAt?: string | null;
+  _count?: {
+    registrations?: number;
+    notifications?: number;
+    teacherReservations?: number;
+    studentReservations?: number;
+    news?: number;
+    eventNews?: number;
+    eventComments?: number;
+  };
 }
 
 export interface UserWithoutPassword extends Omit<User, "password"> {}
@@ -31,10 +61,12 @@ export interface LoginRequest {
 export interface LoginResponse {
   message: string;
   user: {
+    id: number;
     name: string;
     email: string;
     role: "admin" | "user" | "teacher";
     dateOfBirth: string | null;
+    classroom?: string | null;
   };
   token: string;
 }
@@ -45,6 +77,19 @@ export interface TeacherOption {
   name: string;
   email: string;
   role: "teacher";
+  classroom?: string | null;
+}
+
+export interface UserOption {
+  id: number;
+  name: string;
+  email: string;
+  role: "admin" | "user" | "teacher";
+}
+
+export interface GetUsersLiteResponse {
+  message: string;
+  users: UserOption[];
 }
 
 export interface Appointment {
@@ -56,9 +101,28 @@ export interface Appointment {
   status: "pending" | "confirmed" | "cancelled" | "completed";
   startTime: string;
   endTime: string;
+  classroom?: string | null;
   createdAt: string;
   updatedAt: string;
   teacher: TeacherOption | null;
+}
+
+export interface AdminAppointment extends Appointment {
+  student: {
+    id: number;
+    name: string;
+    email: string;
+    role: "admin" | "user" | "teacher";
+  } | null;
+}
+
+export interface TeacherAppointment extends Appointment {
+  student: {
+    id: number;
+    name: string;
+    email: string;
+    role: "admin" | "user" | "teacher";
+  } | null;
 }
 
 export interface GetAppointmentsResponse {
@@ -99,6 +163,59 @@ export interface DeleteAppointmentResponse {
   message: string;
 }
 
+export interface TeacherAvailability {
+  id: number;
+  teacherId: number;
+  dayOfWeek: number;
+  startMinutes: number;
+  endMinutes: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GetTeacherAvailabilityResponse {
+  message: string;
+  availability: TeacherAvailability[];
+}
+
+export interface TeacherOccupiedSlot {
+  id: number;
+  startTime: string;
+  endTime: string;
+  status: "pending" | "confirmed";
+}
+
+export interface GetTeacherOccupiedSlotsResponse {
+  message: string;
+  occupiedSlots: TeacherOccupiedSlot[];
+}
+
+export interface TeacherAvailabilityMutationResponse {
+  message: string;
+  availability: TeacherAvailability;
+}
+
+export interface TeacherAppointmentsResponse {
+  message: string;
+  appointments: TeacherAppointment[];
+}
+
+export interface TeacherAppointmentMutationResponse {
+  message: string;
+  appointment: TeacherAppointment;
+}
+
+export interface TeacherEventsResponse {
+  message: string;
+  events: EventWithRegistrationInfo[];
+}
+
+export interface AdminTeacherAvailabilityListResponse {
+  message: string;
+  availability: TeacherAvailability[];
+}
+
 export interface CreateUserRequest {
   name: string;
   email: string;
@@ -117,14 +234,30 @@ export interface UpdateUserRequest {
   email?: string;
   password?: string;
   dateOfBirth?: string; // ISO date string format (YYYY-MM-DD)
+  settingJson?: UserSettingJson;
 }
 
 export interface GetCurrentUserResponse {
   message: string;
   user: {
+    id: number;
     name: string;
     email: string;
+    role: "admin" | "user" | "teacher";
     dateOfBirth: string | null;
+    classroom?: string | null;
+    settingJson?: UserSettingJson;
+  };
+}
+
+export interface TeacherProfileResponse {
+  message: string;
+  teacher: {
+    id: number;
+    name: string;
+    email: string;
+    role: "teacher";
+    classroom: string | null;
   };
 }
 
@@ -135,10 +268,13 @@ export interface Event {
   description: string;
   imageUrl: string | null;
   creator: string;
+  updatedBy?: number | null;
   location: string;
+  classroom: string;
   date: string; // ISO datetime string
   maxParticipants: number | null;
   createdAt: string; // ISO datetime string
+  deletedAt?: string | null;
 }
 
 export interface UserRegistration {
@@ -185,6 +321,7 @@ export interface RegistrationWithEvent extends Omit<Registration, "userId"> {
     imageUrl: string | null;
     creator: string;
     location: string;
+    classroom: string;
     date: string; // ISO datetime string
     maxParticipants: number | null;
     createdAt: string; // ISO datetime string
@@ -223,6 +360,7 @@ export interface GetEventRegistrationsResponse {
   event: {
     id: number;
     name: string;
+    maxParticipants: number | null;
   };
   registrations: RegistrationWithUser[];
 }
@@ -285,6 +423,29 @@ export interface NewsItem {
   author: NewsAuthor | null;
 }
 
+export interface AdminNewsItem extends NewsItem {
+  isPublished: boolean;
+  updatedAt: string;
+  deletedAt: string | null;
+  author: (NewsAuthor & { email?: string }) | null;
+}
+
+export interface AdminNotification {
+  id: number;
+  userId: number;
+  url: string | null;
+  title: string;
+  message: string;
+  type: "info" | "warning" | "success" | "error";
+  isRead: boolean;
+  createdAt: string;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+  } | null;
+}
+
 export interface GetLatestPublishedNewsResponse {
   message: string;
   news: NewsItem | null;
@@ -336,10 +497,104 @@ export interface DeleteEventNewsResponse {
   message: string;
 }
 
+export interface NotificationItem {
+  id: number;
+  userId: number;
+  url: string | null;
+  title: string;
+  message: string;
+  type: "info" | "warning" | "success" | "error";
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface GetNotificationsResponse {
+  message: string;
+  notifications: NotificationItem[];
+  unreadCount: number;
+  totalCount: number;
+  hasMore: boolean;
+}
+
+export interface GetUnreadNotificationCountResponse {
+  message: string;
+  unreadCount: number;
+}
+
+export interface MarkNotificationAsReadResponse {
+  message: string;
+  notification: NotificationItem;
+}
+
+export interface MarkAllNotificationsAsReadResponse {
+  message: string;
+  updatedCount: number;
+}
+
+export interface DeleteNotificationResponse {
+  message: string;
+}
+
 // API endpoint response types
 export type GetAllEventsResponse = EventWithRegistrationInfo[];
 export type GetAllUsersResponse = User[];
-export type GetUserByIdResponse = User;
+
+export interface AdminNewsResponse {
+  message: string;
+  news: AdminNewsItem[];
+}
+
+export interface AdminNewsMutationResponse {
+  message: string;
+  news: AdminNewsItem;
+}
+
+export interface AdminAppointmentsResponse {
+  message: string;
+  appointments: AdminAppointment[];
+}
+
+export interface AdminAppointmentMutationResponse {
+  message: string;
+  appointment: AdminAppointment;
+}
+
+export interface AdminNotificationsResponse {
+  message: string;
+  notifications: AdminNotification[];
+}
+
+export interface AdminNotificationMutationResponse {
+  message: string;
+  notification: AdminNotification;
+}
+
+export interface AdminRegistration extends RegistrationWithUser {
+  eventId: number;
+  user: RegistrationWithUser["user"] & {
+    role?: "admin" | "user" | "teacher";
+  };
+}
+
+export interface AdminEventRegistrationsResponse {
+  message: string;
+  event: {
+    id: number;
+    name: string;
+    maxParticipants: number | null;
+  };
+  registrations: AdminRegistration[];
+}
+
+export interface AdminRegistrationMutationResponse {
+  message: string;
+  registration: AdminRegistration;
+}
+
+export interface AdminUserMutationResponse {
+  message: string;
+  user: User;
+}
 
 // Common error responses
 export interface ValidationErrorResponse extends ErrorResponse {

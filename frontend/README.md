@@ -9,6 +9,7 @@ Frontend application for the Blueprint event management platform.
 - Tailwind CSS 4
 - TanStack Query
 - GSAP animations
+- Sonner (toast notifications)
 
 ## Prerequisites
 
@@ -80,12 +81,35 @@ PLAYWRIGHT_TEACHER_PASSWORD=
 - `/app` - Main authenticated app area
 - `/admin` - Admin area
 
+## Notifications UX
+
+- Global toaster is mounted in `src/app/layout.tsx`.
+- Action feedback uses Sonner toasts for major async outcomes (success/error/warning), while confirmation flows remain modal-based for destructive actions.
+
+## Notification Settings
+
+- Active notification keys in `settingJson`:
+  - `eventUpdates`
+  - `appointmentUpdates`
+  - `marketingNews`
+  - `inAppReminders`
+- Legacy key migration during hydration:
+  - `commentsReplies` -> `appointmentUpdates`
+  - `emailReminders` -> `inAppReminders`
+
 ## Event Navigation
 
 - Event location navigation uses classroom-based routing.
 - Start point is fixed to `FőBej`.
 - Destination is the event's selected classroom.
 - Admin and teacher event forms require classroom selection.
+
+## Responsive Event UX
+
+- Event modal and individual event pages are optimized for mobile:
+  - fullscreen modal behavior on small screens
+  - horizontally scrollable tab bars
+  - stacked action areas and touch-friendly controls
 
 ## Auth UX Notes
 

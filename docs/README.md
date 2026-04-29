@@ -18,3 +18,13 @@
 - Email confirmation route: `/confirm-email?token=...`
 - Password reset route: `/reset-password?token=...`
 - Backend email delivery uses Microsoft Graph OAuth2.
+
+## Notification Settings
+
+- Active notification keys:
+  - `eventUpdates`
+  - `appointmentUpdates`
+  - `marketingNews`
+  - `inAppReminders`
+- Backend reminder scheduler behavior: exact rolling `T-24h` in-app reminders for events and appointments.
+- Admin news publication fans out marketing notifications, filtered by user preferences.

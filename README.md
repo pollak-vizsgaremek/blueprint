@@ -64,6 +64,19 @@ npm run dev
   - `/reset-password?token=...`
 - Backend email sending uses Microsoft Graph OAuth2.
 
+## Notification Settings
+
+- In-app notifications are filtered by user `settingJson` preferences.
+- Active notification keys:
+  - `eventUpdates`
+  - `appointmentUpdates`
+  - `marketingNews`
+  - `inAppReminders`
+- Backend reminder scheduler behavior: exact rolling `T-24h` in-app reminders for upcoming events and appointments.
+- Legacy key migration during normalization:
+  - `commentsReplies` -> `appointmentUpdates`
+  - `emailReminders` -> `inAppReminders`
+
 ## Notes
 
 - After Prisma schema changes, run `npx prisma generate` again and restart backend.

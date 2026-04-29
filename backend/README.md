@@ -24,6 +24,8 @@ A comprehensive REST API backend for an event management system built with Node.
 - **Database**: MySQL database with Prisma ORM for robust data management
 - **CORS Support**: Cross-origin resource sharing enabled for frontend integration
 - **Error Handling**: Centralized error handling middleware with detailed responses
+- **Preference-filtered Notifications**: Notification delivery respects per-user `settingJson`
+- **24h Reminder Scheduler**: Rolling in-app reminders for upcoming events and appointments
 
 ## Tech Stack
 
@@ -179,6 +181,10 @@ The application uses the following route structure:
 - `/admin/events` - Admin-only event management
 - `/admin/users` - Admin-only user management
 
+Background jobs:
+
+- A reminder scheduler starts with the API process and periodically creates in-app reminder notifications around exact `T-24h` windows.
+
 Note: legacy event map preset endpoints were removed; event navigation now relies on event `classroom`.
 
 The server is configured with:
@@ -200,7 +206,7 @@ The server is configured with:
 - `classroom`: Optional classroom assignment (mainly for teachers)
 - `role`: Role string (`user`, `teacher`, `admin`)
 - `status`: Account status (`active`, `inactive`, `banned`)
-- `settingJson`: Optional JSON user settings
+- `settingJson`: Optional JSON user settings (includes notification preferences)
 - `createdAt`: Account creation timestamp
 - `updatedAt`: Last update timestamp
 - `deletedAt`: Soft-delete timestamp
@@ -357,6 +363,29 @@ The API uses centralized error handling with consistent error response format:
   "error": "Detailed error information"
 }
 ```
+
+## Notification Settings
+
+Notification filtering is enforced in backend services using category-to-setting mapping.
+
+Active notification keys:
+
+- `eventUpdates`
+- `appointmentUpdates`
+- `marketingNews`
+- `inAppReminders`
+
+Category mapping:
+
+- `event_updates` -> `eventUpdates`
+- `appointments` -> `appointmentUpdates`
+- `marketing` -> `marketingNews`
+- `reminders` -> `inAppReminders`
+
+Legacy key migration in normalization:
+
+- `commentsReplies` -> `appointmentUpdates`
+- `emailReminders` -> `inAppReminders`
 
 ## Development
 

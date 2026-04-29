@@ -97,9 +97,11 @@ const EventDetailsTabPage = () => {
   const canRegister = event.isUserRegistered || !event.isFull;
 
   return (
-    <div className="px-10 mt-5 pb-10 flex justify-between flex-col grow page-content">
+    <div className="px-4 sm:px-6 lg:px-10 mt-5 pb-8 sm:pb-10 flex justify-between flex-col grow page-content">
       <div>
-        <div className="text-4xl mb-3">{event.name}</div>
+        <div className="text-2xl sm:text-3xl lg:text-4xl mb-3">
+          {event.name}
+        </div>
         <div className="text-gray-600 text-justify mb-5">
           {event.description}
         </div>
@@ -122,7 +124,7 @@ const EventDetailsTabPage = () => {
           </div>
         </div>
       </div>
-      <div className="w-full justify-between flex mt-10 items-center">
+      <div className="w-full justify-between flex mt-8 sm:mt-10 items-center flex-wrap gap-3">
         <div className="text-sm text-faded px-3 py-2 inline-flex items-center gap-2">
           <CalendarDays size={16} className="" />
           <span>Létrehozva: {formatDateOnly(event.createdAt)}</span>
@@ -136,7 +138,7 @@ const EventDetailsTabPage = () => {
           <button
             onClick={() => toggleRegistration()}
             disabled={!canRegister || isRegistrationPending}
-            className="bg-accent text-white text-xl px-3 py-2 hover:bg-accent/60 transition ease-in-out active:scale-95 active:duration-75 rounded-xl cursor-pointer disabled:bg-faded disabled:cursor-not-allowed"
+            className="bg-accent text-white text-base sm:text-lg px-3 py-2 hover:bg-accent/60 transition ease-in-out active:scale-95 active:duration-75 rounded-xl cursor-pointer disabled:bg-faded disabled:cursor-not-allowed"
           >
             {isRegistrationPending
               ? "Feldolgozás..."

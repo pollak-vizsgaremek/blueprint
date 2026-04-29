@@ -19,6 +19,7 @@
 
 body {
   @apply bg-primary;
+  overflow-x: hidden;
 }
 
 body::after {
@@ -34,7 +35,23 @@ body::before {
 }
 
 .card-box {
-  @apply bg-secondary/30 backdrop-blur-xl border-[0.5px] border-faded/10 grow h-65 rounded-xl p-4;
+  @apply bg-secondary/30 backdrop-blur-xl border-[0.5px] border-faded/10 grow rounded-xl p-4;
+}
+
+.page-shell {
+  @apply mx-auto w-full max-w-[1640px] px-4 sm:px-6 lg:px-8;
+}
+
+.page-main {
+  @apply min-h-screen pt-24 pb-20;
+}
+
+button:not([class*="h-"]):not([class*="size-"]) {
+  min-height: 2.5rem;
+}
+
+a.inline-flex:not([class*="h-"]):not([class*="size-"]) {
+  min-height: 2.5rem;
 }
 
 /* Landing page responsive improvements */

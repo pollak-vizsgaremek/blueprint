@@ -32,7 +32,7 @@ const EventLayoutBody = ({ children }: { children: React.ReactNode }) => {
 
   if (isError || !event) {
     return (
-      <main className="w-7/8 m-auto min-h-screen pt-24 pb-20">
+      <main className="page-shell page-main">
         <DataState
           icon={CircleAlert}
           title="Az esemény nem található."
@@ -43,8 +43,8 @@ const EventLayoutBody = ({ children }: { children: React.ReactNode }) => {
   }
 
   return (
-    <main className="w-7/8 m-auto min-h-screen pt-14 pb-20">
-      <div className="rounded-xl w-full min-h-[750px] flex flex-col">
+    <main className="page-shell min-h-screen pt-20 pb-16 sm:pt-14 sm:pb-20">
+      <div className="rounded-xl w-full min-h-[640px] sm:min-h-[750px] flex flex-col">
         <div className="relative shrink-0 bg-gray-400/10 backdrop-blur-xl rounded-t-xl overflow-hidden">
           {event.imageUrl ? (
             <Image

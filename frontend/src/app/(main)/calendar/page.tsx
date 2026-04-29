@@ -400,7 +400,7 @@ const CalendarContent = () => {
 
   if (isError || isAppointmentsError) {
     return (
-      <main className="w-7/8 m-auto min-h-screen pt-24 pb-20">
+      <main className="page-shell page-main">
         <div className="card-box h-auto">
           <div className="text-xl text-red-600">
             Nem sikerült betölteni a naptár adatokat.
@@ -411,7 +411,7 @@ const CalendarContent = () => {
   }
 
   return (
-    <main className="w-7/8 m-auto min-h-screen pt-24 page-content pb-20">
+    <main className="page-shell page-main page-content">
       <div className="mb-6">
         <h1 className="text-3xl font-semibold">Naptár</h1>
         <p className="text-faded mt-1">
@@ -625,12 +625,12 @@ const CalendarContent = () => {
           <div className="text-faded mb-4 capitalize">{selectedDateLabel}</div>
 
           {allRegisteredEvents.length === 0 && allAppointments.length === 0 ? (
-            <div className="h-48 border border-dashed border-faded/30 rounded-xl flex items-center justify-center text-faded text-center px-4">
+            <div className="min-h-[180px] sm:min-h-[220px] border border-dashed border-faded/30 rounded-xl flex items-center justify-center text-faded text-center px-4">
               Még nincs naptárbejegyzésed.
             </div>
           ) : selectedDayEvents.length === 0 &&
             selectedDayAppointments.length === 0 ? (
-            <div className="h-48 border border-dashed border-faded/30 rounded-xl flex items-center justify-center text-faded text-center px-4">
+            <div className="min-h-[180px] sm:min-h-[220px] border border-dashed border-faded/30 rounded-xl flex items-center justify-center text-faded text-center px-4">
               Erre a napra nincs bejegyzésed.
             </div>
           ) : (

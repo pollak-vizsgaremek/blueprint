@@ -498,7 +498,7 @@ export const EventModal = () => {
     };
 
     return (
-      <div className="pt-2 px-10 pb-2 mt-5 flex grow overflow-y-scroll flex-col">
+      <div className="pt-2 px-4 sm:px-6 lg:px-10 pb-2 mt-5 flex grow overflow-y-auto flex-col">
         {canManageNews && (
           <div className="mb-5 rounded-xl border border-faded/40 bg-white/30 p-3">
             <div className="text-lg mb-2">
@@ -695,7 +695,7 @@ export const EventModal = () => {
 
   const renderDiscussionTab = () => {
     return (
-      <div className="pt-2 px-10 mt-5 pb-2 flex grow overflow-y-scroll flex-col">
+      <div className="pt-2 px-4 sm:px-6 lg:px-10 mt-5 pb-2 flex grow overflow-y-auto flex-col">
         <div className="flex gap-2 mb-4 mt-1">
           <input
             value={commentContent}
@@ -791,7 +791,7 @@ export const EventModal = () => {
             e.stopPropagation();
           }}
         >
-          <div className="flex h-[min(820px,calc(100vh-1rem))] w-[min(1200px,calc(100vw-1rem))] flex-col rounded-xl bg-secondary/70 backdrop-blur-xl sm:h-[min(820px,calc(100vh-2rem))] sm:w-[min(1200px,calc(100vw-2rem))]">
+          <div className="flex h-[min(860px,calc(100vh-1rem))] w-[min(1200px,calc(100vw-1rem))] flex-col rounded-xl bg-secondary/70 backdrop-blur-xl sm:h-[min(860px,calc(100vh-2rem))] sm:w-[min(1200px,calc(100vw-2rem))]">
             <div className="relative h-[180px] shrink-0 w-full sm:h-[220px] md:h-[260px] lg:h-[300px]">
               <div className="absolute top-5 right-5 z-100 flex items-center gap-2">
                 <Link
@@ -863,9 +863,11 @@ export const EventModal = () => {
               </button>
             </div>
             {activeTab === "details" ? (
-              <div className="px-10 pb-10 mt-5 flex justify-between flex-col grow">
+              <div className="px-4 sm:px-6 lg:px-10 pb-6 sm:pb-10 mt-5 flex justify-between flex-col grow">
                 <div>
-                  <div className="text-4xl mb-3">{selectedEvent?.name}</div>
+                  <div className="text-2xl sm:text-3xl lg:text-4xl mb-3">
+                    {selectedEvent?.name}
+                  </div>
                   <div className="text-gray-600 text-justify mb-5">
                     {selectedEvent?.description}
                   </div>
@@ -926,7 +928,7 @@ export const EventModal = () => {
             ) : activeTab === "discussion" ? (
               renderDiscussionTab()
             ) : (
-              <div className="px-10 mt-5 pb-6 flex grow overflow-y-scroll flex-col">
+              <div className="px-4 sm:px-6 lg:px-10 mt-5 pb-6 flex grow overflow-y-auto flex-col">
                 <div className="text-lg font-semibold">Helyszín</div>
                 <div className="text-faded mt-1 mb-4">
                   {selectedEvent?.location}

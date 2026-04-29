@@ -63,7 +63,7 @@ const NewsPage = () => {
 
   if (isError) {
     return (
-      <main className="w-7/8 m-auto min-h-screen pt-24 pb-20">
+      <main className="page-shell page-main">
         <DataState
           icon={TriangleAlert}
           title="Nem sikerült betölteni a híreket."
@@ -76,7 +76,7 @@ const NewsPage = () => {
   const newsItems = data?.news ?? [];
 
   return (
-    <main className="w-7/8 m-auto min-h-screen page-content pt-24 pb-20">
+    <main className="page-shell page-main page-content">
       <div className="mb-6">
         <h1 className="text-3xl font-semibold">Hírek</h1>
         <p className="text-faded mt-1">

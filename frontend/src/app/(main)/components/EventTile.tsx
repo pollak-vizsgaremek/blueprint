@@ -41,7 +41,7 @@ export const EventTile = ({ event }: { event: Event }) => {
   return (
     <div
       onClick={() => openModal(event)}
-      className="h-88 cursor-pointer flex flex-col hover:shadow-md hover:shadow-gray-500 transition rounded-2xl"
+      className="min-h-[480px] sm:min-h-[500px] cursor-pointer flex flex-col hover:shadow-md hover:shadow-gray-500 transition rounded-2xl"
     >
       <div className="h-[52%] w-full relative">
         {event.imageUrl ? (
@@ -69,19 +69,19 @@ export const EventTile = ({ event }: { event: Event }) => {
           </div>
         </div>
         <div className="space-y-1.5 text-sm text-faded">
-          <div className="inline-flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <CalendarDays size={14} />
             <span>{formatDateTime(event.date)}</span>
           </div>
-          <div className="inline-flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <MapPin size={14} />
             <span className="line-clamp-1">{event.location}</span>
           </div>
-          <div className="inline-flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <Building2 size={14} />
             <span>{event.classroom || "Nincs tanterem"}</span>
           </div>
-          <div className="inline-flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <Users size={14} />
             <span>{registrationText} jelentkező</span>
           </div>

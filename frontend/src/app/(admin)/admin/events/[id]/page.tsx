@@ -378,7 +378,10 @@ const AdminEventDetailsPage = () => {
       invalidateEventDetails();
     },
     onError: (error) => {
-      setMessage({ type: "error", text: getErrorMessage(error, "A komment frissítése sikertelen.") });
+      setMessage({
+        type: "error",
+        text: getErrorMessage(error, "A komment frissítése sikertelen."),
+      });
     },
   });
 
@@ -502,7 +505,7 @@ const AdminEventDetailsPage = () => {
     commentsQuery.isLoading
   ) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
+      <div className="flex min-h-[45vh] sm:min-h-[60vh] items-center justify-center">
         <Spinner />
       </div>
     );
@@ -596,7 +599,9 @@ const AdminEventDetailsPage = () => {
               Jelentkezések
             </h2>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-faded">{registrations.length} db</span>
+              <span className="text-sm text-faded">
+                {registrations.length} db
+              </span>
               <button
                 type="button"
                 onClick={openCreateRegistrationModal}
@@ -610,7 +615,7 @@ const AdminEventDetailsPage = () => {
 
           <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1">
             {registrations.length === 0 ? (
-              <div className="h-48 rounded-xl border border-dashed border-faded/30 flex items-center justify-center text-faded">
+              <div className="min-h-[180px] sm:min-h-[220px] rounded-xl border border-dashed border-faded/30 flex items-center justify-center text-faded">
                 Nincs jelentkezés.
               </div>
             ) : (
@@ -670,7 +675,7 @@ const AdminEventDetailsPage = () => {
 
           <div className="space-y-3 max-h-[430px] overflow-y-auto pr-1">
             {newsItems.length === 0 ? (
-              <div className="h-48 rounded-xl border border-dashed border-faded/30 flex items-center justify-center text-faded">
+              <div className="min-h-[180px] sm:min-h-[220px] rounded-xl border border-dashed border-faded/30 flex items-center justify-center text-faded">
                 Nincs eseményhír.
               </div>
             ) : (
@@ -730,7 +735,7 @@ const AdminEventDetailsPage = () => {
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
             {comments.length === 0 ? (
-              <div className="h-48 rounded-xl border border-dashed border-faded/30 flex items-center justify-center text-faded xl:col-span-2">
+              <div className="min-h-[180px] sm:min-h-[220px] rounded-xl border border-dashed border-faded/30 flex items-center justify-center text-faded xl:col-span-2">
                 Nincs komment.
               </div>
             ) : (
@@ -805,7 +810,9 @@ const AdminEventDetailsPage = () => {
       <AdminFormModal
         isOpen={isRegistrationModalOpen}
         onClose={closeRegistrationModal}
-        title={editingRegistration ? "Jelentkezés szerkesztése" : "Új jelentkezés"}
+        title={
+          editingRegistration ? "Jelentkezés szerkesztése" : "Új jelentkezés"
+        }
         description={event.name}
       >
         <form className="space-y-4" onSubmit={handleSaveRegistration}>
@@ -864,7 +871,8 @@ const AdminEventDetailsPage = () => {
               }
               className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 font-medium text-white hover:bg-accent/80 transition ease-in-out disabled:bg-faded cursor-pointer"
             >
-              {saveRegistrationMutation.isPending || updateRegistrationMutation.isPending
+              {saveRegistrationMutation.isPending ||
+              updateRegistrationMutation.isPending
                 ? "Mentés..."
                 : editingRegistration
                   ? "Frissítés"

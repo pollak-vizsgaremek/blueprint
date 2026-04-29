@@ -277,7 +277,7 @@ const TeacherAvailabilityPage = () => {
 
       <section className="card-box h-auto! p-5 min-w-0">
         {isLoading ? (
-          <div className="flex h-48 items-center justify-center">
+          <div className="flex min-h-[180px] sm:min-h-[220px] items-center justify-center">
             <Spinner />
           </div>
         ) : isError ? (

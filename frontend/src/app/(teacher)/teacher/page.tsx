@@ -121,7 +121,7 @@ const TeacherDashboardPage = () => {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
+      <div className="flex min-h-[45vh] sm:min-h-[60vh] items-center justify-center">
         <Spinner />
       </div>
     );

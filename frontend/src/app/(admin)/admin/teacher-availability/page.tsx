@@ -319,7 +319,7 @@ const TeacherAvailabilityAdminPage = () => {
       ) : null}
 
       <section className="card-box h-auto! p-5 min-w-0">
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 mb-4">
+        <div className="grid grid-cols-1 gap-3 mb-4 md:grid-cols-[1fr_auto]">
           <div>
             <h2 className="text-xl font-semibold">Elérhetőségi sávok</h2>
             <p className="text-sm text-faded">
@@ -334,7 +334,7 @@ const TeacherAvailabilityAdminPage = () => {
                 setSelectedTeacherId(event.target.value);
                 setMessage(null);
               }}
-              className="min-w-[280px] rounded-xl border border-faded/25 bg-secondary/70 px-3 py-2 focus:outline-none focus:border-accent"
+              className="w-full md:min-w-[280px] rounded-xl border border-faded/25 bg-secondary/70 px-3 py-2 focus:outline-none focus:border-accent"
             >
               <option value="">Válassz tanárt...</option>
               {teachers.map((teacher) => (
@@ -347,15 +347,15 @@ const TeacherAvailabilityAdminPage = () => {
         </div>
 
         {isUsersLoading ? (
-          <div className="flex h-48 items-center justify-center">
+          <div className="flex min-h-[180px] sm:min-h-[220px] items-center justify-center">
             <Spinner />
           </div>
         ) : !selectedTeacherId ? (
-          <div className="h-48 rounded-xl border border-dashed border-faded/30 flex items-center justify-center text-faded">
+          <div className="min-h-[180px] sm:min-h-[220px] rounded-xl border border-dashed border-faded/30 flex items-center justify-center text-faded">
             Először válassz tanárt.
           </div>
         ) : isAvailabilityLoading ? (
-          <div className="flex h-48 items-center justify-center">
+          <div className="flex min-h-[180px] sm:min-h-[220px] items-center justify-center">
             <Spinner />
           </div>
         ) : isAvailabilityError ? (
@@ -363,7 +363,7 @@ const TeacherAvailabilityAdminPage = () => {
             Nem sikerült betölteni az elérhetőségi sávokat.
           </div>
         ) : availability.length === 0 ? (
-          <div className="h-48 rounded-xl border border-dashed border-faded/30 flex items-center justify-center text-faded">
+          <div className="min-h-[180px] sm:min-h-[220px] rounded-xl border border-dashed border-faded/30 flex items-center justify-center text-faded">
             Ennek a tanárnak még nincs elérhetőségi sávja.
           </div>
         ) : (

@@ -272,7 +272,7 @@ const SettingsPage = () => {
   ];
 
   return (
-    <main className="w-7/8 m-auto min-h-screen pt-24 pb-20 page-content">
+    <main className="page-shell page-main page-content">
       <div className="mb-6 flex items-start justify-between gap-3">
         <div>
           <h1 className="text-3xl font-semibold">Beállítások</h1>

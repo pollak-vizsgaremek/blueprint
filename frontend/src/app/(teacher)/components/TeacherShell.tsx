@@ -71,7 +71,7 @@ export const TeacherShell = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="min-h-screen pb-12">
       <header className="sticky top-0 z-40 pt-4 pb-3 backdrop-blur-md bg-primary/70 border-b border-faded/10">
-        <div className="w-7/8 mx-auto flex items-center justify-between gap-4">
+        <div className="page-shell flex items-center justify-between gap-3 sm:gap-4">
           <Link
             href="/teacher"
             className="flex items-center gap-3 hover:text-accent transition ease-in-out"
@@ -126,7 +126,7 @@ export const TeacherShell = ({ children }: { children: React.ReactNode }) => {
             onClick={() => setIsMenuOpen(false)}
             className="absolute inset-0 bg-black/40"
           />
-          <aside className="absolute right-0 top-0 h-full w-8/10 max-w-sm bg-secondary/70 backdrop-blur-xl border-l border-faded/20 p-4 shadow-xl">
+          <aside className="absolute right-0 top-0 h-full w-[85%] max-w-sm bg-secondary/70 backdrop-blur-xl border-l border-faded/20 p-4 shadow-xl">
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2 font-semibold">
                 <Shield size={18} className="text-accent" />
@@ -153,7 +153,7 @@ export const TeacherShell = ({ children }: { children: React.ReactNode }) => {
         </div>
       )}
 
-      <div className="w-7/8 mx-auto grid grid-cols-1 lg:grid-cols-[250px_1fr] gap-5 pt-5">
+      <div className="page-shell grid grid-cols-1 lg:grid-cols-[250px_1fr] gap-4 sm:gap-5 pt-4 sm:pt-5">
         <aside className="hidden lg:block card-box h-fit! p-3 sticky top-28">
           <div className="px-3 py-2 mb-2">
             <div className="text-xs text-faded uppercase tracking-[0.2em]">

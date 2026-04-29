@@ -84,27 +84,63 @@ export const Header = () => {
   return (
     <>
       {isMenuOpen && (
-        <div className="w-8/10 p-2 max-w-[500px] h-screen bg-secondary/40 backdrop-blur-xl fixed top-0 right-0 z-[2000] shadow-md shadow-black/20">
-          <X
-            strokeWidth={"0.5px"}
-            size={40}
-            className="cursor-pointer"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
+        <div className="fixed inset-0 z-[2000] md:hidden">
+          <button
+            type="button"
+            onClick={() => setIsMenuOpen(false)}
+            className="absolute inset-0 bg-black/40"
+            aria-label="Menü bezárása"
           />
+          <aside className="absolute right-0 top-0 h-full w-[85%] max-w-sm bg-secondary/70 backdrop-blur-xl border-l border-faded/20 p-4 shadow-md shadow-black/20">
+            <X
+              strokeWidth={"1px"}
+              size={32}
+              className="cursor-pointer"
+              onClick={() => setIsMenuOpen(false)}
+            />
+            <div className="mt-6 flex flex-col gap-3 text-lg">
+              {appNavLinks.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  {item.label}
+                </Link>
+              ))}
+              <Link href="/news" onClick={() => setIsMenuOpen(false)}>
+                Hírek
+              </Link>
+              <Link href="/calendar" onClick={() => setIsMenuOpen(false)}>
+                Naptár
+              </Link>
+              <Link href="/notifications" onClick={() => setIsMenuOpen(false)}>
+                Értesítések
+              </Link>
+              <Link href="/settings" onClick={() => setIsMenuOpen(false)}>
+                Beállítások
+              </Link>
+              <button
+                type="button"
+                onClick={logout}
+                className="mt-2 inline-flex items-center gap-2 text-red-600"
+              >
+                <LogOut className="size-5" />
+                Kijelentkezés
+              </button>
+            </div>
+          </aside>
         </div>
       )}
-      {isMenuOpen && (
-        <div className="w-2/10 h-screen fixed z-[1000] left-0 top-0 bg-black/40"></div>
-      )}
-      <div className="mt-5 w-full header">
-        <header className="h-20 max-md:px-5 py-2 flex justify-between items-center w-9/10 transition ease-in-out  rounded-2xl m-auto">
+      <div className="mt-3 sm:mt-5 w-full header">
+        <header className="h-16 sm:h-20 py-2 flex justify-between items-center page-shell transition ease-in-out rounded-2xl">
           <Link href="/">
-            <div className="flex items-center select-none gap-3 text-2xl hover:text-accent hover:scale-90 transition ease-in-out">
-              <Image src="/blueprint.png" alt="Logo" width={50} height={50} />
+            <div className="flex items-center select-none gap-2 sm:gap-3 text-xl sm:text-2xl hover:text-accent transition ease-in-out">
+              <Image src="/blueprint.png" alt="Logo" width={44} height={44} />
               <div className={roboto.className}>Blueprint</div>
             </div>
           </Link>
-          <div className="flex gap-5 items-center max-md:hidden -translate-x-15 justify-center text-xl *:hover:text-faded *:hover:scale-90 *:transition *:ease-in-out">
+          <div className="hidden md:flex gap-5 items-center justify-center text-xl *:hover:text-faded *:transition *:ease-in-out">
             {appNavLinks.map((item) => {
               const isActive = isAppNavActive(item.href);
 
@@ -128,7 +164,7 @@ export const Header = () => {
           </div>
           <div className="flex items-center flex-row-reverse gap-3">
             <Menu
-              className="min-md:hidden"
+              className="md:hidden"
               size={35}
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             />

@@ -42,35 +42,38 @@ const DashboardPage = () => {
   }, []);
 
   return (
-    <main className="w-7/8 pt-30 m-auto h-screen">
-      <div className="text-3xl max-md:text-2xl mb-8" id="name">
+    <main className="page-shell min-h-screen pt-24 pb-16 sm:pt-28">
+      <div className="text-2xl sm:text-3xl mb-6 sm:mb-8" id="name">
         Szép napot, <span className="font-bold text-accent">{user?.name}</span>
       </div>
-      <div className="flex w-full gap-4 mb-4 max-md:flex-wrap" id="box">
-        <div className="card-box flex flex-col basis-2/5">
+      <div
+        className="grid w-full gap-4 mb-4 grid-cols-1 xl:grid-cols-5"
+        id="box"
+      >
+        <div className="card-box flex flex-col xl:col-span-2">
           <div className="card-title">Hírek</div>
           <NewsPanel />
         </div>
-        <div className="card-box flex flex-col basis-3/5">
+        <div className="card-box flex flex-col xl:col-span-3">
           <div className="card-title mb-3">Közelgő események</div>
           <EventsPanel />
         </div>
       </div>
-      <div className="flex w-full gap-4 max-md:flex-wrap" id="box">
-        <div className="card-box flex flex-col basis-1/5">
+      <div className="grid w-full gap-4 grid-cols-1 xl:grid-cols-5" id="box">
+        <div className="card-box flex flex-col xl:col-span-1">
           <div className="card-title mb-3">Naptár</div>
           <CalendarPanel />
         </div>
-        <div className="card-box flex flex-col basis-3/5">
+        <div className="card-box flex flex-col xl:col-span-3">
           <div className="card-title mb-3">Közelgő időpontok</div>
           <AppointmentsPanel />
         </div>
-        <div className="card-box basis-1/5 flex flex-col">
+        <div className="card-box xl:col-span-1 flex flex-col">
           <div className="card-title">Értesítések</div>
           <NotifPanel />
         </div>
       </div>
-      <div className="w-full gap-3 flex justify-end mt-5" id="icons">
+      <div className="w-full gap-3 flex flex-wrap justify-end mt-5" id="icons">
         <button className="bg-secondary/40 backdrop-blur-xl py-2 px-3 rounded-xl border-[0.5px] border-faded/10 transition ease-in-out hover:bg-faded/40 cursor-pointer">
           <Link href="/settings">
             <Settings />

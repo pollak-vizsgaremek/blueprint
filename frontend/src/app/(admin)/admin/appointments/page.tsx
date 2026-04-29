@@ -292,7 +292,7 @@ const AppointmentsAdminPage = () => {
         </div>
 
         {isAppointmentsLoading ? (
-          <div className="flex h-80 items-center justify-center">
+          <div className="flex min-h-[220px] sm:min-h-[320px] items-center justify-center">
             <Spinner />
           </div>
         ) : isAppointmentsError ? (
@@ -300,7 +300,7 @@ const AppointmentsAdminPage = () => {
             Nem sikerült betölteni az időpontokat.
           </div>
         ) : appointments.length === 0 ? (
-          <div className="h-80 rounded-xl border border-dashed border-faded/30 flex items-center justify-center text-faded">
+          <div className="min-h-[220px] sm:min-h-[320px] rounded-xl border border-dashed border-faded/30 flex items-center justify-center text-faded">
             Nincs időpont.
           </div>
         ) : (

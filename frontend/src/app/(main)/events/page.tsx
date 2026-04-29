@@ -74,7 +74,7 @@ const EventsContent = () => {
     });
   }, []);
   return (
-    <main className="w-7/8 m-auto page-content min-h-screen pt-24 mb-50">
+    <main className="page-shell page-content min-h-screen pt-24 pb-20">
       <div className="mb-6">
         <h1 className="text-3xl font-semibold">Események</h1>
         <p className="text-faded mt-1">

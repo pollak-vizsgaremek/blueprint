@@ -540,7 +540,7 @@ const AppointmentsPage = () => {
   };
 
   return (
-    <main className="w-7/8 m-auto min-h-screen pt-24 pb-20 page-content">
+    <main className="page-shell page-main page-content">
       <div className="mb-6">
         <h1 className="text-3xl font-semibold">Időpontok</h1>
         <p className="text-faded mt-1">
@@ -548,7 +548,7 @@ const AppointmentsPage = () => {
         </p>
       </div>
 
-      <section className="grid grid-cols-1 xl:grid-cols-[1fr_1.2fr] gap-5">
+      <section className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_1.2fr]">
         <div className="card-box h-fit! p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">Új időpont</h2>
@@ -697,7 +697,7 @@ const AppointmentsPage = () => {
           )}
         </div>
 
-        <div className="card-box h-180! overflow-clip p-5">
+        <div className="card-box max-h-[900px] overflow-clip p-4 sm:p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">Foglalt időpontjaid</h2>
             <span className="text-xs text-faded">

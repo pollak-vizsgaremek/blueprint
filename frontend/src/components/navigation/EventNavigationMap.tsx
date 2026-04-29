@@ -77,12 +77,12 @@ const normalizeName = (value: string) =>
     .replace(/\s+/g, " ");
 
 const DISPLAY_NAME_TO_CELL: Record<string, string> = {
-  "fobej": "FoBej",
+  fobej: "FoBej",
   "fo bej": "FoBej",
-  "jatek": "Jatek",
-  "bufe": "Bufe",
-  "ferfio": "FerfiO",
-  "noio": "NoiO",
+  jatek: "Jatek",
+  bufe: "Bufe",
+  ferfio: "FerfiO",
+  noio: "NoiO",
 };
 
 const resolveNameToCell = (value: string) => {
@@ -175,7 +175,11 @@ const neighbors = (node: Node, startName: string, endName: string): Node[] => {
 
   if (!sameFloor) {
     Object.entries(STAIR_CONNECTIONS).forEach(([key, target]) => {
-      if (target.floor === node.floor && target.row === node.row && target.col === node.col) {
+      if (
+        target.floor === node.floor &&
+        target.row === node.row &&
+        target.col === node.col
+      ) {
         const [floor, row, col] = key.split("-").map(Number);
         options.push({ floor, row, col });
       }
@@ -196,15 +200,24 @@ const heuristic = (a: Node, b: Node) => {
   );
 };
 
-const findPath = (start: Node, end: Node, startName: string, endName: string) => {
+const findPath = (
+  start: Node,
+  end: Node,
+  startName: string,
+  endName: string,
+) => {
   const open: Node[] = [start];
   const closed = new Set<string>();
   const came: Record<string, Node | undefined> = {};
   const gScore: Record<string, number> = { [keyOf(start)]: 0 };
-  const fScore: Record<string, number> = { [keyOf(start)]: heuristic(start, end) };
+  const fScore: Record<string, number> = {
+    [keyOf(start)]: heuristic(start, end),
+  };
 
   while (open.length > 0) {
-    open.sort((a, b) => (fScore[keyOf(a)] ?? Infinity) - (fScore[keyOf(b)] ?? Infinity));
+    open.sort(
+      (a, b) => (fScore[keyOf(a)] ?? Infinity) - (fScore[keyOf(b)] ?? Infinity),
+    );
     const current = open.shift()!;
     const currentKey = keyOf(current);
     if (currentKey === keyOf(end)) {
@@ -253,7 +266,10 @@ const toDisplay = (value: string) => {
 
 const toSidebarDisplay = (value: string) => {
   const normalized = normalizeName(value);
-  if (normalized === normalizeName(NAVIGATION_START) || normalized === "fobej") {
+  if (
+    normalized === normalizeName(NAVIGATION_START) ||
+    normalized === "fobej"
+  ) {
     return "Főbejárat";
   }
   return getClassroomLabel(value);
@@ -272,7 +288,12 @@ export const EventNavigationMap = ({ classroom }: { classroom: string }) => {
   }, [start, end, startName, endName]);
 
   const pathOnFloor = useMemo(
-    () => new Set(path.filter((n) => n.floor === currentFloor).map((n) => `${n.row}-${n.col}`)),
+    () =>
+      new Set(
+        path
+          .filter((n) => n.floor === currentFloor)
+          .map((n) => `${n.row}-${n.col}`),
+      ),
     [path, currentFloor],
   );
 
@@ -285,21 +306,28 @@ export const EventNavigationMap = ({ classroom }: { classroom: string }) => {
   }
 
   const floorData = FLOORS[currentFloor];
-  const floorLabel = currentFloor === 0 ? "Földszint" : `${currentFloor}. emelet`;
+  const floorLabel =
+    currentFloor === 0 ? "Földszint" : `${currentFloor}. emelet`;
 
   return (
-    <div className="rounded-2xl border border-accent/25 bg-gradient-to-br from-[#ecf8fd] via-secondary/90 to-[#f3fbff] p-2.5 shadow-[0_12px_30px_-20px_rgba(19,152,198,0.65)] sm:p-3 md:p-4">
+    <div className="">
       <div className="grid gap-3 lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-4">
-        <aside className="rounded-xl border border-accent/25 bg-white p-3 shadow-[inset_0_1px_0_rgba(19,152,198,0.08)]">
-          <div className="text-xs font-semibold uppercase tracking-wider text-accent">Navigáció</div>
+        <aside className="rounded-xl border border-faded/20 bg-white p-3">
+          <div className="text-xs font-semibold uppercase tracking-wider ">
+            Navigáció
+          </div>
           <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
             <div className="rounded-lg border border-accent/20 bg-[#f6fcff] p-2.5">
               <div className="text-xs text-faded">Kezdőpont</div>
-              <div className="font-semibold text-text">{toSidebarDisplay(NAVIGATION_START)}</div>
+              <div className="font-semibold text-text">
+                {toSidebarDisplay(NAVIGATION_START)}
+              </div>
             </div>
             <div className="rounded-lg border border-accent/40 bg-gradient-to-r from-accent/10 to-accent/5 p-2.5">
               <div className="text-xs text-accent">Célállomás</div>
-              <div className="font-semibold text-text">{toSidebarDisplay(classroom)}</div>
+              <div className="font-semibold text-text">
+                {toSidebarDisplay(classroom)}
+              </div>
               <div className="mt-1 text-xs text-faded">
                 {end.floor === 0 ? "Földszint" : `${end.floor}. emelet`}
               </div>
@@ -322,13 +350,17 @@ export const EventNavigationMap = ({ classroom }: { classroom: string }) => {
           </div>
         </aside>
 
-        <div className="rounded-xl border border-accent/25 bg-white p-2.5 sm:p-3 shadow-[inset_0_1px_0_rgba(19,152,198,0.08)]">
+        <div className="rounded-xl border border-faded/20 bg-white p-2.5 sm:p-3">
           <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-sm font-semibold text-text">Aktuális szint: {floorLabel}</div>
+            <div className="text-sm font-semibold text-text">
+              Aktuális szint: {floorLabel}
+            </div>
             <div className="inline-flex items-center gap-2 rounded-lg border border-accent/25 bg-[#f6fcff] px-2 py-1">
               <button
                 type="button"
-                onClick={() => setCurrentFloor((value) => Math.max(0, value - 1))}
+                onClick={() =>
+                  setCurrentFloor((value) => Math.max(0, value - 1))
+                }
                 className="rounded p-1 text-accent transition hover:bg-accent/15"
                 aria-label="Lépés lejjebb"
               >
@@ -336,7 +368,9 @@ export const EventNavigationMap = ({ classroom }: { classroom: string }) => {
               </button>
               <button
                 type="button"
-                onClick={() => setCurrentFloor((value) => Math.min(2, value + 1))}
+                onClick={() =>
+                  setCurrentFloor((value) => Math.min(2, value + 1))
+                }
                 className="rounded p-1 text-accent transition hover:bg-accent/15"
                 aria-label="Lépés feljebb"
               >
@@ -345,53 +379,63 @@ export const EventNavigationMap = ({ classroom }: { classroom: string }) => {
             </div>
           </div>
 
-          <div className="w-full rounded-lg border border-accent/30 bg-gradient-to-b from-[#dff2fb] via-[#cfeaf8] to-[#bfe2f5] p-2 shadow-inner">
+          <div className="w-full rounded-lg border-faded/20 border p-2 shadow-inner">
             <div
               className="grid w-full gap-[2px]"
-              style={{ gridTemplateColumns: `repeat(${floorData.cols}, minmax(0, 1fr))` }}
+              style={{
+                gridTemplateColumns: `repeat(${floorData.cols}, minmax(0, 1fr))`,
+              }}
             >
-            {Array.from({ length: floorData.rows * floorData.cols }).map((_, index) => {
-              const row = Math.floor(index / floorData.cols);
-              const col = index % floorData.cols;
-              const value = floorData.cells[row][col] ?? "";
-              const isWall = value === "X";
-              const isStair = value === STAIR;
-              const pointKey = `${row}-${col}`;
-              const isPath = pathOnFloor.has(pointKey);
-              const isStart = currentFloor === start.floor && row === start.row && col === start.col;
-              const isEnd = currentFloor === end.floor && row === end.row && col === end.col;
-               const label = isWall ? "" : isStair ? "L" : value;
+              {Array.from({ length: floorData.rows * floorData.cols }).map(
+                (_, index) => {
+                  const row = Math.floor(index / floorData.cols);
+                  const col = index % floorData.cols;
+                  const value = floorData.cells[row][col] ?? "";
+                  const isWall = value === "X";
+                  const isStair = value === STAIR;
+                  const pointKey = `${row}-${col}`;
+                  const isPath = pathOnFloor.has(pointKey);
+                  const isStart =
+                    currentFloor === start.floor &&
+                    row === start.row &&
+                    col === start.col;
+                  const isEnd =
+                    currentFloor === end.floor &&
+                    row === end.row &&
+                    col === end.col;
+                  const label = isWall ? "" : isStair ? "L" : value;
 
-              return (
-                <div
-                  key={`${currentFloor}-${row}-${col}`}
-                  className={`relative flex h-8 items-center justify-center overflow-hidden rounded-[2px] border px-0.5 text-center text-[9px] leading-tight sm:h-9 sm:text-[10px] ${
-                    isWall
-                      ? "border-[#6f8aa0] bg-[#7f98ad]"
-                      : isStart
-                        ? "border-[#00885f] bg-[#00a676] text-white"
-                        : isEnd
-                          ? "border-[#e2474d] bg-[#ff5a5f] text-white"
-                          : isPath
-                            ? "border-[#0f87b2] bg-accent text-white"
-                            : isStair
-                              ? "border-[#dc9f35] bg-[#ffbf47] text-[#1f2937]"
-                              : label
-                                ? "border-accent/25 bg-white text-text"
-                                : "border-accent/20 bg-[#f2f9fd]"
-                  }`}
-                >
-                  {label ? (
-                    <span
-                      className="pointer-events-none block max-w-full overflow-hidden text-ellipsis whitespace-nowrap font-medium"
-                      title={toDisplay(label)}
+                  return (
+                    <div
+                      key={`${currentFloor}-${row}-${col}`}
+                      className={`relative flex h-8 items-center justify-center overflow-hidden rounded-[2px] border px-0.5 text-center text-[9px] leading-tight sm:h-9 sm:text-[10px] ${
+                        isWall
+                          ? "border-[#f4f4f4] bg-[#fdfdfd]"
+                          : isStart
+                            ? "border-[#00885f] bg-[#00a676] text-white"
+                            : isEnd
+                              ? "border-[#e2474d] bg-[#ff5a5f] text-white"
+                              : isPath
+                                ? "border-[#0f87b2] bg-accent text-white"
+                                : isStair
+                                  ? "border-[#dc9f35] bg-[#ffbf47] text-[#1f2937]"
+                                  : label
+                                    ? "border-accent/25 bg-white text-text"
+                                    : "border-accent/20 bg-[#f0f0f0]"
+                      }`}
                     >
-                      {toDisplay(label)}
-                    </span>
-                  ) : null}
-                </div>
-              );
-            })}
+                      {label ? (
+                        <span
+                          className="pointer-events-none block max-w-full overflow-hidden text-ellipsis whitespace-nowrap font-medium"
+                          title={toDisplay(label)}
+                        >
+                          {toDisplay(label)}
+                        </span>
+                      ) : null}
+                    </div>
+                  );
+                },
+              )}
             </div>
           </div>
         </div>

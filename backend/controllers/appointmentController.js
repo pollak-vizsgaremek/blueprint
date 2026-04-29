@@ -304,7 +304,7 @@ export const createAppointment = async (req, res) => {
         userId: parsedTeacherId,
         title: "Új időpont kérés",
         message: `Új időpont kérés érkezett tőled: ${appointment.purpose || "Új időpont"}`,
-        url: "/appointments",
+        url: "/teacher/appointments",
         type: "info",
         category: "appointments",
       },

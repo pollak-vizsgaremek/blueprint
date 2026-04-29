@@ -51,7 +51,7 @@ npm run dev
 
 ## Navigation & Classrooms
 
-- Event navigation uses classroom-based routing inspired by PollakFind.
+- Event navigation uses classroom-based routing.
 - Route start is fixed to `FőBej`.
 - Destination comes from event `classroom`.
 - Classroom is required when creating/updating events (admin and teacher).

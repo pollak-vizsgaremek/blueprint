@@ -1203,7 +1203,7 @@ export const getEventComments = async (req, res) => {
     }
 
     const comments = await prisma.eventComment.findMany({
-      where: Részletek{
+      where: {
         eventId: parsedEventId,
         ...(canManageEvent ? {} : { deletedAt: null }),
       },

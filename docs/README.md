@@ -1,6 +1,7 @@
 # Documentation
 
 - Product design: [Figma design](https://www.figma.com/design/zAolEbfuVy0w17Nd38a9ZD/oldal?node-id=82-177&t=k0ifczP81rzbQB8W-1)
+- English presentation: [Canva presentation](https://canva.link/4phcfvb1w3y0wr2)
 - Project setup: [Root README](../README.md)
 - Backend API and environment: [Backend README](../backend/README.md)
 - Frontend routes and auth UX: [Frontend README](../frontend/README.md)

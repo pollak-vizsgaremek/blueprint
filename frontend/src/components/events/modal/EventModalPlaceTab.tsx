@@ -9,7 +9,7 @@ export const EventModalPlaceTab = ({
   selectedEvent,
 }: EventModalPlaceTabProps) => {
   return (
-    <div className="px-4 sm:px-6 lg:px-10 mt-5 pb-6 flex grow overflow-y-auto flex-col">
+    <div className="mt-4 flex grow flex-col overflow-y-auto px-4 pb-6 sm:mt-5 sm:px-6 lg:px-10">
       <div className="text-lg font-semibold">Helyszín</div>
       <div className="text-faded mt-1 mb-4">{selectedEvent?.location}</div>
 

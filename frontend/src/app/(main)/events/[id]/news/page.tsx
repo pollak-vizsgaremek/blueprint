@@ -152,7 +152,7 @@ const EventNewsTabPage = () => {
     isDeleteEventNewsPending;
 
   return (
-    <div className="pt-5 px-4 sm:px-6 lg:px-10 pb-2 flex grow overflow-y-auto flex-col page-content">
+    <div className="mt-4 flex grow flex-col overflow-y-auto px-4 pb-2 pt-2 page-content sm:mt-5 sm:px-6 lg:px-10">
       {isLoading ? (
         <div className="text-faded">Betöltés...</div>
       ) : isError ? (
@@ -242,7 +242,7 @@ const EventNewsTabPage = () => {
                       Utoljára frissítve:{" "}
                       {new Date(news.updatedAt).toLocaleString("hu-HU")}
                     </div>
-                    <div className="mt-2 flex gap-2">
+                    <div className="mt-2 flex flex-wrap gap-2">
                       <button
                         onClick={() => {
                           setEditingDraftId(news.id);

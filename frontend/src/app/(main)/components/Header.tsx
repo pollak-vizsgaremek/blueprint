@@ -91,43 +91,61 @@ export const Header = () => {
             className="absolute inset-0 bg-black/40"
             aria-label="Menü bezárása"
           />
-          <aside className="absolute right-0 top-0 h-full w-[85%] max-w-sm bg-secondary/70 backdrop-blur-xl border-l border-faded/20 p-4 shadow-md shadow-black/20">
+          <aside className="absolute flex flex-col right-0 top-0 h-full w-[85%] max-w-sm bg-secondary/70 backdrop-blur-xl border-l border-faded/20 p-4 shadow-md shadow-black/20">
             <X
               strokeWidth={"1px"}
               size={32}
               className="cursor-pointer"
               onClick={() => setIsMenuOpen(false)}
             />
-            <div className="mt-6 flex flex-col gap-3 text-lg">
-              {appNavLinks.map((item) => (
+            <div className="mt-6 flex flex-col pl-5 justify-between grow gap-3 text-lg">
+              <div className="flex flex-col gap-3 text-lg">
+                {appNavLinks.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+              <div className="flex flex-col gap-3 text-lg">
+                <Link href="/news" onClick={() => setIsMenuOpen(false)}>
+                  Hírek
+                </Link>
+                <Link href="/calendar" onClick={() => setIsMenuOpen(false)}>
+                  Naptár
+                </Link>
+                {user?.role === "admin" && (
+                  <Link href="/admin" onClick={() => setIsMenuOpen(false)}>
+                    Admin felület
+                  </Link>
+                )}
+                {user?.role === "teacher" && (
+                  <Link href="/teacher" onClick={() => setIsMenuOpen(false)}>
+                    Tanári felület
+                  </Link>
+                )}
                 <Link
-                  key={item.href}
-                  href={item.href}
+                  href="/notifications"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  {item.label}
+                  Értesítések
                 </Link>
-              ))}
-              <Link href="/news" onClick={() => setIsMenuOpen(false)}>
-                Hírek
-              </Link>
-              <Link href="/calendar" onClick={() => setIsMenuOpen(false)}>
-                Naptár
-              </Link>
-              <Link href="/notifications" onClick={() => setIsMenuOpen(false)}>
-                Értesítések
-              </Link>
-              <Link href="/settings" onClick={() => setIsMenuOpen(false)}>
-                Beállítások
-              </Link>
-              <button
-                type="button"
-                onClick={logout}
-                className="mt-2 inline-flex items-center gap-2 text-red-600"
-              >
-                <LogOut className="size-5" />
-                Kijelentkezés
-              </button>
+                <Link href="/settings" onClick={() => setIsMenuOpen(false)}>
+                  Beállítások
+                </Link>
+                <Separator className="my-1 bg-faded" />
+                <button
+                  type="button"
+                  onClick={logout}
+                  className=" inline-flex items-center gap-2 text-red-600"
+                >
+                  <LogOut className="size-5" />
+                  Kijelentkezés
+                </button>
+              </div>
             </div>
           </aside>
         </div>

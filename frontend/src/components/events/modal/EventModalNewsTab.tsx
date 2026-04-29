@@ -66,7 +66,7 @@ export const EventModalNewsTab = ({
   }
 
   return (
-    <div className="pt-2 px-4 sm:px-6 lg:px-10 pb-2 mt-5 flex grow overflow-y-auto flex-col">
+    <div className="mt-4 flex grow flex-col overflow-y-auto px-4 pb-2 pt-2 sm:mt-5 sm:px-6 lg:px-10">
       {canManageNews && (
         <div className="mb-5 rounded-xl border border-faded/40 bg-white/30 p-3">
           <div className="text-lg mb-2">
@@ -158,7 +158,7 @@ export const EventModalNewsTab = ({
                   Utoljára frissítve:{" "}
                   {new Date(news.updatedAt).toLocaleString("hu-HU")}
                 </div>
-                <div className="mt-2 flex gap-2">
+                <div className="mt-2 flex flex-wrap gap-2">
                   <button
                     onClick={() => onEditDraft(news)}
                     disabled={isNewsManagementPending}
@@ -212,7 +212,7 @@ export const EventModalNewsTab = ({
                   {news.content}
                 </div>
                 {canManageNews && (
-                  <div className="mt-2 flex gap-2">
+                  <div className="mt-2 flex flex-wrap gap-2">
                     <button
                       onClick={() => onMovePublishedToDraft(news.id)}
                       disabled={isNewsManagementPending}

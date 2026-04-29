@@ -44,7 +44,7 @@ export const EventModalDetailsTab = ({
   onToggleRegistration,
 }: EventModalDetailsTabProps) => {
   return (
-    <div className="px-4 sm:px-6 lg:px-10 pb-6 sm:pb-10 mt-5 flex justify-between flex-col grow">
+    <div className="mt-4 flex grow flex-col justify-between px-4 pb-6 sm:mt-5 sm:px-6 sm:pb-10 lg:px-10">
       <div>
         <div className="text-2xl sm:text-3xl lg:text-4xl mb-3">
           {selectedEvent?.name}
@@ -110,12 +110,12 @@ export const EventModalDetailsTab = ({
           </div>
         </div>
       </div>
-      <div className="w-full justify-between flex mt-10 items-center">
-        <div className=" px-3 py-2 inline-flex text-faded text-sm items-center gap-2">
+      <div className="mt-6 flex w-full flex-col gap-3 sm:mt-10 sm:flex-row sm:items-center sm:justify-between">
+        <div className="inline-flex items-center gap-2 px-3 py-2 text-sm text-faded">
           <CalendarDays size={16} className="" />
           <span>Létrehozva: {formatDateOnlyHu(selectedEvent?.createdAt)}</span>
         </div>
-        <div className="flex gap-4 items-center">
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-4">
           <div className="text-sm text-gray-600">
             {selectedEvent && selectedEvent.maxParticipants
               ? `${selectedEvent.registrationCount}/${selectedEvent.maxParticipants} jelentkező`
@@ -126,7 +126,7 @@ export const EventModalDetailsTab = ({
           <button
             onClick={onToggleRegistration}
             disabled={!canRegister || isRegisterPending}
-            className="bg-accent text-white text-xl px-3 py-2 hover:bg-accent/60 transition ease-in-out active:scale-95 active:duration-75 rounded-xl cursor-pointer disabled:bg-faded disabled:cursor-not-allowed"
+            className="w-full rounded-xl bg-accent px-3 py-2 text-base text-white transition ease-in-out hover:bg-accent/60 active:scale-95 active:duration-75 cursor-pointer disabled:bg-faded disabled:cursor-not-allowed sm:w-auto sm:text-xl"
           >
             {isRegisterPending
               ? "Feldolgozás..."

@@ -91,8 +91,8 @@ const EventDiscussionTabPage = () => {
   }
 
   return (
-    <div className="pt-5 px-4 sm:px-6 lg:px-10 pb-2 flex grow overflow-y-auto flex-col page-content">
-      <div className="flex gap-2 mb-4 mt-1">
+    <div className="mt-4 flex grow flex-col overflow-y-auto px-4 pb-2 pt-2 page-content sm:mt-5 sm:px-6 lg:px-10">
+      <div className="mb-4 mt-1 flex flex-col gap-2 sm:flex-row">
         <input
           value={commentContent}
           onChange={(e) => setCommentContent(e.target.value)}
@@ -103,7 +103,7 @@ const EventDiscussionTabPage = () => {
         <button
           onClick={() => createComment()}
           disabled={!canSubmitComment}
-          className="bg-accent text-white px-4 py-2 rounded-xl disabled:bg-faded disabled:cursor-not-allowed"
+          className="rounded-xl bg-accent px-4 py-2 text-white disabled:bg-faded disabled:cursor-not-allowed"
         >
           {isCommentPending ? "Mentés..." : "Küldés"}
         </button>

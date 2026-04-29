@@ -75,7 +75,7 @@ export const NewsPanel = () => {
   return (
     <Link
       href="/news"
-      className="grow flex p-2 justify-between hover:bg-faded/20 transition ease-in-out cursor-pointer rounded-xl gap-3"
+      className="grow flex p-2 justify-between max-md:flex-col hover:bg-faded/20 transition ease-in-out cursor-pointer rounded-xl gap-3"
     >
       <div className="min-w-0 h-full flex flex-col justify-between pb-6">
         <div className="">

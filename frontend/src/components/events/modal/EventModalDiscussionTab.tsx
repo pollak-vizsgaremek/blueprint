@@ -24,8 +24,8 @@ export const EventModalDiscussionTab = ({
   onDeleteComment,
 }: EventModalDiscussionTabProps) => {
   return (
-    <div className="pt-2 px-4 sm:px-6 lg:px-10 mt-5 pb-2 flex grow overflow-y-auto flex-col">
-      <div className="flex gap-2 mb-4 mt-1">
+    <div className="mt-4 flex grow flex-col overflow-y-auto px-4 pb-2 pt-2 sm:mt-5 sm:px-6 lg:px-10">
+      <div className="mb-4 mt-1 flex flex-col gap-2 sm:flex-row">
         <input
           value={commentContent}
           onChange={(event) => setCommentContent(event.target.value)}
@@ -36,7 +36,7 @@ export const EventModalDiscussionTab = ({
         <button
           onClick={onCreateComment}
           disabled={!canSubmitComment}
-          className="bg-accent text-white px-4 py-2 rounded-xl disabled:bg-faded disabled:cursor-not-allowed"
+          className="rounded-xl bg-accent px-4 py-2 text-white disabled:bg-faded disabled:cursor-not-allowed sm:w-auto"
         >
           {isCommentPending ? "Mentés..." : "Küldés"}
         </button>

@@ -84,7 +84,7 @@ const EventsContent = () => {
           Foglalj időpontot tanárral, és kezeld a meglévő bejegyzéseidet.
         </p>
       </div>
-      <div className="flex justify-between border-b-[1px] border-faded/40 pb-1">
+      <div className="flex max-md:flex-col max-md:gap-4 justify-between border-b-[1px] border-faded/40 pb-1">
         <div className="flex gap-1 text-xl">
           <Link
             href={`/events?v=${view}&f=all`}

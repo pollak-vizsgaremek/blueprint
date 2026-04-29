@@ -254,7 +254,7 @@ const EventDetailsTabPage = () => {
   };
 
   return (
-    <div className="px-4 sm:px-6 lg:px-10 mt-5 pb-8 sm:pb-10 flex justify-between flex-col grow page-content">
+    <div className="mt-4 flex grow flex-col justify-between px-4 pb-8 page-content sm:mt-5 sm:px-6 sm:pb-10 lg:px-10">
       <div>
         <div className="text-2xl sm:text-3xl lg:text-4xl mb-3">
           {event.name}
@@ -320,12 +320,12 @@ const EventDetailsTabPage = () => {
           </div>
         </div>
       </div>
-      <div className="w-full justify-between flex mt-8 sm:mt-10 items-center flex-wrap gap-3">
-        <div className="text-sm text-faded px-3 py-2 inline-flex items-center gap-2">
+      <div className="mt-6 flex w-full flex-col gap-3 sm:mt-10 sm:flex-row sm:items-center sm:justify-between">
+        <div className="inline-flex items-center gap-2 px-3 py-2 text-sm text-faded">
           <CalendarDays size={16} className="" />
           <span>Létrehozva: {formatDateOnlyHu(event.createdAt)}</span>
         </div>
-        <div className="flex gap-4 items-center">
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-4">
           <div className="text-sm text-gray-600">
             {event.maxParticipants
               ? `${event.registrationCount}/${event.maxParticipants} jelentkező`
@@ -334,7 +334,7 @@ const EventDetailsTabPage = () => {
           <button
             onClick={handleToggleRegistration}
             disabled={!canRegister || isRegistrationPending}
-            className="bg-accent text-white text-base sm:text-lg px-3 py-2 hover:bg-accent/60 transition ease-in-out active:scale-95 active:duration-75 rounded-xl cursor-pointer disabled:bg-faded disabled:cursor-not-allowed"
+            className="w-full rounded-xl bg-accent px-3 py-2 text-base text-white transition ease-in-out hover:bg-accent/60 active:scale-95 active:duration-75 cursor-pointer disabled:bg-faded disabled:cursor-not-allowed sm:w-auto sm:text-lg"
           >
             {isRegistrationPending
               ? "Feldolgozás..."

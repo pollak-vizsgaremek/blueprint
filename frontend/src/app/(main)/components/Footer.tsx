@@ -37,7 +37,7 @@ export const Footer = () => {
   return (
     <footer className="w-full bg-primary/20 backdrop-blur-md py-8 sm:py-10 mt-10">
       <div className="page-shell">
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 mx-auto max-w-4xl">
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 mx-auto max-w-4xl max-md:max-w-fit">
           <div>
             <Image
               src="/blueprint.png"

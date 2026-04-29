@@ -631,31 +631,31 @@ export const EventModal = () => {
     isOpen && (
       <div
         onClick={closeModal}
-        className="fixed left-0 top-0 z-[1000] flex h-screen w-screen items-center justify-center bg-black/40 p-2 sm:p-4"
+        className="fixed left-0 top-0 z-[1000] flex h-screen w-screen items-center justify-center bg-black/40 p-0 sm:p-4"
       >
         <div
           onClick={(e) => {
             e.stopPropagation();
           }}
         >
-          <div className="flex h-[min(860px,calc(100vh-1rem))] w-[min(1200px,calc(100vw-1rem))] flex-col rounded-xl bg-secondary/70 backdrop-blur-xl sm:h-[min(860px,calc(100vh-2rem))] sm:w-[min(1200px,calc(100vw-2rem))]">
-            <div className="relative h-[180px] shrink-0 w-full sm:h-[220px] md:h-[260px] lg:h-[300px]">
-              <div className="absolute top-5 right-5 z-100 flex items-center gap-2">
+          <div className="flex h-[100dvh] w-[100vw] flex-col rounded-none bg-secondary/70 backdrop-blur-xl sm:h-[min(860px,calc(100vh-2rem))] sm:w-[min(1200px,calc(100vw-2rem))] sm:rounded-xl">
+            <div className="relative h-[150px] shrink-0 w-full sm:h-[220px] md:h-[260px] lg:h-[300px]">
+              <div className="absolute right-3 top-3 z-100 flex items-center gap-2 sm:right-5 sm:top-5">
                 <Link
                   href={`/events/${selectedEvent?.id}/details`}
                   prefetch
                   onClick={closeModal}
-                  className="bg-white/30 backdrop-blur-sm p-1.5 rounded-full hover:bg-white/45 transition ease-in-out"
+                  className="rounded-full bg-white/30 p-1.5 backdrop-blur-sm transition ease-in-out hover:bg-white/45"
                   aria-label="Esemény oldal megnyitása"
                 >
-                  <ExternalLink size={22} />
+                  <ExternalLink size={20} className="sm:size-[22px]" />
                 </Link>
                 <button
-                  className="cursor-pointer bg-white/30 backdrop-blur-sm p-1 rounded-full hover:bg-white/45 transition ease-in-out"
+                  className="cursor-pointer rounded-full bg-white/30 p-1 backdrop-blur-sm transition ease-in-out hover:bg-white/45"
                   onClick={closeModal}
                   aria-label="Bezárás"
                 >
-                  <X size={25} />
+                  <X size={22} className="sm:size-[25px]" />
                 </button>
               </div>
               <Image
@@ -664,7 +664,7 @@ export const EventModal = () => {
                 fill
                 sizes="(max-width: 640px) calc(100vw - 1rem), (max-width: 1280px) calc(100vw - 2rem), 1200px"
                 quality={75}
-                className="rounded-t-xl object-cover"
+                className="object-cover sm:rounded-t-xl"
               />
             </div>
             <EventModalTabs activeTab={activeTab} onSelect={setActiveTab} />

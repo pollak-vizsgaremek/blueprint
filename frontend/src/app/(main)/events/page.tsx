@@ -44,7 +44,7 @@ const EventsContent = () => {
     filter === "joined" || filter === "mine" || filter === "all"
       ? filter
       : "all";
-  const currentUserName = user?.name ?? "";
+  const currentUserId = user?.id;
 
   const filteredEvents: EventWithRegistrationInfo[] = (events ?? []).filter(
     (event: EventWithRegistrationInfo) => {
@@ -53,7 +53,9 @@ const EventsContent = () => {
       }
 
       if (normalizedFilter === "mine") {
-        return Boolean(currentUserName) && event.creator === currentUserName;
+        return (
+          typeof currentUserId === "number" && event.updatedBy === currentUserId
+        );
       }
 
       return true;
@@ -172,7 +174,7 @@ const EventsContent = () => {
             normalizedFilter === "joined"
               ? "Nincs csatlakozott eseményed."
               : normalizedFilter === "mine"
-                ? "Nincs saját eseményed."
+                ? "Nincs hozzád rendelt frissítői esemény."
                 : "Jelenleg nincs megjeleníthető esemény."
           }
         />

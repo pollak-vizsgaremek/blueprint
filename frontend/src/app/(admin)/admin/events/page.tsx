@@ -2,7 +2,7 @@
 
 import { Spinner } from "@/components/Spinner";
 import { DataState } from "@/components/ui/DataState";
-import { EventWithRegistrationInfo, GetAllEventsResponse } from "@/types";
+import { EventWithRegistrationInfo, GetUsersLiteResponse } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import {
@@ -31,6 +31,7 @@ import {
 type EventFormState = {
   name: string;
   creator: string;
+  updatedBy: string;
   description: string;
   location: string;
   date: string;
@@ -41,6 +42,7 @@ type EventFormState = {
 const initialFormState: EventFormState = {
   name: "",
   creator: "",
+  updatedBy: "",
   description: "",
   location: "",
   date: "",
@@ -78,8 +80,22 @@ const EventsAdminPage = () => {
   } = useQuery({
     queryKey: ["admin-events"],
     queryFn: async () => {
-      const { data } = await axios.get<GetAllEventsResponse>(
-        `${process.env.NEXT_PUBLIC_API_URL}/events`,
+      const { data } = await axios.get<{ events: EventWithRegistrationInfo[] }>(
+        `${process.env.NEXT_PUBLIC_API_URL}/admin/events?scope=all`,
+        {
+          withCredentials: true,
+        },
+      );
+
+      return data.events;
+    },
+  });
+
+  const { data: usersLiteData } = useQuery({
+    queryKey: ["users-lite"],
+    queryFn: async () => {
+      const { data } = await axios.get<GetUsersLiteResponse>(
+        `${process.env.NEXT_PUBLIC_API_URL}/users/list`,
         {
           withCredentials: true,
         },
@@ -88,6 +104,8 @@ const EventsAdminPage = () => {
       return data;
     },
   });
+
+  const usersLite = usersLiteData?.users ?? [];
 
   const resetForm = () => {
     setForm(initialFormState);
@@ -107,12 +125,22 @@ const EventsAdminPage = () => {
   const filteredEvents = useMemo(() => {
     const now = Date.now();
     return events.filter((event) => {
+      const isDeleted = Boolean(event.deletedAt);
+
+      if (filter === "active") {
+        return !isDeleted;
+      }
+
+      if (filter === "deleted") {
+        return isDeleted;
+      }
+
       const eventTime = new Date(event.date).getTime();
       if (filter === "future") {
-        return eventTime >= now;
+        return !isDeleted && eventTime >= now;
       }
       if (filter === "past") {
-        return eventTime < now;
+        return !isDeleted && eventTime < now;
       }
       return true;
     });
@@ -123,6 +151,7 @@ const EventsAdminPage = () => {
       const payload = new FormData();
       payload.append("name", form.name.trim());
       payload.append("creator", form.creator.trim());
+      payload.append("updatedBy", form.updatedBy);
       payload.append("description", form.description.trim());
       payload.append("location", form.location.trim());
       payload.append("date", new Date(form.date).toISOString());
@@ -190,12 +219,38 @@ const EventsAdminPage = () => {
     },
   });
 
+  const restoreMutation = useMutation({
+    mutationFn: async (eventId: number) => {
+      const { data } = await axios.put(
+        `${process.env.NEXT_PUBLIC_API_URL}/admin/events/${eventId}/restore`,
+        {},
+        {
+          withCredentials: true,
+        },
+      );
+      return data;
+    },
+    onSuccess: () => {
+      setMessage({ type: "success", text: "Esemény visszaállítva." });
+      queryClient.invalidateQueries({ queryKey: ["admin-events"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      queryClient.invalidateQueries({ queryKey: ["teacher-events"] });
+    },
+    onError: (error) => {
+      setMessage({
+        type: "error",
+        text: getErrorMessage(error, "Az esemény visszaállítása sikertelen."),
+      });
+    },
+  });
+
   const startEditing = (event: EventWithRegistrationInfo) => {
     setEditingEvent(event);
     setImage(null);
     setForm({
       name: event.name,
       creator: event.creator,
+      updatedBy: event.updatedBy ? String(event.updatedBy) : "",
       description: event.description,
       location: event.location,
       date: toLocalInputValue(event.date),
@@ -212,6 +267,7 @@ const EventsAdminPage = () => {
     if (
       !form.name.trim() ||
       !form.creator.trim() ||
+      !form.updatedBy ||
       !form.description.trim() ||
       !form.location.trim() ||
       !form.classroom ||
@@ -219,7 +275,7 @@ const EventsAdminPage = () => {
     ) {
       setMessage({
         type: "error",
-        text: "A kötelező mezők kitöltése szükséges (szervezővel együtt).",
+        text: "A kötelező mezők kitöltése szükséges (szervezővel és frissítővel együtt).",
       });
       return;
     }
@@ -292,6 +348,8 @@ const EventsAdminPage = () => {
           <div className="inline-flex rounded-xl border border-faded/20 bg-secondary/50 p-1 self-start">
             {[
               { value: "all", label: "Összes" },
+              { value: "active", label: "Aktív" },
+              { value: "deleted", label: "Törölt" },
               { value: "future", label: "Jövőbeli" },
               { value: "past", label: "Befejezett" },
             ].map((option) => (
@@ -329,6 +387,7 @@ const EventsAdminPage = () => {
               const isSelected =
                 editingEvent?.id === event.id && isFormModalOpen;
               const isPast = new Date(event.date).getTime() < Date.now();
+              const isDeleted = Boolean(event.deletedAt);
 
               return (
                 <article
@@ -365,8 +424,16 @@ const EventsAdminPage = () => {
                             {event.description}
                           </p>
                         </div>
-                        <AdminStatusBadge tone={isPast ? "neutral" : "green"}>
-                          {isPast ? "Befejezett" : "Aktív"}
+                        <AdminStatusBadge
+                          tone={
+                            isDeleted ? "neutral" : isPast ? "neutral" : "green"
+                          }
+                        >
+                          {isDeleted
+                            ? "Törölt"
+                            : isPast
+                              ? "Befejezett"
+                              : "Aktív"}
                         </AdminStatusBadge>
                       </div>
 
@@ -392,21 +459,35 @@ const EventsAdminPage = () => {
                       </div>
 
                       <div className="mt-4 flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() => startEditing(event)}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-faded/30 px-3 py-1.5 text-sm hover:bg-faded/10 transition ease-in-out cursor-pointer"
-                        >
-                          <Pencil size={14} />
-                          Szerkesztés
-                        </button>
-                        <Link
-                          href={`/admin/events/${event.id}`}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-faded/30 px-3 py-1.5 text-sm hover:bg-faded/10 transition ease-in-out"
-                        >
-                          <Eye size={14} />
-                          Részletek
-                        </Link>
+                        {!isDeleted ? (
+                          <button
+                            type="button"
+                            onClick={() => startEditing(event)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-faded/30 px-3 py-1.5 text-sm hover:bg-faded/10 transition ease-in-out cursor-pointer"
+                          >
+                            <Pencil size={14} />
+                            Szerkesztés
+                          </button>
+                        ) : null}
+                        {!isDeleted ? (
+                          <Link
+                            href={`/admin/events/${event.id}`}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-faded/30 px-3 py-1.5 text-sm hover:bg-faded/10 transition ease-in-out"
+                          >
+                            <Eye size={14} />
+                            Részletek
+                          </Link>
+                        ) : null}
+                        {isDeleted ? (
+                          <button
+                            type="button"
+                            onClick={() => restoreMutation.mutate(event.id)}
+                            disabled={restoreMutation.isPending}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300/50 bg-emerald-50 px-3 py-1.5 text-sm text-emerald-700 hover:bg-emerald-100 transition ease-in-out cursor-pointer disabled:text-faded disabled:bg-transparent disabled:cursor-not-allowed"
+                          >
+                            Visszaállítás
+                          </button>
+                        ) : null}
                       </div>
                     </div>
                   </div>
@@ -469,6 +550,28 @@ const EventsAdminPage = () => {
               placeholder="Szervező neve"
               required
             />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm text-faded">Frissítő felhasználó</label>
+            <select
+              value={form.updatedBy}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  updatedBy: event.target.value,
+                }))
+              }
+              className="w-full rounded-xl border border-faded/25 bg-secondary/70 px-3 py-2 focus:outline-none focus:border-accent"
+              required
+            >
+              <option value="">Válassz felhasználót</option>
+              {usersLite.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name} ({user.email})
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="space-y-1">

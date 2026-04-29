@@ -4,6 +4,7 @@ import {
   createUser,
   deleteCurrentUser,
   getCurrentUser,
+  getUsersLite,
   getTeachers,
   requestEmailConfirmation,
   requestPasswordReset,
@@ -43,6 +44,9 @@ router.get("/profile", authenticateToken, getCurrentUser);
 
 // GET /users/teachers - Get all teachers
 router.get("/teachers", authenticateToken, getTeachers);
+
+// GET /users/list - Get all active users (minimal fields)
+router.get("/list", authenticateToken, getUsersLite);
 
 // PUT /users/profile - Update current user profile
 router.put("/profile", authenticateToken, updateCurrentUser);

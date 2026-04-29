@@ -699,6 +699,66 @@ export const updateAdminComment = async (req, res) => {
   }
 };
 
+export const getAdminEvents = async (req, res) => {
+  const scope = req.query.scope || "active";
+
+  try {
+    const where =
+      scope === "deleted"
+        ? { deletedAt: { not: null } }
+        : scope === "all"
+          ? {}
+          : { deletedAt: null };
+
+    const events = await prisma.event.findMany({
+      where,
+      include: {
+        _count: {
+          select: {
+            registrations: {
+              where: {
+                status: "registered",
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        date: "asc",
+      },
+    });
+
+    const formattedEvents = events.map((event) => ({
+      id: event.id,
+      name: event.name,
+      description: event.description,
+      imageUrl: event.imageUrl,
+      creator: event.creator,
+      location: event.location,
+      classroom: event.classroom,
+      date: event.date,
+      maxParticipants: event.maxParticipants,
+      updatedBy: event.updatedBy,
+      createdAt: event.createdAt,
+      deletedAt: event.deletedAt,
+      registrationCount: event._count.registrations,
+      userRegistration: null,
+      isUserRegistered: false,
+      isFull: event.maxParticipants
+        ? event._count.registrations >= event.maxParticipants
+        : false,
+    }));
+
+    res.json({
+      message: "Admin events retrieved successfully",
+      events: formattedEvents,
+    });
+  } catch (error) {
+    console.error("Error fetching admin events:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 export const createEvent = async (req, res) => {
   let {
     name,
@@ -708,6 +768,7 @@ export const createEvent = async (req, res) => {
     maxParticipants,
     classroom,
     creator,
+    updatedBy,
   } = req.body;
 
   try {
@@ -732,6 +793,38 @@ export const createEvent = async (req, res) => {
         error: "Missing required fields",
         message:
           "Name, description, location, date, creator, and classroom are required",
+      });
+    }
+
+    const parsedUpdatedBy = parseInt(updatedBy, 10);
+
+    if (Number.isNaN(parsedUpdatedBy)) {
+      if (req.uploadedImage) {
+        deleteEventImageFromMinio(req.uploadedImage.url);
+      }
+
+      return res.status(400).json({
+        error: "Invalid updatedBy",
+        message: "Updater user ID must be provided as a number",
+      });
+    }
+
+    const updaterUser = await prisma.user.findFirst({
+      where: {
+        id: parsedUpdatedBy,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+
+    if (!updaterUser) {
+      if (req.uploadedImage) {
+        deleteEventImageFromMinio(req.uploadedImage.url);
+      }
+
+      return res.status(400).json({
+        error: "Invalid updatedBy",
+        message: "Selected updater user does not exist",
       });
     }
 
@@ -768,6 +861,7 @@ export const createEvent = async (req, res) => {
         imageUrl,
         creator: normalizedCreator,
         createdBy: req.user.id,
+        updatedBy: parsedUpdatedBy,
         location,
         classroom: normalizedClassroom,
         date: new Date(date),
@@ -794,8 +888,15 @@ export const createEvent = async (req, res) => {
 // Update an existing event
 export const updateEvent = async (req, res) => {
   const { eventId } = req.params;
-  let { name, description, location, date, maxParticipants, classroom } =
-    req.body;
+  let {
+    name,
+    description,
+    location,
+    date,
+    maxParticipants,
+    classroom,
+    updatedBy,
+  } = req.body;
 
   try {
     // Check if event exists
@@ -855,6 +956,42 @@ export const updateEvent = async (req, res) => {
       updateData.classroom = String(classroom).trim();
     }
 
+    if (updatedBy !== undefined) {
+      const parsedUpdatedBy = parseInt(updatedBy, 10);
+
+      if (Number.isNaN(parsedUpdatedBy)) {
+        if (req.uploadedImage) {
+          deleteEventImageFromMinio(req.uploadedImage.url);
+        }
+
+        return res.status(400).json({
+          error: "Invalid updatedBy",
+          message: "Updater user ID must be a number",
+        });
+      }
+
+      const updaterUser = await prisma.user.findFirst({
+        where: {
+          id: parsedUpdatedBy,
+          deletedAt: null,
+        },
+        select: { id: true },
+      });
+
+      if (!updaterUser) {
+        if (req.uploadedImage) {
+          deleteEventImageFromMinio(req.uploadedImage.url);
+        }
+
+        return res.status(400).json({
+          error: "Invalid updatedBy",
+          message: "Selected updater user does not exist",
+        });
+      }
+
+      updateData.updatedBy = parsedUpdatedBy;
+    }
+
     // Handle image update
     if (req.uploadedImage) {
       // Delete old image if it exists
@@ -899,21 +1036,63 @@ export const deleteEvent = async (req, res) => {
       return res.status(404).json({ error: "Event not found" });
     }
 
-    // Delete the event (this will cascade delete registrations)
-    await prisma.event.delete({
+    await prisma.event.update({
       where: { id: parseInt(eventId) },
+      data: {
+        deletedAt: new Date(),
+      },
     });
 
-    // Delete associated image from MinIO if it exists
-    if (existingEvent.imageUrl) {
-      deleteEventImageFromMinio(existingEvent.imageUrl);
-    }
-
     res.json({
-      message: "Event deleted successfully",
+      message: "Event soft deleted successfully",
     });
   } catch (error) {
     console.error("Error deleting event:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+export const restoreEvent = async (req, res) => {
+  const { eventId } = req.params;
+
+  try {
+    const parsedEventId = parseInt(eventId, 10);
+    if (Number.isNaN(parsedEventId)) {
+      return res.status(400).json({
+        error: "Invalid event ID",
+        message: "Event ID must be a number",
+      });
+    }
+
+    const existingEvent = await prisma.event.findUnique({
+      where: { id: parsedEventId },
+      select: {
+        id: true,
+        deletedAt: true,
+      },
+    });
+
+    if (!existingEvent) {
+      return res.status(404).json({ error: "Event not found" });
+    }
+
+    if (!existingEvent.deletedAt) {
+      return res.json({ message: "Event is already active" });
+    }
+
+    const restoredEvent = await prisma.event.update({
+      where: { id: parsedEventId },
+      data: {
+        deletedAt: null,
+      },
+    });
+
+    res.json({
+      message: "Event restored successfully",
+      event: restoredEvent,
+    });
+  } catch (error) {
+    console.error("Error restoring event:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };

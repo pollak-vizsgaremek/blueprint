@@ -212,6 +212,7 @@ export const userLogin = async (req, res) => {
     res.json({
       message: "Login successful",
       user: {
+        id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
@@ -235,6 +236,7 @@ export const getCurrentUser = async (req, res) => {
     res.json({
       message: "Profile retrieved successfully",
       user: {
+        id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
@@ -273,6 +275,42 @@ export const getTeachers = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching teachers:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+export const getUsersLite = async (req, res) => {
+  try {
+    const requesterRole = req.user?.role;
+
+    if (requesterRole !== "teacher" && requesterRole !== "admin") {
+      return res.status(403).json({
+        error: "Forbidden",
+        message: "Only teachers and admins can access this user list",
+      });
+    }
+
+    const users = await prisma.user.findMany({
+      where: {
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+      },
+      orderBy: {
+        name: "asc",
+      },
+    });
+
+    res.json({
+      message: "Users retrieved successfully",
+      users,
+    });
+  } catch (error) {
+    console.error("Error fetching users list:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };

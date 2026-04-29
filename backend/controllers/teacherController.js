@@ -458,6 +458,7 @@ export const getTeacherCreatedEvents = async (req, res) => {
       classroom: event.classroom,
       date: event.date,
       maxParticipants: event.maxParticipants,
+      updatedBy: event.updatedBy,
       createdAt: event.createdAt,
       registrationCount: event._count.registrations,
       userRegistration: null,
@@ -486,12 +487,14 @@ export const createTeacherEvent = async (req, res) => {
     maxParticipants,
     creator,
     classroom,
+    updatedBy,
   } = req.body;
 
   try {
     const normalizedCreator = typeof creator === "string" ? creator.trim() : "";
     const normalizedClassroom =
       typeof classroom === "string" ? classroom.trim() : "";
+    const parsedUpdatedBy = parseInt(updatedBy, 10);
 
     if (
       !name ||
@@ -499,12 +502,28 @@ export const createTeacherEvent = async (req, res) => {
       !location ||
       !date ||
       !normalizedCreator ||
-      !normalizedClassroom
+      !normalizedClassroom ||
+      Number.isNaN(parsedUpdatedBy)
     ) {
       return res.status(400).json({
         error: "Missing required fields",
         message:
-          "Name, description, location, date, creator, and classroom are required",
+          "Name, description, location, date, creator, classroom, and updater are required",
+      });
+    }
+
+    const updaterUser = await prisma.user.findFirst({
+      where: {
+        id: parsedUpdatedBy,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+
+    if (!updaterUser) {
+      return res.status(400).json({
+        error: "Invalid updatedBy",
+        message: "Selected updater user does not exist",
       });
     }
 
@@ -534,6 +553,7 @@ export const createTeacherEvent = async (req, res) => {
         imageUrl,
         creator: normalizedCreator,
         createdBy: req.user.id,
+        updatedBy: parsedUpdatedBy,
         location,
         classroom: normalizedClassroom,
         date: new Date(date),
@@ -567,6 +587,7 @@ export const updateTeacherEvent = async (req, res) => {
     maxParticipants,
     creator,
     classroom,
+    updatedBy,
   } = req.body;
 
   if (Number.isNaN(eventId)) {
@@ -610,6 +631,7 @@ export const updateTeacherEvent = async (req, res) => {
     const normalizedCreator = typeof creator === "string" ? creator.trim() : "";
     const normalizedClassroom =
       typeof classroom === "string" ? classroom.trim() : "";
+    const parsedUpdatedBy = parseInt(updatedBy, 10);
 
     if (
       !name ||
@@ -617,7 +639,8 @@ export const updateTeacherEvent = async (req, res) => {
       !location ||
       !date ||
       !normalizedCreator ||
-      !normalizedClassroom
+      !normalizedClassroom ||
+      Number.isNaN(parsedUpdatedBy)
     ) {
       if (req.uploadedImage) {
         deleteEventImageFromMinio(req.uploadedImage.url);
@@ -626,7 +649,26 @@ export const updateTeacherEvent = async (req, res) => {
       return res.status(400).json({
         error: "Missing required fields",
         message:
-          "Name, description, location, date, creator, and classroom are required",
+          "Name, description, location, date, creator, classroom, and updater are required",
+      });
+    }
+
+    const updaterUser = await prisma.user.findFirst({
+      where: {
+        id: parsedUpdatedBy,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+
+    if (!updaterUser) {
+      if (req.uploadedImage) {
+        deleteEventImageFromMinio(req.uploadedImage.url);
+      }
+
+      return res.status(400).json({
+        error: "Invalid updatedBy",
+        message: "Selected updater user does not exist",
       });
     }
 
@@ -659,6 +701,7 @@ export const updateTeacherEvent = async (req, res) => {
       maxParticipants: maxParticipants || null,
       creator: normalizedCreator,
       classroom: normalizedClassroom,
+      updatedBy: parsedUpdatedBy,
     };
 
     if (req.uploadedImage) {

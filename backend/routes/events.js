@@ -12,8 +12,10 @@ import {
   getEventRegistrations,
   getEventComments,
   createEventComment,
+  deleteManagedEvent,
   deleteEventComment,
   updateEventNews,
+  updateManagedEvent,
 } from "../controllers/eventController.js";
 import { authenticateToken } from "../middleware/auth.js";
 
@@ -48,6 +50,12 @@ router.post("/:eventId/register", authenticateToken, registerForEvent);
 
 // DELETE /events/:eventId/register - Unregister from an event (requires authentication)
 router.delete("/:eventId/register", authenticateToken, unregisterFromEvent);
+
+// PUT /events/:eventId - Update event (admin/creator/updater)
+router.put("/:eventId", authenticateToken, updateManagedEvent);
+
+// DELETE /events/:eventId - Soft delete event (admin/creator/updater)
+router.delete("/:eventId", authenticateToken, deleteManagedEvent);
 
 // GET /events/:eventId/registrations - Get event registrations (admin only)
 router.get("/:eventId/registrations", authenticateToken, getEventRegistrations);

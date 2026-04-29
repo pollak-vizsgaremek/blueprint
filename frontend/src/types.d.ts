@@ -61,6 +61,7 @@ export interface LoginRequest {
 export interface LoginResponse {
   message: string;
   user: {
+    id: number;
     name: string;
     email: string;
     role: "admin" | "user" | "teacher";
@@ -77,6 +78,18 @@ export interface TeacherOption {
   email: string;
   role: "teacher";
   classroom?: string | null;
+}
+
+export interface UserOption {
+  id: number;
+  name: string;
+  email: string;
+  role: "admin" | "user" | "teacher";
+}
+
+export interface GetUsersLiteResponse {
+  message: string;
+  users: UserOption[];
 }
 
 export interface Appointment {
@@ -227,6 +240,7 @@ export interface UpdateUserRequest {
 export interface GetCurrentUserResponse {
   message: string;
   user: {
+    id: number;
     name: string;
     email: string;
     role: "admin" | "user" | "teacher";
@@ -254,11 +268,13 @@ export interface Event {
   description: string;
   imageUrl: string | null;
   creator: string;
+  updatedBy?: number | null;
   location: string;
   classroom: string;
   date: string; // ISO datetime string
   maxParticipants: number | null;
   createdAt: string; // ISO datetime string
+  deletedAt?: string | null;
 }
 
 export interface UserRegistration {

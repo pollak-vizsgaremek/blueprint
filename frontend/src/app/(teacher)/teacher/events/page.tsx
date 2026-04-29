@@ -5,6 +5,7 @@ import { DataState } from "@/components/ui/DataState";
 import {
   CreateEventResponse,
   EventWithRegistrationInfo,
+  GetUsersLiteResponse,
   TeacherEventsResponse,
 } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -28,6 +29,7 @@ import { TeacherPageHeader } from "../../components/TeacherPageHeader";
 type EventFormState = {
   name: string;
   creator: string;
+  updatedBy: string;
   description: string;
   location: string;
   classroom: string;
@@ -38,6 +40,7 @@ type EventFormState = {
 const initialFormState: EventFormState = {
   name: "",
   creator: "",
+  updatedBy: "",
   description: "",
   location: "",
   classroom: "",
@@ -106,6 +109,22 @@ const TeacherEventsPage = () => {
 
   const events = eventsData?.events ?? [];
 
+  const { data: usersLiteData } = useQuery({
+    queryKey: ["users-lite"],
+    queryFn: async () => {
+      const { data } = await axios.get<GetUsersLiteResponse>(
+        `${process.env.NEXT_PUBLIC_API_URL}/users/list`,
+        {
+          withCredentials: true,
+        },
+      );
+
+      return data;
+    },
+  });
+
+  const usersLite = usersLiteData?.users ?? [];
+
   const resetForm = () => {
     setForm(initialFormState);
     setImage(null);
@@ -136,6 +155,7 @@ const TeacherEventsPage = () => {
     setForm({
       name: event.name,
       creator: event.creator,
+      updatedBy: event.updatedBy ? String(event.updatedBy) : "",
       description: event.description,
       location: event.location,
       classroom: event.classroom || "",
@@ -153,6 +173,7 @@ const TeacherEventsPage = () => {
       const payload = new FormData();
       payload.append("name", form.name.trim());
       payload.append("creator", form.creator.trim());
+      payload.append("updatedBy", form.updatedBy);
       payload.append("description", form.description.trim());
       payload.append("location", form.location.trim());
       payload.append("classroom", form.classroom);
@@ -200,6 +221,7 @@ const TeacherEventsPage = () => {
       const payload = new FormData();
       payload.append("name", form.name.trim());
       payload.append("creator", form.creator.trim());
+      payload.append("updatedBy", form.updatedBy);
       payload.append("description", form.description.trim());
       payload.append("location", form.location.trim());
       payload.append("classroom", form.classroom);
@@ -244,6 +266,7 @@ const TeacherEventsPage = () => {
     if (
       !form.name.trim() ||
       !form.creator.trim() ||
+      !form.updatedBy ||
       !form.description.trim() ||
       !form.location.trim() ||
       !form.classroom ||
@@ -251,7 +274,7 @@ const TeacherEventsPage = () => {
     ) {
       setMessage({
         type: "error",
-        text: "A kötelező mezők kitöltése szükséges (szervezővel együtt).",
+        text: "A kötelező mezők kitöltése szükséges (szervezővel és frissítővel együtt).",
       });
       return;
     }
@@ -433,6 +456,28 @@ const TeacherEventsPage = () => {
               placeholder="Szervező neve"
               required
             />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm text-faded">Frissítő felhasználó</label>
+            <select
+              value={form.updatedBy}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  updatedBy: event.target.value,
+                }))
+              }
+              className="w-full rounded-xl border border-faded/25 bg-secondary/70 px-3 py-2 focus:outline-none focus:border-accent"
+              required
+            >
+              <option value="">Válassz felhasználót</option>
+              {usersLite.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name} ({user.email})
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="space-y-1">

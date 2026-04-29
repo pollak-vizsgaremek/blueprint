@@ -2,6 +2,7 @@
 
 import { useModal } from "@/contexts/ModalContext";
 import { usePopupModal } from "@/contexts/PopupModalContext";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   CreateEventNewsResponse,
   CreateEventCommentResponse,
@@ -11,6 +12,7 @@ import {
   EventNewsItem,
   GetEventCommentsResponse,
   GetEventNewsResponse,
+  GetUsersLiteResponse,
   UpdateEventNewsResponse,
 } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -28,7 +30,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { EventNavigationMap } from "@/components/navigation/EventNavigationMap";
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 const formatDateTime = (value?: string) => {
   if (!value) return "Ismeretlen";
@@ -54,9 +56,35 @@ const formatDateOnly = (value?: string) => {
   });
 };
 
+const toLocalInputValue = (value?: string) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
+type EventEditFormState = {
+  name: string;
+  description: string;
+  location: string;
+  classroom: string;
+  date: string;
+  maxParticipants: string;
+  updatedBy: string;
+};
+
 export const EventModal = () => {
   const { isOpen, closeModal, selectedEvent, setEvent } = useModal();
   const { showAlert, showConfirm } = usePopupModal();
+  const { user } = useAuth();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const pathname = usePathname();
   const [commentContent, setCommentContent] = useState("");
@@ -67,6 +95,16 @@ export const EventModal = () => {
   const [activeTab, setActiveTab] = useState<
     "details" | "discussion" | "news" | "place"
   >("details");
+  const [isEditingEvent, setIsEditingEvent] = useState(false);
+  const [eventForm, setEventForm] = useState<EventEditFormState>({
+    name: "",
+    description: "",
+    location: "",
+    classroom: "",
+    date: "",
+    maxParticipants: "",
+    updatedBy: "",
+  });
 
   useEffect(() => {
     if (isOpen) {
@@ -75,8 +113,49 @@ export const EventModal = () => {
       setNewsContent("");
       setPublishNow(false);
       setEditingDraftId(null);
+      setIsEditingEvent(false);
+
+      if (selectedEvent) {
+        setEventForm({
+          name: selectedEvent.name,
+          description: selectedEvent.description,
+          location: selectedEvent.location,
+          classroom: selectedEvent.classroom,
+          date: toLocalInputValue(selectedEvent.date),
+          maxParticipants: selectedEvent.maxParticipants
+            ? String(selectedEvent.maxParticipants)
+            : "",
+          updatedBy: selectedEvent.updatedBy
+            ? String(selectedEvent.updatedBy)
+            : "",
+        });
+      }
     }
   }, [isOpen, selectedEvent?.id]);
+
+  const canManageEvent =
+    Boolean(user) &&
+    Boolean(selectedEvent) &&
+    (user?.role === "admin" ||
+      (selectedEvent?.updatedBy !== null &&
+        selectedEvent?.updatedBy === user?.id));
+
+  const { data: usersLiteData } = useQuery({
+    queryKey: ["users-lite"],
+    enabled: isOpen && canManageEvent,
+    queryFn: async () => {
+      const { data } = await axios.get<GetUsersLiteResponse>(
+        `${process.env.NEXT_PUBLIC_API_URL}/users/list`,
+        {
+          withCredentials: true,
+        },
+      );
+
+      return data;
+    },
+  });
+
+  const usersLite = usersLiteData?.users ?? [];
 
   useEffect(() => {
     if (isOpen) {
@@ -415,6 +494,110 @@ export const EventModal = () => {
       },
     });
 
+  const { mutate: updateManagedEvent, isPending: isUpdateManagedEventPending } =
+    useMutation({
+      mutationFn: async () => {
+        if (!selectedEvent) {
+          return;
+        }
+
+        const payload: Record<string, string | number | null> = {
+          name: eventForm.name.trim(),
+          description: eventForm.description.trim(),
+          location: eventForm.location.trim(),
+          classroom: eventForm.classroom.trim(),
+          date: new Date(eventForm.date).toISOString(),
+          updatedBy: Number(eventForm.updatedBy),
+        };
+
+        if (eventForm.maxParticipants.trim()) {
+          payload.maxParticipants = Number(eventForm.maxParticipants.trim());
+        } else {
+          payload.maxParticipants = null;
+        }
+
+        return axios.put(
+          `${process.env.NEXT_PUBLIC_API_URL}/events/${selectedEvent.id}`,
+          payload,
+          {
+            withCredentials: true,
+          },
+        );
+      },
+      onSuccess: () => {
+        if (!selectedEvent) {
+          return;
+        }
+
+        setEvent({
+          ...selectedEvent,
+          name: eventForm.name.trim(),
+          description: eventForm.description.trim(),
+          location: eventForm.location.trim(),
+          classroom: eventForm.classroom.trim(),
+          date: new Date(eventForm.date).toISOString(),
+          updatedBy: Number(eventForm.updatedBy),
+          maxParticipants: eventForm.maxParticipants.trim()
+            ? Number(eventForm.maxParticipants.trim())
+            : null,
+        });
+
+        setIsEditingEvent(false);
+        showAlert({ message: "Esemény frissítve.", tone: "success" });
+        queryClient.invalidateQueries({ queryKey: ["events"] });
+        queryClient.invalidateQueries({
+          queryKey: ["events", "detail", selectedEvent.id],
+        });
+        queryClient.invalidateQueries({ queryKey: ["myevents"] });
+      },
+      onError: (error) => {
+        if (axios.isAxiosError(error)) {
+          const errorMessage =
+            error.response?.data?.message ??
+            error.response?.data?.error ??
+            "Esemény frissítése sikertelen.";
+          showAlert({ message: errorMessage, tone: "error" });
+          return;
+        }
+
+        showAlert({ message: "Esemény frissítése sikertelen.", tone: "error" });
+      },
+    });
+
+  const { mutate: deleteManagedEvent, isPending: isDeleteManagedEventPending } =
+    useMutation({
+      mutationFn: async () => {
+        if (!selectedEvent) {
+          return;
+        }
+
+        return axios.delete(
+          `${process.env.NEXT_PUBLIC_API_URL}/events/${selectedEvent.id}`,
+          {
+            withCredentials: true,
+          },
+        );
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["events"] });
+        queryClient.invalidateQueries({ queryKey: ["myevents"] });
+        closeModal();
+        router.push("/events");
+      },
+      onError: (error) => {
+        if (axios.isAxiosError(error)) {
+          const errorMessage =
+            error.response?.data?.message ??
+            error.response?.data?.error ??
+            "Esemény törlése sikertelen.";
+          showAlert({ message: errorMessage, tone: "error" });
+          return;
+        }
+
+        showAlert({ message: "Esemény törlése sikertelen.", tone: "error" });
+      },
+    });
+
   const canRegister =
     selectedEvent && (selectedEvent.isUserRegistered || !selectedEvent.isFull);
 
@@ -465,6 +648,57 @@ export const EventModal = () => {
     }
 
     deleteComment(commentId);
+  };
+
+  const validateEventForm = () => {
+    if (
+      !eventForm.name.trim() ||
+      !eventForm.description.trim() ||
+      !eventForm.location.trim() ||
+      !eventForm.classroom.trim() ||
+      !eventForm.date ||
+      !eventForm.updatedBy
+    ) {
+      showAlert({
+        message: "Minden kötelező mezőt tölts ki.",
+        tone: "warning",
+      });
+      return false;
+    }
+
+    if (Number.isNaN(new Date(eventForm.date).getTime())) {
+      showAlert({ message: "Érvénytelen dátum.", tone: "warning" });
+      return false;
+    }
+
+    if (
+      eventForm.maxParticipants.trim() &&
+      (!Number.isInteger(Number(eventForm.maxParticipants)) ||
+        Number(eventForm.maxParticipants) <= 0)
+    ) {
+      showAlert({
+        message: "A maximális létszám pozitív egész szám legyen.",
+        tone: "warning",
+      });
+      return false;
+    }
+
+    return true;
+  };
+
+  const confirmDeleteEvent = async () => {
+    const confirmed = await showConfirm({
+      message: "Biztosan törölni szeretnéd ezt az eseményt?",
+      tone: "warning",
+      confirmText: "Törlés",
+      cancelText: "Mégse",
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    deleteManagedEvent();
   };
 
   const renderNewsTab = () => {
@@ -871,6 +1105,159 @@ export const EventModal = () => {
                   <div className="text-gray-600 text-justify mb-5">
                     {selectedEvent?.description}
                   </div>
+                  {canManageEvent && (
+                    <div className="mb-5 flex flex-wrap items-center gap-2">
+                      <button
+                        onClick={() =>
+                          setIsEditingEvent((previous) => !previous)
+                        }
+                        className="rounded-xl bg-sky-100 px-3 py-2 text-sm text-sky-700 hover:bg-sky-200 transition"
+                      >
+                        {isEditingEvent
+                          ? "Szerkesztés bezárása"
+                          : "Szerkesztés"}
+                      </button>
+                      <button
+                        onClick={confirmDeleteEvent}
+                        disabled={isDeleteManagedEventPending}
+                        className="rounded-xl bg-red-100 px-3 py-2 text-sm text-red-700 hover:bg-red-200 transition disabled:bg-faded disabled:text-faded disabled:cursor-not-allowed"
+                      >
+                        {isDeleteManagedEventPending ? "Törlés..." : "Törlés"}
+                      </button>
+                    </div>
+                  )}
+                  {canManageEvent && isEditingEvent && (
+                    <div className="mb-5 rounded-xl border border-faded/40 bg-white/30 p-3">
+                      <div className="text-lg mb-2">Esemény szerkesztése</div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <input
+                          value={eventForm.name}
+                          onChange={(event) =>
+                            setEventForm((previous) => ({
+                              ...previous,
+                              name: event.target.value,
+                            }))
+                          }
+                          placeholder="Esemény neve"
+                          className="w-full border border-faded/60 rounded-xl px-3 py-2 bg-white/20"
+                        />
+                        <input
+                          value={eventForm.location}
+                          onChange={(event) =>
+                            setEventForm((previous) => ({
+                              ...previous,
+                              location: event.target.value,
+                            }))
+                          }
+                          placeholder="Helyszín"
+                          className="w-full border border-faded/60 rounded-xl px-3 py-2 bg-white/20"
+                        />
+                        <input
+                          value={eventForm.classroom}
+                          onChange={(event) =>
+                            setEventForm((previous) => ({
+                              ...previous,
+                              classroom: event.target.value,
+                            }))
+                          }
+                          placeholder="Tanterem"
+                          className="w-full border border-faded/60 rounded-xl px-3 py-2 bg-white/20"
+                        />
+                        <input
+                          type="datetime-local"
+                          value={eventForm.date}
+                          onChange={(event) =>
+                            setEventForm((previous) => ({
+                              ...previous,
+                              date: event.target.value,
+                            }))
+                          }
+                          className="w-full border border-faded/60 rounded-xl px-3 py-2 bg-white/20"
+                        />
+                        <input
+                          value={eventForm.maxParticipants}
+                          onChange={(event) =>
+                            setEventForm((previous) => ({
+                              ...previous,
+                              maxParticipants: event.target.value,
+                            }))
+                          }
+                          placeholder="Max létszám (opcionális)"
+                          className="w-full border border-faded/60 rounded-xl px-3 py-2 bg-white/20"
+                        />
+                        <select
+                          value={eventForm.updatedBy}
+                          onChange={(event) =>
+                            setEventForm((previous) => ({
+                              ...previous,
+                              updatedBy: event.target.value,
+                            }))
+                          }
+                          className="w-full border border-faded/60 rounded-xl px-3 py-2 bg-white/20"
+                        >
+                          <option value="">Válassz frissítőt</option>
+                          {usersLite.map((candidate) => (
+                            <option
+                              key={candidate.id}
+                              value={String(candidate.id)}
+                            >
+                              {candidate.name} ({candidate.role})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <textarea
+                        value={eventForm.description}
+                        onChange={(event) =>
+                          setEventForm((previous) => ({
+                            ...previous,
+                            description: event.target.value,
+                          }))
+                        }
+                        rows={3}
+                        placeholder="Leírás"
+                        className="mt-2 w-full border border-faded/60 rounded-xl px-3 py-2 bg-white/20"
+                      />
+                      <div className="mt-2 flex gap-2">
+                        <button
+                          onClick={() => {
+                            if (!validateEventForm()) {
+                              return;
+                            }
+
+                            updateManagedEvent();
+                          }}
+                          disabled={isUpdateManagedEventPending}
+                          className="rounded-xl bg-accent px-3 py-2 text-white disabled:bg-faded disabled:cursor-not-allowed"
+                        >
+                          {isUpdateManagedEventPending ? "Mentés..." : "Mentés"}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setIsEditingEvent(false);
+                            if (selectedEvent) {
+                              setEventForm({
+                                name: selectedEvent.name,
+                                description: selectedEvent.description,
+                                location: selectedEvent.location,
+                                classroom: selectedEvent.classroom,
+                                date: toLocalInputValue(selectedEvent.date),
+                                maxParticipants: selectedEvent.maxParticipants
+                                  ? String(selectedEvent.maxParticipants)
+                                  : "",
+                                updatedBy: selectedEvent.updatedBy
+                                  ? String(selectedEvent.updatedBy)
+                                  : "",
+                              });
+                            }
+                          }}
+                          className="rounded-xl border border-faded/40 px-3 py-2 text-faded"
+                        >
+                          Mégse
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                     <div className="rounded-xl border border-faded/20 bg-secondary/35 px-3 py-2 inline-flex items-center gap-2">
                       <UserRound size={16} className="text-accent" />
